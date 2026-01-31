@@ -6,7 +6,7 @@ from mmpose.apis import MMPoseInferencer
 
 from ez_openmmlab.engines.mmpose import EZMMPose
 from ez_openmmlab.core.config_loader import get_config_file
-from ez_openmmlab.schemas.inference import PoseInferenceResult
+from ez_openmmlab.core.results import InferenceResult
 from ez_openmmlab.utils.toml_config import UserConfig
 
 
@@ -19,15 +19,38 @@ class RTMO(EZMMPose):
 
     def predict(
         self,
-        image_path: Union[str, Path],
+        image_path: Union[str, Path, list],
+        *,
         bbox_thr: float = 0.3,
         kpt_thr: float = 0.3,
         device: str = "cuda",
         show: bool = False,
         out_dir: Optional[str] = None,
         **kwargs,
-    ) -> PoseInferenceResult:
-        """Runs RTMO inference without a separate detector."""
+    ) -> Union[InferenceResult, list[InferenceResult]]:
+        """Runs RTMO inference
+
+        Args:
+            image_path: Path to a single image, a list of paths, or a directory.
+            bbox_thr: Bounding box score threshold.
+            kpt_thr: Keypoint score threshold.
+            device: Computing device ('cuda', 'cpu').
+            show: Whether to display results.
+            out_dir: Directory to save visualization.
+            det_cat_ids: Category IDs (not typically used by bottom-up RTMO).
+        """
+        return super().predict(
+            image_path=image_path,
+            bbox_thr=bbox_thr,
+            kpt_thr=kpt_thr,
+            device=device,
+            show=show,
+            out_dir=out_dir,
+            **kwargs,
+        )
+
+    def _init_inferencer(self, device: str, **kwargs):
+        """Lazy initialization of the RTMO inferencer."""
         if self._inferencer is None:
             config_path = get_config_file(self.model_name)
 
@@ -38,15 +61,6 @@ class RTMO(EZMMPose):
                     pose2d_weights=str(self.checkpoint_path),
                     device=device,
                 )
-
-        return self._execute_mmpose_inferencer(
-            image_path=image_path,
-            out_dir=out_dir,
-            show=show,
-            bbox_thr=bbox_thr,
-            kpt_thr=kpt_thr,
-            **kwargs,
-        )
 
     def _configure_model_specifics(self, config: UserConfig) -> None:
         """RTMO specific head overrides."""
@@ -65,4 +79,3 @@ class RTMO(EZMMPose):
                     f"[{self.__class__.__name__}] Setting RTMO model.head.head_module_cfg.num_classes to 1"
                 )
                 head.head_module_cfg.num_classes = 1
-

@@ -1,8 +1,10 @@
 import pytest
+import numpy as np
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 from ez_openmmlab import RTMDet
 from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.core.results import InferenceResult, Boxes
 
 @pytest.fixture
 def dummy_dataset_config(tmp_path):
@@ -48,10 +50,6 @@ def test_train_orchestration_and_artifact_creation(mock_ensure, mock_runner, dum
     
     # 2. Verify Runner was called with modified config
     mock_runner.from_cfg.assert_called_once()
-    cfg = mock_runner.from_cfg.call_args[0][0]
-    
-    # Verify some key config overrides were applied (Integration between base.py and handlers)
-from ez_openmmlab.schemas.inference import InferenceResult
 
 @patch("ez_openmmlab.engines.mmdet.DetInferencer")
 @patch("ez_openmmlab.core.base.ensure_model_checkpoint")
@@ -65,11 +63,15 @@ def test_predict_result_conversion(mock_ensure, mock_inferencer_cls):
     mock_inferencer_instance.return_value = raw_result
     mock_inferencer_cls.return_value = mock_inferencer_instance
     
-    detector = RTMDet(ModelName.RTM_DET_TINY)
-    result = detector.predict(image_path="dummy.jpg")
+    # Mock cv2.imread
+    with patch("cv2.imread", return_value=np.zeros((100, 100, 3), dtype=np.uint8)):
+        detector = RTMDet(ModelName.RTM_DET_TINY)
+        result = detector.predict(image_path="dummy.jpg")
     
     assert isinstance(result, InferenceResult)
-    assert len(result.predictions) == 1
-    assert result.predictions[0].label == 1
-    assert result.predictions[0].score == 0.85
-    assert result.predictions[0].bbox == [0, 0, 10, 10]
+    assert result.boxes is not None
+    assert isinstance(result.boxes, Boxes)
+    assert len(result.boxes) == 1
+    assert result.boxes.cls[0] == 1
+    assert np.allclose(result.boxes.conf[0], 0.85)
+    assert np.allclose(result.boxes.xyxy[0], [0, 0, 10, 10])

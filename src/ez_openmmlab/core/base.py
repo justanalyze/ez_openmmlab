@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 from loguru import logger
 from mmengine.config import Config
@@ -9,9 +9,10 @@ from mmengine.runner import Runner
 from ez_openmmlab.core.config_loader import get_config_file
 from ez_openmmlab.core.handlers import DataloaderHandler, RuntimeHandler
 from ez_openmmlab.schemas.dataset import DatasetConfig
-from ez_openmmlab.schemas.inference import InferenceResult
+from ez_openmmlab.core.results import InferenceResult
 from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.utils.download import ensure_model_checkpoint
+from ez_openmmlab.utils.path import get_unique_dir
 from ez_openmmlab.utils.toml_config import (
     DataSection,
     ModelSection,
@@ -27,14 +28,9 @@ class EZMMLab(ABC):
     Implements shared logic for configuration management and training workflows.
     """
 
-    model_name: str
-    log_level: str
-    checkpoint_path: Path
-    _cfg: Optional[Config]
-
     def __init__(
         self,
-        model_name: ModelName,
+        model_name: ModelName | str,
         checkpoint_path: Optional[Union[str, Path]] = None,
         log_level: str = "INFO",
     ):
@@ -50,6 +46,7 @@ class EZMMLab(ABC):
         )
         # Ensure noisy warnings are suppressed when engine starts
         from ez_openmmlab import mute_warnings
+
         mute_warnings()
 
         self.model_name: str = (
@@ -74,6 +71,44 @@ class EZMMLab(ABC):
     def predict(self, *args, **kwargs):
         """Abstract method for performing inference."""
         pass
+
+    def _resolve_out_dir(self, out_dir: Optional[str]) -> str:
+        """Returns a unique output directory if one is provided."""
+        return str(get_unique_dir(out_dir)) if out_dir else ""
+
+    def _normalize_inputs(
+        self, inputs: Union[str, Path, List[Union[str, Path]]]
+    ) -> Union[str, List[str]]:
+        """Normalizes input paths (single, list, or directory) into a format engines accept.
+
+        Args:
+            inputs: A single path, a list of paths, or a directory path.
+
+        Returns:
+            A list of image paths (strings) if the input was a list or directory,
+            or a single string path if the input was a single file.
+        """
+        # Case 1: List of paths -> Convert all to strings
+        if isinstance(inputs, list):
+            return [str(p) for p in inputs]
+
+        path_obj = Path(inputs)
+
+        # Case 2: Directory -> Glob all images
+        if path_obj.is_dir():
+            extensions = {"*.jpg", "*.jpeg", "*.png", "*.bmp", "*.webp"}
+            images = []
+            for ext in extensions:
+                # Case insensitive globbing is harder in pure pathlib, so we iterate
+                images.extend([str(p) for p in path_obj.glob(ext)])
+                images.extend([str(p) for p in path_obj.glob(ext.upper())])
+
+            if not images:
+                logger.warning(f"No images found in directory: {inputs}")
+            return sorted(list(set(images)))
+
+        # Case 3: Single file path -> Return as string
+        return str(path_obj)
 
     def switch_to_lib_root(self):
         """Context manager to temporarily switch to the appropriate library root.

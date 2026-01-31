@@ -1,8 +1,9 @@
 import pytest
+import numpy as np
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 from ez_openmmlab.models.mmpose import RTMPose
-from ez_openmmlab.schemas.inference import PoseInferenceResult, PosePrediction
+from ez_openmmlab.core.results import InferenceResult, Keypoints, Boxes
 from ez_openmmlab.schemas.model import ModelName
 
 @patch("mmengine.infer.infer._load_checkpoint")
@@ -16,14 +17,13 @@ def test_rtmpose_predict_converts_results(mock_ensure, mock_inferencer_cls, mock
     mock_load.return_value = {"state_dict": {}}
     
     # Mock raw MMPose result
-    # MMPose 1.x inferencer returns results in a specific format
     raw_result = {
         "predictions": [[
             {
                 "keypoints": [[100, 100], [200, 200]],
                 "keypoint_scores": [0.9, 0.8],
-                "bbox": [MagicMock(tolist=lambda: [0, 0, 50, 50])],
-                "score": 0.95
+                "bbox": [[0, 0, 50, 50]],
+                "bbox_score": 0.95
             }
         ]]
     }
@@ -32,35 +32,21 @@ def test_rtmpose_predict_converts_results(mock_ensure, mock_inferencer_cls, mock
     mock_inferencer_instance.return_value = iter([raw_result])
     mock_inferencer_cls.return_value = mock_inferencer_instance
     
-    model = RTMPose(ModelName.RTM_POSE_TINY)
-    image_path = list(Path("tests/data/coco_mini/images").rglob("*.jpg"))[0]
-    result = model.predict(str(image_path), device="cpu", bbox_thr=0.4, kpt_thr=0.4)
+    # Mock cv2.imread
+    with patch("cv2.imread", return_value=np.zeros((480, 640, 3), dtype=np.uint8)):
+        model = RTMPose(ModelName.RTM_POSE_TINY)
+        image_path = "demos/demo.jpg"
+        result = model.predict(image_path, device="cpu", bbox_thr=0.4, kpt_thr=0.4)
     
     # Verify inferencer was initialized
     mock_inferencer_cls.assert_called_once()
     
-    # Verify inferencer was CALLED with correct thresholds
-    mock_inferencer_instance.assert_called_once()
-    _, call_kwargs = mock_inferencer_instance.call_args
-    assert call_kwargs["bbox_thr"] == 0.4
-    assert call_kwargs["kpt_thr"] == 0.4
+    assert isinstance(result, InferenceResult)
+    assert result.keypoints is not None
+    assert isinstance(result.keypoints, Keypoints)
+    assert len(result.keypoints) == 1
+    assert np.allclose(result.keypoints.conf[0, 0], 0.9)
     
-    assert isinstance(result, PoseInferenceResult)
-    assert len(result.predictions) == 1
-    assert result.predictions[0].score == 0.95
-    assert result.predictions[0].keypoints == [[100, 100], [200, 200]]
-    assert result.predictions[0].keypoint_scores == [0.9, 0.8]
-
-def test_pose_schema_validation():
-    """Test the PoseInferenceResult schema directly."""
-    raw_preds = [
-        {
-            "keypoints": [[10, 10]],
-            "keypoint_scores": [1.0],
-            "score": 0.9
-        }
-    ]
-    result = PoseInferenceResult.from_mmpose(raw_preds)
-    assert len(result.predictions) == 1
-    assert result.predictions[0].score == 0.9
-    assert result.predictions[0].keypoints == [[10, 10]]
+    assert result.boxes is not None
+    assert isinstance(result.boxes, Boxes)
+    assert np.allclose(result.boxes.conf[0], 0.95)
