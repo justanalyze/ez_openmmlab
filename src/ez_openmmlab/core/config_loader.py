@@ -29,21 +29,22 @@ class ConfigLoader:
                 "Ensure submodules are initialized."
             )
 
-    def get_config_path(self, model_name: str) -> Path:
+    def get_config_path(self, model_name: str | ModelName) -> Path:
         """Resolves a model name to its absolute config path."""
+        actual_name = model_name.value if isinstance(model_name, ModelName) else model_name
         try:
-            model = ModelName(model_name)
+            model = ModelName(actual_name)
             rel_path = model.config_path
         except ValueError:
-            logger.error(f"Model '{model_name}' is not supported or recognized.")
+            logger.error(f"Model '{actual_name}' is not supported or recognized.")
             supported = ", ".join([m.value for m in ModelName])
             raise ValueError(
-                f"Model '{model_name}' not found in internal map.\n"
+                f"Model '{actual_name}' not found in internal map.\n"
                 f"Currently supported models: {supported}"
             )
 
         # Determine which library root to use
-        if "rtmpose" in model_name or "rtmo" in model_name:
+        if "rtmpose" in actual_name or "rtmo" in actual_name:
             config_root = self._mmpose_config_root
         else:
             config_root = self._mmdet_config_root
@@ -51,13 +52,13 @@ class ConfigLoader:
         config_path = config_root / rel_path
 
         if not config_path.exists():
-            logger.error(f"Config file for '{model_name}' missing at: {config_path}")
+            logger.error(f"Config file for '{actual_name}' missing at: {config_path}")
             raise FileNotFoundError(
-                f"Config file for '{model_name}' not found at: {config_path}\n"
+                f"Config file for '{actual_name}' not found at: {config_path}\n"
                 "Please verify the appropriate OpenMMLab submodule is correctly initialized."
             )
 
-        logger.info(f"Resolved model '{model_name}' to: {config_path}")
+        logger.info(f"Resolved model '{actual_name}' to: {config_path}")
         return config_path
 
 
@@ -65,5 +66,5 @@ class ConfigLoader:
 _LOADER = ConfigLoader()
 
 
-def get_config_file(model_name: str) -> Path:
-    return _LOADER.get_config_path(model_name)
+def get_config_file(model_name: str | ModelName) -> Path:
+    return _LOADER.get_config_path(str(model_name.value) if isinstance(model_name, ModelName) else model_name)

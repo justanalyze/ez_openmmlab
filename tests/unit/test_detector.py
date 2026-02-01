@@ -55,8 +55,9 @@ def test_predict_initializes_inferencer_and_calls_it(mock_ensure):
             "demo.jpg", out_dir="", show=False, pred_score_thr=0.5
         )
 
-        # Verify results is an InferenceResult object
-        assert isinstance(results, InferenceResult)
+        # Verify results is a list of InferenceResult objects
+        assert isinstance(results, list)
+        assert isinstance(results[0], InferenceResult)
 
 
 @patch("ez_openmmlab.engines.mmdet.ensure_model_checkpoint")

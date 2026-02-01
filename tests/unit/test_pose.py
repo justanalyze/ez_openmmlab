@@ -36,11 +36,13 @@ def test_rtmpose_predict_converts_results(mock_ensure, mock_inferencer_cls, mock
     with patch("cv2.imread", return_value=np.zeros((480, 640, 3), dtype=np.uint8)):
         model = RTMPose(ModelName.RTM_POSE_TINY)
         image_path = "demos/demo.jpg"
-        result = model.predict(image_path, device="cpu", bbox_thr=0.4, kpt_thr=0.4)
+        results = model.predict(image_path, device="cpu", bbox_thr=0.4, kpt_thr=0.4)
     
     # Verify inferencer was initialized
     mock_inferencer_cls.assert_called_once()
     
+    assert isinstance(results, list)
+    result = results[0]
     assert isinstance(result, InferenceResult)
     assert result.keypoints is not None
     assert isinstance(result.keypoints, Keypoints)

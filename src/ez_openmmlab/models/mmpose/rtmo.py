@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 from loguru import logger
 from mmpose.apis import MMPoseInferencer
@@ -27,7 +27,7 @@ class RTMO(EZMMPose):
         show: bool = False,
         out_dir: Optional[str] = None,
         **kwargs,
-    ) -> Union[InferenceResult, list[InferenceResult]]:
+    ) -> List[InferenceResult]:
         """Runs RTMO inference
 
         Args:

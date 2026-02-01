@@ -39,7 +39,7 @@ class EZMMPose(EZMMLab):
         out_dir: Optional[str] = None,
         det_cat_ids: Optional[Union[int, list[int]]] = [0],
         **kwargs,
-    ) -> Union[InferenceResult, List[InferenceResult]]:
+    ) -> List[InferenceResult]:
         """Runs pose estimation on one or more images.
 
         Args:
@@ -82,19 +82,19 @@ class EZMMPose(EZMMLab):
 
     def _map_pose_results(
         self, results: list, inputs: Union[str, List[str]]
-    ) -> Union[InferenceResult, List[InferenceResult]]:
+    ) -> List[InferenceResult]:
         """Maps raw MMPose results to vectorized InferenceResult objects."""
         # Get class names from inferencer if possible, fallback to COCO
         names = COCO_CLASSES
-        if self._inferencer and hasattr(self._inferencer, 'model'):
-            meta = getattr(self._inferencer.model, 'dataset_meta', {})
-            if 'classes' in meta:
-                names = {i: name for i, name in enumerate(meta['classes'])}
+        if self._inferencer and hasattr(self._inferencer, "model"):
+            meta = getattr(self._inferencer.model, "dataset_meta", {})
+            if "classes" in meta:
+                names = {i: name for i, name in enumerate(meta["classes"])}
 
         def _to_result(raw_preds: list, img_path: str) -> InferenceResult:
             # raw_preds is a list of dicts for one image
             # Each dict: {'keypoints': [...], 'keypoint_scores': [...], 'bbox': [...], 'bbox_score': ...}
-            
+
             kpts_list = []
             kpt_scores_list = []
             bboxes_list = []
@@ -104,7 +104,7 @@ class EZMMPose(EZMMLab):
             for p in raw_preds:
                 kpts_list.append(p.get("keypoints", []))
                 kpt_scores_list.append(p.get("keypoint_scores", []))
-                
+
                 # Handle bbox nesting ([x1, y1, x2, y2],)
                 raw_bbox = p.get("bbox", [])
                 if isinstance(raw_bbox, (list, tuple)) and len(raw_bbox) > 0:
@@ -115,7 +115,7 @@ class EZMMPose(EZMMLab):
                         bboxes_list.append(raw_bbox[:4])
                 else:
                     bboxes_list.append([0, 0, 0, 0])
-                
+
                 bbox_scores_list.append(p.get("bbox_score", 0.0))
                 # For person pose, label is usually 0 (person)
                 labels_list.append(0)
@@ -134,10 +134,12 @@ class EZMMPose(EZMMLab):
 
             # Package Boxes: [N, 6] -> [x1, y1, x2, y2, score, label]
             if len(bboxes) > 0:
-                boxes_data = np.concatenate([bboxes, bbox_scores[:, None], labels[:, None]], axis=1)
+                boxes_data = np.concatenate(
+                    [bboxes, bbox_scores[:, None], labels[:, None]], axis=1
+                )
             else:
                 boxes_data = np.zeros((0, 6), dtype=np.float32)
-            
+
             boxes = Boxes(boxes_data, orig_img.shape[:2])
 
             # Package Keypoints: [N, K, 3] -> [x, y, score]
@@ -145,15 +147,15 @@ class EZMMPose(EZMMLab):
                 kpts_data = np.concatenate([kpts, kpt_scores[:, :, None]], axis=2)
             else:
                 kpts_data = np.zeros((0, 0, 3), dtype=np.float32)
-            
+
             keypoints = Keypoints(kpts_data, orig_img.shape[:2])
 
             return InferenceResult(
                 orig_img=orig_img,
                 path=str(Path(img_path).absolute()),
-                names={0: "person"}, # For now, pose models usually target person
+                names={0: "person"},  # For now, pose models usually target person
                 boxes=boxes,
-                keypoints=keypoints
+                keypoints=keypoints,
             )
 
         # MMPose batch format: results is a list of batch results
@@ -164,9 +166,13 @@ class EZMMPose(EZMMLab):
                 all_flattened_preds.extend(batch_res["predictions"])
 
         if isinstance(inputs, list):
-            return [_to_result(p, p_path) for p, p_path in zip(all_flattened_preds, inputs)]
+            return [
+                _to_result(p, p_path) for p, p_path in zip(all_flattened_preds, inputs)
+            ]
 
-        return _to_result(all_flattened_preds[0] if all_flattened_preds else [], inputs)
+        return [
+            _to_result(all_flattened_preds[0] if all_flattened_preds else [], inputs)
+        ]
 
     @abstractmethod
     def _configure_model_specifics(self, config):
@@ -177,3 +183,4 @@ class EZMMPose(EZMMLab):
     def _init_inferencer(self, device: str, **kwargs):
         """Lazy initialization of the MMPose inferencer."""
         pass
+

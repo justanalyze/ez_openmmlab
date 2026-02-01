@@ -38,7 +38,7 @@ class EZMMDetector(EZMMLab):
         device: str = "cuda",
         out_dir: Optional[str] = None,
         show: bool = False,
-    ) -> Union[InferenceResult, List[InferenceResult]]:
+    ) -> List[InferenceResult]:
         """Runs object detection on one or more images.
 
         Args:
@@ -79,7 +79,7 @@ class EZMMDetector(EZMMLab):
 
     def _map_inference_results(
         self, results: dict, inputs: Union[str, List[str]]
-    ) -> Union[InferenceResult, List[InferenceResult]]:
+    ) -> List[InferenceResult]:
         """Maps raw MMDetection results to vectorized InferenceResult objects."""
         # Get class names from inferencer if possible, fallback to COCO
         names = COCO_CLASSES
@@ -120,7 +120,13 @@ class EZMMDetector(EZMMLab):
             return [_to_result(p, p_path) for p, p_path in zip(results["predictions"], inputs)]
 
         # Single inference: results['predictions'] is a list with one dict
-        return _to_result(results["predictions"][0], inputs)
+        # Even for single input, inputs is a single string but _normalize_inputs could have returned a list or string.
+        # However, DetInferencer structure depends on input.
+        # If inputs is a string (single file), results['predictions'] is a list with one dict.
+        
+        # Let's handle the single input case by wrapping in list
+        raw_pred = results["predictions"][0] if results["predictions"] else {"labels": [], "scores": [], "bboxes": []}
+        return [_to_result(raw_pred, inputs)]
 
     def _configure_model_specifics(self, config):
         """Detection specific overrides are handled by subclasses."""

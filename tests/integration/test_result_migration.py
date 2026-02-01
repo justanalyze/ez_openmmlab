@@ -10,8 +10,10 @@ def test_detector_returns_vectorized_result(model_name):
     detector = RTMDet(model_name=model_name)
     img_path = "demos/demo.jpg"
     
-    result = detector.predict(img_path, device="cpu")
+    results = detector.predict(img_path, device="cpu")
     
+    assert isinstance(results, list)
+    result = results[0]
     assert isinstance(result, InferenceResult)
     assert result.boxes is not None
     assert isinstance(result.boxes, Boxes)
@@ -27,8 +29,10 @@ def test_pose_returns_vectorized_result(model_name):
     pose = RTMPose(model_name=model_name)
     img_path = "demos/demo.jpg"
     
-    result = pose.predict(img_path, device="cpu")
+    results = pose.predict(img_path, device="cpu")
     
+    assert isinstance(results, list)
+    result = results[0]
     assert isinstance(result, InferenceResult)
     assert result.keypoints is not None
     assert isinstance(result.keypoints, Keypoints)

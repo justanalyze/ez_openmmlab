@@ -66,8 +66,10 @@ def test_predict_result_conversion(mock_ensure, mock_inferencer_cls):
     # Mock cv2.imread
     with patch("cv2.imread", return_value=np.zeros((100, 100, 3), dtype=np.uint8)):
         detector = RTMDet(ModelName.RTM_DET_TINY)
-        result = detector.predict(image_path="dummy.jpg")
+        results = detector.predict(image_path="dummy.jpg")
     
+    assert isinstance(results, list)
+    result = results[0]
     assert isinstance(result, InferenceResult)
     assert result.boxes is not None
     assert isinstance(result.boxes, Boxes)

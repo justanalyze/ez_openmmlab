@@ -68,7 +68,7 @@ class EZMMLab(ABC):
             logger.warning(f"Failed to set log level: {e}")
 
     @abstractmethod
-    def predict(self, *args, **kwargs):
+    def predict(self, *args, **kwargs) -> List[InferenceResult]:
         """Abstract method for performing inference."""
         pass
 

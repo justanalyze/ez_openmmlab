@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 from loguru import logger
 from mmpose.apis import MMPoseInferencer
@@ -32,7 +32,7 @@ class RTMPose(EZMMPose):
         det_weights: Optional[str] = None,
         det_cat_ids: Optional[Union[int, list[int]]] = [0],
         **kwargs,
-    ) -> Union[InferenceResult, list[InferenceResult]]:
+    ) -> List[InferenceResult]:
         """Runs RTMPose inference with a person detector.
 
         Note:
