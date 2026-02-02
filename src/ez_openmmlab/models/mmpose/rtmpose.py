@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Optional, Union, List
 
 from loguru import logger
+from mmengine.config import Config
 from mmpose.apis import MMPoseInferencer
 
 from ez_openmmlab.engines.mmpose import EZMMPose
@@ -18,6 +19,15 @@ class RTMPose(EZMMPose):
     Supported variants: rtmpose_tiny, rtmpose_s, rtmpose_m, rtmpose_l.
     Note: RTMPose is a top-down model and requires a detector.
     """
+
+    def __init__(
+        self,
+        model_name: ModelName | str,
+        checkpoint_path: Optional[Union[str, Path]] = None,
+        log_level: str = "INFO",
+    ):
+        super().__init__(model_name, checkpoint_path, log_level)
+        self._inferencer: Optional[MMPoseInferencer] = None
 
     def predict(
         self,
@@ -68,42 +78,64 @@ class RTMPose(EZMMPose):
 
     def _init_inferencer(self, device: str, **kwargs):
         """Lazy initialization of the RTMPose inferencer."""
-        if self._inferencer is None:
-            det_model = kwargs.get("det_model", "rtmdet_tiny")
-            det_weights = kwargs.get("det_weights", None)
-            # Default to person category (0) for RTMPose
-            det_cat_ids = kwargs.get("det_cat_ids", [0])
+        if self._inferencer is not None:
+            return
 
-            config_path = get_config_file(self.model_name)
-            # Resolve detector config if it's a known model name
-            actual_det_model = det_model
-            if det_model in [m.value for m in ModelName]:
-                actual_det_model = str(get_config_file(det_model))
+        # 1. Resolve detector components (Stage 1)
+        det_config, det_weights, det_cat_ids = self._resolve_detector_params(kwargs)
 
-            # Resolve detector weights if not provided
-            actual_det_weights = det_weights
-            if det_model and not det_weights:
-                actual_det_weights = str(ensure_model_checkpoint(det_model))
+        # 2. Prepare and patch the pose config (Stage 2)
+        pose_cfg = self._load_and_patch_config()
 
-            logger.info(f"Initializing RTMPose inferencer: {self.model_name}")
-            with self.switch_to_lib_root():
-                self._inferencer = MMPoseInferencer(
-                    pose2d=str(config_path),
-                    pose2d_weights=str(self.checkpoint_path),
-                    det_model=actual_det_model,
-                    det_weights=actual_det_weights,
-                    det_cat_ids=det_cat_ids,
-                    device=device,
-                )
+        logger.info(f"Initializing RTMPose inferencer: {self.model_name}")
+
+        # 3. Instantiate the inferencer
+        with self.switch_to_lib_root():
+            self._inferencer = MMPoseInferencer(
+                pose2d=pose_cfg,
+                pose2d_weights=str(self.checkpoint_path),
+                det_model=det_config,
+                det_weights=det_weights,
+                det_cat_ids=det_cat_ids,
+                device=device,
+            )
+
+    def _resolve_detector_params(self, kwargs: dict) -> tuple:
+        """Resolves detector config, weights, and category IDs."""
+        det_model = kwargs.get("det_model", "rtmdet_tiny")
+        det_weights = kwargs.get("det_weights", None)
+        det_cat_ids = kwargs.get("det_cat_ids", [0])
+
+        if det_model in [m.value for m in ModelName]:
+            det_config = str(get_config_file(det_model))
+            if not det_weights:
+                det_weights = str(ensure_model_checkpoint(det_model))
+        else:
+            det_config = det_model
+
+        return det_config, det_weights, det_cat_ids
+
+    def _load_and_patch_config(self) -> Config:
+        """Loads the pose config and applies runtime patches (like keypoint counts). for initializing the inferencer"""
+        config_path = get_config_file(self.model_name)
+        with self.switch_to_lib_root():
+            cfg = Config.fromfile(str(config_path))
+            self._apply_head_patch(cfg)
+            return cfg
 
     def _configure_model_specifics(self, config: UserConfig) -> None:
-        """RTMPose specific head overrides."""
+        """Architecture-specific overrides for training."""
         if not self._cfg:
             raise RuntimeError("Config not loaded.")
+        self._apply_head_patch(self._cfg)
 
-        if hasattr(self._cfg.model, "head"):
-            head = self._cfg.model.head
-            logger.info(
-                f"[{self.__class__.__name__}] Setting model.head.out_channels to {config.model.num_classes}"
-            )
-            head.out_channels = config.model.num_classes
+    def _apply_head_patch(self, cfg: Config) -> None:
+        """Shared logic to patch the model head for custom keypoints."""
+        if hasattr(cfg.model, "head"):
+            # Use auto-loaded metadata if available
+            target = self.num_keypoints or self.num_classes
+            if target:
+                logger.info(
+                    f"[{self.__class__.__name__}] Patching model.head.out_channels to {target}"
+                )
+                cfg.model.head.out_channels = target

@@ -17,6 +17,7 @@ class ModelSection(BaseModel):
 
     name: ModelName = ModelName.RTM_DET_TINY
     num_classes: int = Field(..., gt=0)
+    num_keypoints: Optional[int] = Field(None, gt=0)
     load_from: Optional[str] = None
 
 

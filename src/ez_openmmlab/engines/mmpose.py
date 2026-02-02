@@ -10,7 +10,6 @@ from mmpose.apis import MMPoseInferencer
 from ez_openmmlab.core.base import EZMMLab
 from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.core.results import InferenceResult, Boxes, Keypoints
-from ez_openmmlab.utils.constants import COCO_CLASSES
 
 
 class EZMMPose(EZMMLab):
@@ -83,80 +82,16 @@ class EZMMPose(EZMMLab):
     def _map_pose_results(
         self, results: list, inputs: Union[str, List[str]]
     ) -> List[InferenceResult]:
-        """Maps raw MMPose results to vectorized InferenceResult objects."""
-        # Get class names from inferencer if possible, fallback to COCO
-        names = COCO_CLASSES
-        if self._inferencer and hasattr(self._inferencer, "model"):
-            meta = getattr(self._inferencer.model, "dataset_meta", {})
-            if "classes" in meta:
-                names = {i: name for i, name in enumerate(meta["classes"])}
+        """Maps raw MMPose results to vectorized InferenceResult objects.
 
-        def _to_result(raw_preds: list, img_path: str) -> InferenceResult:
-            # raw_preds is a list of dicts for one image
-            # Each dict: {'keypoints': [...], 'keypoint_scores': [...], 'bbox': [...], 'bbox_score': ...}
+        Args:
+            results: Raw list of results from MMPoseInferencer.
+            inputs: Original input path(s) passed to predict().
 
-            kpts_list = []
-            kpt_scores_list = []
-            bboxes_list = []
-            bbox_scores_list = []
-            labels_list = []
-
-            for p in raw_preds:
-                kpts_list.append(p.get("keypoints", []))
-                kpt_scores_list.append(p.get("keypoint_scores", []))
-
-                # Handle bbox nesting ([x1, y1, x2, y2],)
-                raw_bbox = p.get("bbox", [])
-                if isinstance(raw_bbox, (list, tuple)) and len(raw_bbox) > 0:
-                    inner = raw_bbox[0]
-                    if isinstance(inner, (list, tuple)) and len(inner) >= 4:
-                        bboxes_list.append(inner[:4])
-                    else:
-                        bboxes_list.append(raw_bbox[:4])
-                else:
-                    bboxes_list.append([0, 0, 0, 0])
-
-                bbox_scores_list.append(p.get("bbox_score", 0.0))
-                # For person pose, label is usually 0 (person)
-                labels_list.append(0)
-
-            # Convert to NumPy
-            kpts = np.array(kpts_list, dtype=np.float32)
-            kpt_scores = np.array(kpt_scores_list, dtype=np.float32)
-            bboxes = np.array(bboxes_list, dtype=np.float32)
-            bbox_scores = np.array(bbox_scores_list, dtype=np.float32)
-            labels = np.array(labels_list, dtype=np.int32)
-
-            orig_img = cv2.imread(img_path)
-            if orig_img is None:
-                logger.warning(f"Could not read image for result container: {img_path}")
-                orig_img = np.zeros((100, 100, 3), dtype=np.uint8)
-
-            # Package Boxes: [N, 6] -> [x1, y1, x2, y2, score, label]
-            if len(bboxes) > 0:
-                boxes_data = np.concatenate(
-                    [bboxes, bbox_scores[:, None], labels[:, None]], axis=1
-                )
-            else:
-                boxes_data = np.zeros((0, 6), dtype=np.float32)
-
-            boxes = Boxes(boxes_data, orig_img.shape[:2])
-
-            # Package Keypoints: [N, K, 3] -> [x, y, score]
-            if len(kpts) > 0:
-                kpts_data = np.concatenate([kpts, kpt_scores[:, :, None]], axis=2)
-            else:
-                kpts_data = np.zeros((0, 0, 3), dtype=np.float32)
-
-            keypoints = Keypoints(kpts_data, orig_img.shape[:2])
-
-            return InferenceResult(
-                orig_img=orig_img,
-                path=str(Path(img_path).absolute()),
-                names={0: "person"},  # For now, pose models usually target person
-                boxes=boxes,
-                keypoints=keypoints,
-            )
+        Returns:
+            A list of InferenceResult objects.
+        """
+        names = self._get_class_names()
 
         # MMPose batch format: results is a list of batch results
         # Each batch result is a dict with 'predictions' key (list of lists of dicts)
@@ -165,14 +100,102 @@ class EZMMPose(EZMMLab):
             if "predictions" in batch_res:
                 all_flattened_preds.extend(batch_res["predictions"])
 
-        if isinstance(inputs, list):
-            return [
-                _to_result(p, p_path) for p, p_path in zip(all_flattened_preds, inputs)
-            ]
+        input_list = inputs if isinstance(inputs, list) else [inputs]
+
+        # Handle edge cases where predictions might be empty
+        if not all_flattened_preds and input_list:
+            all_flattened_preds = [[] for _ in range(len(input_list))]
 
         return [
-            _to_result(all_flattened_preds[0] if all_flattened_preds else [], inputs)
+            self._process_single_prediction(pred, path, names)
+            for pred, path in zip(all_flattened_preds, input_list)
         ]
+
+    def _get_class_names(self) -> dict:
+        """Retrieves class names from local metainfo or inferencer.
+
+        Returns:
+            A dictionary mapping class IDs to names.
+        """
+        # 1. Check local metainfo (auto-loaded from config near checkpoint)
+        if self.metainfo and "classes" in self.metainfo:
+            return {i: name for i, name in enumerate(self.metainfo["classes"])}
+
+        # 2. Check inferencer model metadata (contains model's original training classes)
+        if self._inferencer and hasattr(self._inferencer, "model"):
+            meta = getattr(self._inferencer.model, "dataset_meta", {})
+            if "classes" in meta:
+                return {i: name for i, name in enumerate(meta["classes"])}
+
+        # 3. No generic fallback
+        return {}
+
+    def _process_single_prediction(
+        self, raw_preds: list, img_path: str, names: dict
+    ) -> InferenceResult:
+        """Converts a single image's raw pose predictions into an InferenceResult object."""
+        kpts_list = []
+        kpt_scores_list = []
+        bboxes_list = []
+        bbox_scores_list = []
+        labels_list = []
+
+        for p in raw_preds:
+            kpts_list.append(p.get("keypoints", []))
+            kpt_scores_list.append(p.get("keypoint_scores", []))
+
+            # Handle bbox nesting ([x1, y1, x2, y2],) common in some MMPose outputs
+            raw_bbox = p.get("bbox", [])
+            if isinstance(raw_bbox, (list, tuple)) and len(raw_bbox) > 0:
+                inner = raw_bbox[0]
+                if isinstance(inner, (list, tuple)) and len(inner) >= 4:
+                    bboxes_list.append(inner[:4])
+                else:
+                    bboxes_list.append(raw_bbox[:4])
+            else:
+                bboxes_list.append([0, 0, 0, 0])
+
+            bbox_scores_list.append(p.get("bbox_score", 0.0))
+            # For person pose, label is usually 0
+            labels_list.append(0)
+
+        # Convert to NumPy
+        kpts = np.array(kpts_list, dtype=np.float32)
+        kpt_scores = np.array(kpt_scores_list, dtype=np.float32)
+        bboxes = np.array(bboxes_list, dtype=np.float32)
+        bbox_scores = np.array(bbox_scores_list, dtype=np.float32)
+        labels = np.array(labels_list, dtype=np.int32)
+
+        orig_img = cv2.imread(img_path)
+        if orig_img is None:
+            logger.warning(f"Could not read image for result container: {img_path}")
+            orig_img = np.zeros((100, 100, 3), dtype=np.uint8)
+
+        # Package Boxes: [N, 6] -> [x1, y1, x2, y2, score, label]
+        if len(bboxes) > 0:
+            boxes_data = np.concatenate(
+                [bboxes, bbox_scores[:, None], labels[:, None]], axis=1
+            )
+        else:
+            boxes_data = np.zeros((0, 6), dtype=np.float32)
+
+        boxes = Boxes(boxes_data, orig_img.shape[:2])
+
+        # Package Keypoints: [N, K, 3] -> [x, y, score]
+        if len(kpts) > 0:
+            kpts_data = np.concatenate([kpts, kpt_scores[:, :, None]], axis=2)
+        else:
+            kpts_data = np.zeros((0, 0, 3), dtype=np.float32)
+
+        keypoints = Keypoints(kpts_data, orig_img.shape[:2])
+
+        return InferenceResult(
+            orig_img=orig_img,
+            path=str(Path(img_path).absolute()),
+            names=names,
+            boxes=boxes,
+            keypoints=keypoints,
+        )
 
     @abstractmethod
     def _configure_model_specifics(self, config):
@@ -183,4 +206,3 @@ class EZMMPose(EZMMLab):
     def _init_inferencer(self, device: str, **kwargs):
         """Lazy initialization of the MMPose inferencer."""
         pass
-

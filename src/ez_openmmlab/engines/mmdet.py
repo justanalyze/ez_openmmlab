@@ -12,7 +12,6 @@ from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.core.config_loader import get_config_file
 from ez_openmmlab.core.results import InferenceResult, Boxes
 from ez_openmmlab.utils.download import ensure_model_checkpoint
-from ez_openmmlab.utils.constants import COCO_CLASSES
 
 # Force registration of MMDet modules
 register_all_modules(init_default_scope=True)
@@ -23,7 +22,7 @@ class EZMMDetector(EZMMLab):
 
     def __init__(
         self,
-        model_name: ModelName,
+        model_name: ModelName | str,
         checkpoint_path: Optional[Union[str, Path]] = None,
         log_level: str = "INFO",
     ):
@@ -80,53 +79,80 @@ class EZMMDetector(EZMMLab):
     def _map_inference_results(
         self, results: dict, inputs: Union[str, List[str]]
     ) -> List[InferenceResult]:
-        """Maps raw MMDetection results to vectorized InferenceResult objects."""
-        # Get class names from inferencer if possible, fallback to COCO
-        names = COCO_CLASSES
-        if self._inferencer and hasattr(self._inferencer, 'model'):
-            meta = getattr(self._inferencer.model, 'dataset_meta', {})
-            if 'classes' in meta:
-                names = {i: name for i, name in enumerate(meta['classes'])}
+        """Maps raw MMDetection results to vectorized InferenceResult objects.
 
-        def _to_result(raw_pred: dict, img_path: str) -> InferenceResult:
-            # raw_pred format: {'labels': [...], 'scores': [...], 'bboxes': [[...]]}
-            bboxes = np.array(raw_pred.get("bboxes", []), dtype=np.float32)
-            scores = np.array(raw_pred.get("scores", []), dtype=np.float32)
-            labels = np.array(raw_pred.get("labels", []), dtype=np.int32)
-            
-            # Combine into [N, 6] -> [x1, y1, x2, y2, score, label]
-            if len(bboxes) > 0:
-                data = np.concatenate([bboxes, scores[:, None], labels[:, None]], axis=1)
-            else:
-                data = np.zeros((0, 6), dtype=np.float32)
-            
-            orig_img = cv2.imread(img_path)
-            if orig_img is None:
-                logger.warning(f"Could not read image for result container: {img_path}")
-                orig_img = np.zeros((100, 100, 3), dtype=np.uint8)
+        Args:
+            results: Raw dictionary output from DetInferencer.
+            inputs: Original input path(s) passed to predict().
 
-            boxes = Boxes(data, orig_img.shape[:2])
-            
-            return InferenceResult(
-                orig_img=orig_img,
-                path=str(Path(img_path).absolute()),
-                names=names,
-                boxes=boxes
-            )
+        Returns:
+            A list of InferenceResult objects.
+        """
+        names = self._get_class_names()
+        predictions = results.get("predictions", [])
 
-        # Handle batch vs single
-        if isinstance(inputs, list):
-            # results['predictions'] is a list of dicts
-            return [_to_result(p, p_path) for p, p_path in zip(results["predictions"], inputs)]
+        # Normalize inputs to a list for consistent iteration
+        input_list = inputs if isinstance(inputs, list) else [inputs]
 
-        # Single inference: results['predictions'] is a list with one dict
-        # Even for single input, inputs is a single string but _normalize_inputs could have returned a list or string.
-        # However, DetInferencer structure depends on input.
-        # If inputs is a string (single file), results['predictions'] is a list with one dict.
-        
-        # Let's handle the single input case by wrapping in list
-        raw_pred = results["predictions"][0] if results["predictions"] else {"labels": [], "scores": [], "bboxes": []}
-        return [_to_result(raw_pred, inputs)]
+        # Handle cases where inferencer returns fewer predictions than inputs (should not happen normally)
+        if not predictions and input_list:
+            predictions = [
+                {"labels": [], "scores": [], "bboxes": []} for _ in range(len(input_list))
+            ]
+
+        return [
+            self._process_single_prediction(pred, path, names)
+            for pred, path in zip(predictions, input_list)
+        ]
+
+    def _get_class_names(self) -> dict:
+        """Retrieves class names from local metainfo or inferencer.
+
+        Returns:
+            A dictionary mapping class IDs to names.
+        """
+        # 1. Check local metainfo (auto-loaded from config near checkpoint)
+        if self.metainfo and "classes" in self.metainfo:
+            return {i: name for i, name in enumerate(self.metainfo["classes"])}
+
+        # 2. Check inferencer model metadata (contains model's original training classes)
+        if self._inferencer and hasattr(self._inferencer, "model"):
+            meta = getattr(self._inferencer.model, "dataset_meta", {})
+            if "classes" in meta:
+                return {i: name for i, name in enumerate(meta["classes"])}
+
+        # 3. No fallback to COCO - return empty or generic mapping
+        return {}
+
+    def _process_single_prediction(
+        self, raw_pred: dict, img_path: str, names: dict
+    ) -> InferenceResult:
+        """Converts a single raw prediction dict into an InferenceResult object."""
+        # Extract and convert components to NumPy arrays
+        bboxes = np.array(raw_pred.get("bboxes", []), dtype=np.float32)
+        scores = np.array(raw_pred.get("scores", []), dtype=np.float32)
+        labels = np.array(raw_pred.get("labels", []), dtype=np.int32)
+
+        # Package Boxes: [N, 6] -> [x1, y1, x2, y2, score, label]
+        if len(bboxes) > 0:
+            data = np.concatenate([bboxes, scores[:, None], labels[:, None]], axis=1)
+        else:
+            data = np.zeros((0, 6), dtype=np.float32)
+
+        # Load original image for shape metadata and plotting support
+        orig_img = cv2.imread(img_path)
+        if orig_img is None:
+            logger.warning(f"Could not read image for result container: {img_path}")
+            orig_img = np.zeros((100, 100, 3), dtype=np.uint8)
+
+        boxes = Boxes(data, orig_img.shape[:2])
+
+        return InferenceResult(
+            orig_img=orig_img,
+            path=str(Path(img_path).absolute()),
+            names=names,
+            boxes=boxes,
+        )
 
     def _configure_model_specifics(self, config):
         """Detection specific overrides are handled by subclasses."""

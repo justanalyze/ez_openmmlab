@@ -1,7 +1,9 @@
 from loguru import logger
 from pathlib import Path
+from typing import Optional, Union
 
 from ez_openmmlab.engines.mmdet import EZMMDetector
+from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.utils.toml_config import UserConfig
 
 
@@ -14,8 +16,14 @@ class RTMDet(EZMMDetector):
         log_level: Global logging level for the internal engine ('INFO', 'WARNING', 'ERROR').
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        model_name: ModelName | str,
+        checkpoint_path: Optional[Union[str, Path]] = None,
+        log_level: str = "INFO",
+        **kwargs,
+    ):
+        super().__init__(model_name, checkpoint_path, log_level, **kwargs)
 
     def _configure_model_specifics(self, config: UserConfig) -> None:
         """Overrides the bbox_head num_classes for RTMDet."""

@@ -2,11 +2,13 @@ from pathlib import Path
 from typing import Optional, Union, List
 
 from loguru import logger
+from mmengine.config import Config
 from mmpose.apis import MMPoseInferencer
 
 from ez_openmmlab.engines.mmpose import EZMMPose
 from ez_openmmlab.core.config_loader import get_config_file
 from ez_openmmlab.core.results import InferenceResult
+from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.utils.toml_config import UserConfig
 
 
@@ -16,6 +18,15 @@ class RTMO(EZMMPose):
     Supported variants: rtmo_s, rtmo_m, rtmo_l.
     Note: RTMO is a bottom-up model and does not require a separate detector.
     """
+
+    def __init__(
+        self,
+        model_name: ModelName | str,
+        checkpoint_path: Optional[Union[str, Path]] = None,
+        log_level: str = "INFO",
+    ):
+        super().__init__(model_name, checkpoint_path, log_level)
+        self._inferencer: Optional[MMPoseInferencer] = None
 
     def predict(
         self,
@@ -56,8 +67,18 @@ class RTMO(EZMMPose):
 
             logger.info(f"Initializing RTMO inferencer: {self.model_name}")
             with self.switch_to_lib_root():
+                # Load config to check if we need to override keypoints
+                cfg = Config.fromfile(str(config_path))
+
+                if self.num_keypoints:
+                    logger.info(
+                        f"Overriding model.head.num_keypoints to {self.num_keypoints} for inference"
+                    )
+                    if hasattr(cfg.model, "head"):
+                        cfg.model.head.num_keypoints = self.num_keypoints
+
                 self._inferencer = MMPoseInferencer(
-                    pose2d=str(config_path),
+                    pose2d=cfg,
                     pose2d_weights=str(self.checkpoint_path),
                     device=device,
                 )
@@ -69,10 +90,12 @@ class RTMO(EZMMPose):
 
         if hasattr(self._cfg.model, "head"):
             head = self._cfg.model.head
+            # For pose, num_keypoints is the target
+            target_kpts = config.model.num_keypoints or config.model.num_classes
             logger.info(
-                f"[{self.__class__.__name__}] Setting RTMO model.head.num_keypoints to {config.model.num_classes}"
+                f"[{self.__class__.__name__}] Setting RTMO model.head.num_keypoints to {target_kpts}"
             )
-            head.num_keypoints = config.model.num_classes
+            head.num_keypoints = target_kpts
 
             if hasattr(head, "head_module_cfg"):
                 logger.info(

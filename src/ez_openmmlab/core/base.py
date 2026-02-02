@@ -53,10 +53,17 @@ class EZMMLab(ABC):
             model_name.value if isinstance(model_name, ModelName) else model_name
         )
         self.log_level: str = log_level
+        self.num_classes: Optional[int] = None
+        self.num_keypoints: Optional[int] = None
+        self.metainfo: Optional[dict] = None
         self._cfg: Optional[Config] = None
 
         # Resolve or download checkpoint
         self.checkpoint_path = ensure_model_checkpoint(self.model_name, checkpoint_path)
+
+        # If a custom checkpoint is used, try to auto-load metadata from accompanying config
+        if checkpoint_path:
+            self._auto_load_metadata(Path(self.checkpoint_path))
 
         # Configure loguru level
         try:
@@ -66,6 +73,36 @@ class EZMMLab(ABC):
             logger.add(sys.stderr, level=log_level)
         except Exception as e:
             logger.warning(f"Failed to set log level: {e}")
+
+    def _auto_load_metadata(self, checkpoint_path: Path) -> None:
+        """Attempts to find and load training metadata (num_classes, keypoints) from nearby config files."""
+        search_dirs = [checkpoint_path.parent, checkpoint_path.parent.parent]
+        config_files = ["user_config.toml", "dataset.toml"]
+
+        for d in search_dirs:
+            for f in config_files:
+                path = d / f
+                if path.exists():
+                    try:
+                        if f == "user_config.toml":
+                            from ez_openmmlab.utils.toml_config import load_user_config
+                            user_cfg = load_user_config(path)
+                            self.num_classes = user_cfg.model.num_classes
+                            self.num_keypoints = user_cfg.model.num_keypoints
+                            self.metainfo = user_cfg.data.metainfo
+                            logger.info(f"Auto-loaded metadata from: {path}")
+                        else:
+                            from ez_openmmlab.schemas.dataset import DatasetConfig
+                            ds_cfg = DatasetConfig.from_toml(path)
+                            self.num_classes = len(ds_cfg.classes) if ds_cfg.classes else None
+                            if ds_cfg.metainfo:
+                                self.metainfo = ds_cfg.metainfo
+                                if "keypoint_info" in ds_cfg.metainfo:
+                                    self.num_keypoints = len(ds_cfg.metainfo["keypoint_info"])
+                            logger.info(f"Auto-loaded metadata from: {path}")
+                        return
+                    except Exception as e:
+                        logger.warning(f"Failed to auto-load metadata from {path}: {e}")
 
     @abstractmethod
     def predict(self, *args, **kwargs) -> List[InferenceResult]:
@@ -170,10 +207,16 @@ class EZMMLab(ABC):
         self.classes = dataset_cfg.classes
         self.num_classes: int = len(dataset_cfg.classes) if dataset_cfg.classes else 80
 
+        # Extract num_keypoints from metainfo if available (for pose models)
+        num_keypoints = None
+        if dataset_cfg.metainfo and "keypoint_info" in dataset_cfg.metainfo:
+            num_keypoints = len(dataset_cfg.metainfo["keypoint_info"])
+
         user_config = UserConfig(
             model=ModelSection(
                 name=self.model_name,
                 num_classes=self.num_classes,
+                num_keypoints=num_keypoints,
                 load_from=str(self.checkpoint_path),
             ),
             data=DataSection(
