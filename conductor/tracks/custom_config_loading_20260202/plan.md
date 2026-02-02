@@ -5,18 +5,18 @@
 - [x] Task: Update `EZMMLab` constructor signature [04bcbd9]
     - [ ] Modify `__init__` in `src/ez_openmmlab/core/base.py` to accept `model: Union[str, Path, ModelName]`.
     - [ ] Update type hints and docstrings.
-- [ ] Task: Implement Custom Config Loading Logic
-    - [ ] Create private method `_resolve_model_config(self, model_input: Union[str, Path, ModelName])`.
-    - [ ] Implement logic:
-        - [ ] If input is `ModelName` (or string equivalent): Use existing default behavior (fetch base weights/config).
-        - [ ] If input is path to `.toml`:
-            - [ ] Validate existence of `checkpoint_path`. Raise `ValueError` if missing.
-            - [ ] Parse `config.toml` to get `model.name` and other settings.
-            - [ ] Resolve base config path using `ModelName(model_name).config_path`.
-            - [ ] Create a temporary `.py` config file that inherits from the base config and applies overrides from `.toml`.
-            - [ ] Return the path to this temporary `.py` file as the config to be used.
-- [ ] Task: Cleanup Mechanism
-    - [ ] Ensure temporary `.py` files are deleted after initialization (or use `tempfile` module contexts).
+- [x] Task: Implement Custom Config Loading Logic [ee120ea]
+    - [x] Create private method `_resolve_model_config(self, model_input: Union[str, Path, ModelName])`.
+    - [x] Implement logic:
+        - [x] If input is `ModelName` (or string equivalent): Use existing default behavior (fetch base weights/config).
+        - [x] If input is path to `.toml`:
+            - [x] Validate existence of `checkpoint_path`. Raise `ValueError` if missing.
+            - [x] Parse `config.toml` to get `model.name` and other settings.
+            - [x] Resolve base config path using `ModelName(model_name).config_path`.
+            - [x] Create a temporary `.py` config file that inherits from the base config and applies overrides from `.toml`.
+            - [x] Return the path to this temporary `.py` file as the config to be used.
+- [x] Task: Cleanup Mechanism [ee120ea]
+    - [x] Ensure temporary `.py` files are deleted after initialization (or use `tempfile` module contexts).
 - [ ] Task: Conductor - User Manual Verification 'Core Base Enhancements' (Protocol in workflow.md)
 
 ## Phase 2: Engine Updates
