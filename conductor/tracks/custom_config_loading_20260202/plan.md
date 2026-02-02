@@ -21,9 +21,9 @@
 
 ## Phase 2: Engine Updates
 
-- [ ] Task: Update `EZMMDetector`
-    - [ ] Ensure `EZMMDetector` inherits the new constructor logic.
-    - [ ] Verify `_init_inferencer` uses the resolved config path.
+- [x] Task: Update `EZMMDetector` [4c805eb]
+    - [x] Ensure `EZMMDetector` inherits the new constructor logic.
+    - [x] Verify `_init_inferencer` uses the resolved config path.
 - [ ] Task: Update `EZMMPose`
     - [ ] Ensure `EZMMPose` (and subclasses `RTMPose`, `RTMO`) inherits the new constructor logic.
     - [ ] Verify `_init_inferencer` uses the resolved config path.
