@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional, Union, List
+import tempfile
 
 from loguru import logger
 from mmengine.config import Config
@@ -19,6 +20,7 @@ from ez_openmmlab.utils.toml_config import (
     TrainingSection,
     UserConfig,
     save_user_config,
+    load_user_config,
 )
 
 
@@ -49,24 +51,33 @@ class EZMMLab(ABC):
 
         mute_warnings()
 
-        if isinstance(model_name, Path):
-            self.model_name = str(model_name)
-        elif isinstance(model_name, ModelName):
-            self.model_name = model_name.value
-        else:
-            self.model_name = model_name
-
         self.log_level: str = log_level
         self.num_classes: Optional[int] = None
         self.num_keypoints: Optional[int] = None
         self.metainfo: Optional[dict] = None
         self._cfg: Optional[Config] = None
+        self._temp_config_file: Optional[Path] = None
 
-        # Resolve or download checkpoint
-        self.checkpoint_path = ensure_model_checkpoint(self.model_name, checkpoint_path)
+        # Resolve or download checkpoint (might be None if training from scratch, but required for custom inference)
+        # Note: ensure_model_checkpoint might need adjustment if model_name is a path, 
+        # but for now we assume if it's a path, the user MUST provide a checkpoint_path.
+        if isinstance(model_name, (Path, str)) and str(model_name).endswith(".toml"):
+             self.checkpoint_path = Path(checkpoint_path) if checkpoint_path else None
+        else:
+             self.checkpoint_path = ensure_model_checkpoint(model_name, checkpoint_path)
+
+        # Resolve model configuration
+        # This will set self.config_path to either a standard config or a temp config
+        self.config_path = self._resolve_model_config(model_name)
+        
+        # If we loaded from a config.toml, we should set the internal model_name to the base model
+        # so other parts of the system (like training logs) make sense.
+        # _resolve_model_config sets self.model_name as a side effect if it parses a toml.
+        if not hasattr(self, 'model_name'):
+             self.model_name = model_name.value if isinstance(model_name, ModelName) else str(model_name)
 
         # If a custom checkpoint is used, try to auto-load metadata from accompanying config
-        if checkpoint_path:
+        if self.checkpoint_path:
             self._auto_load_metadata(Path(self.checkpoint_path))
 
         # Configure loguru level
@@ -77,6 +88,68 @@ class EZMMLab(ABC):
             logger.add(sys.stderr, level=log_level)
         except Exception as e:
             logger.warning(f"Failed to set log level: {e}")
+
+    def _resolve_model_config(self, model_input: Union[str, Path, ModelName]) -> Path:
+        """Resolves the model configuration path.
+
+        If input is a ModelName, returns the standard config path.
+        If input is a config.toml path, generates a temporary python config.
+        """
+        # Case 1: Custom config.toml
+        toml_path = Path(model_input)
+        if toml_path.suffix == ".toml":
+            if not self.checkpoint_path:
+                raise ValueError("Checkpoint path is required when using a custom config.toml")
+            
+            if not toml_path.exists():
+                raise FileNotFoundError(f"Custom config file not found: {toml_path}")
+
+            logger.info(f"Loading custom configuration from: {toml_path}")
+            user_cfg = load_user_config(toml_path)
+            
+            # Set internal state from config
+            self.model_name = user_cfg.model.name.value
+            self.num_classes = user_cfg.model.num_classes
+            self.num_keypoints = user_cfg.model.num_keypoints
+            if user_cfg.data.metainfo:
+                self.metainfo = user_cfg.data.metainfo
+
+            # Resolve base config
+            base_config_path = get_config_file(self.model_name)
+            
+            # Create temporary config inheriting from base
+            # We use the absolute path of the base config
+            base_config_str = str(base_config_path.absolute())
+            
+            # Create content for temp config
+            # We override essential parameters. Detailed dataset/pipeline overrides happen in handlers during training,
+            # but for inference or initial setup, we might need basic model structure.
+            # Ideally, the engine's _init_inferencer will load this config.
+            content = f'_base_ = ["{base_config_str}"]\n'
+            
+            # Create temp file
+            # We keep it until the object is destroyed or explicitly cleaned up.
+            # Using NamedTemporaryFile with delete=False so we can pass the path around.
+            temp_file = tempfile.NamedTemporaryFile(suffix=".py", mode="w", delete=False)
+            temp_file.write(content)
+            temp_file.close()
+            
+            self._temp_config_file = Path(temp_file.name)
+            logger.debug(f"Created temporary config file: {self._temp_config_file}")
+            return self._temp_config_file
+
+        # Case 2: Standard ModelName (or string equivalent)
+        # ensure_model_checkpoint already handled weights, we just need the config
+        return get_config_file(model_input)
+
+    def __del__(self):
+        """Cleanup temporary files."""
+        if hasattr(self, '_temp_config_file') and self._temp_config_file and self._temp_config_file.exists():
+            try:
+                self._temp_config_file.unlink()
+                logger.debug(f"Removed temporary config file: {self._temp_config_file}")
+            except Exception as e:
+                logger.warning(f"Failed to remove temp config file: {e}")
 
     def _auto_load_metadata(self, checkpoint_path: Path) -> None:
         """Attempts to find and load training metadata (num_classes, keypoints) from nearby config files."""
