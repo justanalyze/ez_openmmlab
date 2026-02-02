@@ -22,11 +22,11 @@ class RTMPose(EZMMPose):
 
     def __init__(
         self,
-        model_name: ModelName | str,
+        model: Union[ModelName, str, Path],
         checkpoint_path: Optional[Union[str, Path]] = None,
         log_level: str = "INFO",
     ):
-        super().__init__(model_name, checkpoint_path, log_level)
+        super().__init__(model, checkpoint_path, log_level)
         self._inferencer: Optional[MMPoseInferencer] = None
 
     def predict(
@@ -87,7 +87,7 @@ class RTMPose(EZMMPose):
         # 2. Prepare and patch the pose config (Stage 2)
         pose_cfg = self._load_and_patch_config()
 
-        logger.info(f"Initializing RTMPose inferencer: {self.model_name}")
+        logger.info(f"Initializing RTMPose inferencer: {self.model}")
 
         # 3. Instantiate the inferencer
         with self.switch_to_lib_root():
@@ -117,7 +117,7 @@ class RTMPose(EZMMPose):
 
     def _load_and_patch_config(self) -> Config:
         """Loads the pose config and applies runtime patches (like keypoint counts). for initializing the inferencer"""
-        config_path = get_config_file(self.model_name)
+        config_path = get_config_file(self.model)
         with self.switch_to_lib_root():
             cfg = Config.fromfile(str(config_path))
             self._apply_head_patch(cfg)

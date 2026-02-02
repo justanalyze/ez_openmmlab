@@ -12,7 +12,7 @@ def test_predict_initializes_inferencer_and_calls_it(mock_ensure):
     Test that predict() initializes DetInferencer with correct params
     and calls it with the provided image.
     """
-    model_name = "rtmdet_tiny"
+    model = "rtmdet_tiny"
     checkpoint_path = "checkpoints/best.pth"
     image_path = "demo.jpg"
     mock_ensure.return_value = Path(checkpoint_path)
@@ -33,7 +33,7 @@ def test_predict_initializes_inferencer_and_calls_it(mock_ensure):
         # Mock cv2.imread
         with patch("cv2.imread", return_value=np.zeros((480, 640, 3), dtype=np.uint8)):
             # Initialize with checkpoint
-            detector = RTMDet(model_name=model_name, checkpoint_path=checkpoint_path)
+            detector = RTMDet(model=model, checkpoint_path=checkpoint_path)
 
             # Predict WITHOUT checkpoint_path
             results = detector.predict(image_path=image_path, confidence=0.5)
@@ -65,7 +65,7 @@ def test_predict_with_out_dir_creates_directory(mock_ensure, tmp_path):
     """
     Test that predict() passes out_dir to the inferencer.
     """
-    model_name = "rtmdet_tiny"
+    model = "rtmdet_tiny"
     checkpoint_path = "checkpoints/best.pth"
     image_path = "demo.jpg"
     out_dir = tmp_path / "results"
@@ -80,7 +80,7 @@ def test_predict_with_out_dir_creates_directory(mock_ensure, tmp_path):
 
         # Mock cv2.imread
         with patch("cv2.imread", return_value=np.zeros((480, 640, 3), dtype=np.uint8)):
-            detector = RTMDet(model_name=model_name, checkpoint_path=checkpoint_path)
+            detector = RTMDet(model=model, checkpoint_path=checkpoint_path)
             detector.predict(image_path=image_path, out_dir=str(out_dir))
 
         # Verify inferencer was called with the out_dir

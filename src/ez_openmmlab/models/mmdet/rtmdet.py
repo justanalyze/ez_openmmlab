@@ -11,19 +11,19 @@ class RTMDet(EZMMDetector):
     """RTMDet implementation for fast object detection and instance segmentation.
 
     Args:
-        model_name: Name of the RTMDet variant (e.g., 'rtmdet_tiny', 'rtmdet-ins_s').
+        model: Name of the RTMDet variant (e.g., 'rtmdet_tiny', 'rtmdet-ins_s') OR path to a config.toml.
         checkpoint_path: Path to a custom .pth file. If None, it will use the official pretrained weights.
         log_level: Global logging level for the internal engine ('INFO', 'WARNING', 'ERROR').
     """
 
     def __init__(
         self,
-        model_name: ModelName | str,
+        model: Union[ModelName, str, Path],
         checkpoint_path: Optional[Union[str, Path]] = None,
         log_level: str = "INFO",
         **kwargs,
     ):
-        super().__init__(model_name, checkpoint_path, log_level, **kwargs)
+        super().__init__(model, checkpoint_path, log_level, **kwargs)
 
     def _configure_model_specifics(self, config: UserConfig) -> None:
         """Overrides the bbox_head num_classes for RTMDet."""

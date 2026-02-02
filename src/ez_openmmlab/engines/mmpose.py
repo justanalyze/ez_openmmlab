@@ -20,11 +20,11 @@ class EZMMPose(EZMMLab):
 
     def __init__(
         self,
-        model_name: ModelName | str,
+        model: Union[ModelName, str, Path],
         checkpoint_path: Optional[Union[str, Path]] = None,
         log_level: str = "INFO",
     ):
-        super().__init__(model_name, checkpoint_path, log_level)
+        super().__init__(model, checkpoint_path, log_level)
         self._inferencer: Optional[MMPoseInferencer] = None
 
     def predict(

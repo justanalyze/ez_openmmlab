@@ -32,19 +32,19 @@ class EZMMLab(ABC):
 
     def __init__(
         self,
-        model_name: Union[ModelName, str, Path],
+        model: Union[ModelName, str, Path],
         checkpoint_path: Optional[Union[str, Path]] = None,
         log_level: str = "INFO",
     ):
         """Initializes the library wrapper with a base model.
 
         Args:
-            model_name: The name of the architecture (e.g., 'rtmdet_tiny') OR path to a config.toml.
+            model: The name of the architecture (e.g., 'rtmdet_tiny') OR path to a config.toml.
             checkpoint_path: Path to a specific checkpoint (.pth or .pt).
             log_level: Global logging level. Default is 'INFO'.
         """
         logger.info(
-            f"Initializing {self.__class__.__name__} with base model: '{model_name}'"
+            f"Initializing {self.__class__.__name__} with base model: '{model}'"
         )
         # Ensure noisy warnings are suppressed when engine starts
         from ez_openmmlab import mute_warnings
@@ -59,22 +59,22 @@ class EZMMLab(ABC):
         self._temp_config_file: Optional[Path] = None
 
         # Resolve or download checkpoint (might be None if training from scratch, but required for custom inference)
-        # Note: ensure_model_checkpoint might need adjustment if model_name is a path, 
+        # Note: ensure_model_checkpoint might need adjustment if model is a path, 
         # but for now we assume if it's a path, the user MUST provide a checkpoint_path.
-        if isinstance(model_name, (Path, str)) and str(model_name).endswith(".toml"):
+        if isinstance(model, (Path, str)) and str(model).endswith(".toml"):
              self.checkpoint_path = Path(checkpoint_path) if checkpoint_path else None
         else:
-             self.checkpoint_path = ensure_model_checkpoint(model_name, checkpoint_path)
+             self.checkpoint_path = ensure_model_checkpoint(model, checkpoint_path)
 
         # Resolve model configuration
         # This will set self.config_path to either a standard config or a temp config
-        self.config_path = self._resolve_model_config(model_name)
+        self.config_path = self._resolve_model_config(model)
         
-        # If we loaded from a config.toml, we should set the internal model_name to the base model
+        # If we loaded from a config.toml, we should set the internal model attribute to the base model
         # so other parts of the system (like training logs) make sense.
-        # _resolve_model_config sets self.model_name as a side effect if it parses a toml.
-        if not hasattr(self, 'model_name'):
-             self.model_name = model_name.value if isinstance(model_name, ModelName) else str(model_name)
+        # _resolve_model_config sets self.model as a side effect if it parses a toml.
+        if not hasattr(self, 'model'):
+             self.model = model.value if isinstance(model, ModelName) else str(model)
 
         # If a custom checkpoint is used, try to auto-load metadata from accompanying config
         if self.checkpoint_path:
@@ -108,14 +108,14 @@ class EZMMLab(ABC):
             user_cfg = load_user_config(toml_path)
             
             # Set internal state from config
-            self.model_name = user_cfg.model.name.value
+            self.model = user_cfg.model.name.value
             self.num_classes = user_cfg.model.num_classes
             self.num_keypoints = user_cfg.model.num_keypoints
             if user_cfg.data.metainfo:
                 self.metainfo = user_cfg.data.metainfo
 
             # Resolve base config
-            base_config_path = get_config_file(self.model_name)
+            base_config_path = get_config_file(self.model)
             
             # Create temporary config inheriting from base
             # We use the absolute path of the base config
@@ -131,6 +131,7 @@ class EZMMLab(ABC):
             # We keep it until the object is destroyed or explicitly cleaned up.
             # Using NamedTemporaryFile with delete=False so we can pass the path around.
             temp_file = tempfile.NamedTemporaryFile(suffix=".py", mode="w", delete=False)
+            temp_file.write(temp_file.name if isinstance(temp_file.name, str) else str(temp_file.name)) # Dummy use to avoid lint issue if any, but NamedTemporaryFile returns name as attribute
             temp_file.write(content)
             temp_file.close()
             
@@ -235,7 +236,7 @@ class EZMMLab(ABC):
 
         @contextmanager
         def _switch():
-            if "rtmpose" in self.model_name or "rtmo" in self.model_name:
+            if "rtmpose" in self.model or "rtmo" in self.model:
                 lib_root = Path.cwd() / "libs" / "mmpose"
             else:
                 lib_root = Path.cwd() / "libs" / "mmdetection"
@@ -291,7 +292,7 @@ class EZMMLab(ABC):
 
         user_config = UserConfig(
             model=ModelSection(
-                name=self.model_name,
+                name=self.model,
                 num_classes=self.num_classes,
                 num_keypoints=num_keypoints,
                 load_from=str(self.checkpoint_path),
@@ -341,8 +342,8 @@ class EZMMLab(ABC):
         runner = Runner.from_cfg(self._cfg)
         runner.train()
 
-    def _load_base_config(self, model_name: str) -> Config:
-        config_path = get_config_file(model_name)
+    def _load_base_config(self, model: str) -> Config:
+        config_path = get_config_file(model)
 
         with self.switch_to_lib_root() as lib_root:
             # Use relative path from lib_root

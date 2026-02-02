@@ -17,13 +17,13 @@ class ConcreteEZMMLab(EZMMLab):
 
 def test_ezmmlab_init_with_model_name_enum():
     """Test initialization with ModelName enum."""
-    model = ConcreteEZMMLab(model_name=ModelName.RTM_DET_TINY)
-    assert model.model_name == ModelName.RTM_DET_TINY.value
+    model_obj = ConcreteEZMMLab(model=ModelName.RTM_DET_TINY)
+    assert model_obj.model == ModelName.RTM_DET_TINY.value
 
 def test_ezmmlab_init_with_string():
     """Test initialization with string model name."""
-    model = ConcreteEZMMLab(model_name="rtmdet_tiny")
-    assert model.model_name == "rtmdet_tiny"
+    model_obj = ConcreteEZMMLab(model="rtmdet_tiny")
+    assert model_obj.model == "rtmdet_tiny"
 
 def test_ezmmlab_init_with_config_path_no_checkpoint(tmp_path):
     """Test initialization with a path to a config file but no checkpoint raises ValueError."""
@@ -31,7 +31,7 @@ def test_ezmmlab_init_with_config_path_no_checkpoint(tmp_path):
     config_file.touch()
     
     with pytest.raises(ValueError, match="Checkpoint path is required"):
-        ConcreteEZMMLab(model_name=config_file)
+        ConcreteEZMMLab(model=config_file)
 
 @patch("ez_openmmlab.core.base.get_config_file")
 @patch("ez_openmmlab.core.base.load_user_config")
@@ -53,31 +53,20 @@ def test_resolve_model_config_with_toml_valid(mock_load_config, mock_get_config,
     # Mock base config path
     mock_get_config.return_value = Path("/libs/mmdetection/configs/rtmdet/tiny.py")
     
-    # We also need to mock ensure_model_checkpoint because __init__ calls it.
-    # But since we provide a checkpoint_path, it might just resolve it.
-    # However, ensure_model_checkpoint logic for custom models might be tricky.
-    # In base.py:
-    # if isinstance(model_name, (Path, str)) and str(model_name).endswith(".toml"):
-    #      self.checkpoint_path = Path(checkpoint_path) if checkpoint_path else None
-    # else:
-    #      self.checkpoint_path = ensure_model_checkpoint(...)
-    
-    # So if we pass a .toml, ensure_model_checkpoint is skipped. Good.
-    
-    model = ConcreteEZMMLab(model_name=config_file, checkpoint_path=checkpoint_file)
+    model_obj = ConcreteEZMMLab(model=config_file, checkpoint_path=checkpoint_file)
     
     # Check if temp config was set
-    assert model._temp_config_file is not None
-    assert model._temp_config_file.exists()
-    assert model._temp_config_file.suffix == ".py"
+    assert model_obj._temp_config_file is not None
+    assert model_obj._temp_config_file.exists()
+    assert model_obj._temp_config_file.suffix == ".py"
     
     # Check content
-    content = model._temp_config_file.read_text()
+    content = model_obj._temp_config_file.read_text()
     assert '_base_ = ["/libs/mmdetection/configs/rtmdet/tiny.py"]' in content
     
     # Verify model state was updated from config
-    assert model.model_name == ModelName.RTM_DET_TINY.value
-    assert model.num_classes == 80
+    assert model_obj.model == ModelName.RTM_DET_TINY.value
+    assert model_obj.num_classes == 80
 
 def test_temp_config_cleanup(tmp_path):
     """Test that temporary config file is deleted when object is destroyed."""
@@ -94,12 +83,12 @@ def test_temp_config_cleanup(tmp_path):
         with patch("ez_openmmlab.core.base.get_config_file") as mock_get:
             mock_get.return_value = Path("/dummy.py")
             
-            model = ConcreteEZMMLab(model_name=config_file, checkpoint_path=checkpoint_file)
-            temp_path = model._temp_config_file
+            model_obj = ConcreteEZMMLab(model=config_file, checkpoint_path=checkpoint_file)
+            temp_path = model_obj._temp_config_file
             assert temp_path.exists()
             
             # Destroy object
-            del model
+            del model_obj
             
             # File should be gone
             assert not temp_path.exists()

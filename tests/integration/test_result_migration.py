@@ -5,9 +5,9 @@ from ez_openmmlab import RTMDet
 from ez_openmmlab.core.results import InferenceResult, Boxes
 from ez_openmmlab.schemas.model import ModelName
 
-@pytest.mark.parametrize("model_name", [ModelName.RTM_DET_TINY])
-def test_detector_returns_vectorized_result(model_name):
-    detector = RTMDet(model_name=model_name)
+@pytest.mark.parametrize("model", [ModelName.RTM_DET_TINY])
+def test_detector_returns_vectorized_result(model):
+    detector = RTMDet(model=model)
     img_path = "demos/demo.jpg"
     
     results = detector.predict(img_path, device="cpu")
@@ -21,12 +21,12 @@ def test_detector_returns_vectorized_result(model_name):
     assert isinstance(result.names, dict)
     assert result.path == str(Path(img_path).absolute())
 
-@pytest.mark.parametrize("model_name", [ModelName.RTM_POSE_S])
-def test_pose_returns_vectorized_result(model_name):
+@pytest.mark.parametrize("model", [ModelName.RTM_POSE_S])
+def test_pose_returns_vectorized_result(model):
     from ez_openmmlab import RTMPose
     from ez_openmmlab.core.results import Keypoints
     
-    pose = RTMPose(model_name=model_name)
+    pose = RTMPose(model=model)
     img_path = "demos/demo.jpg"
     
     results = pose.predict(img_path, device="cpu")

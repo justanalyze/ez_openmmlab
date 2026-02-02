@@ -34,7 +34,7 @@ def test_train_orchestration_and_artifact_creation(mock_ensure, mock_runner, dum
     mock_ensure.return_value = Path("dummy.pth")
     work_dir = tmp_path / "runs" / "test_run"
     
-    detector = RTMDet(ModelName.RTM_DET_TINY)
+    detector = RTMDet(model=ModelName.RTM_DET_TINY)
     
     # We expect this to run through base config loading, handlers, and save user_config.toml
     # It will stop at mock_runner.from_cfg
@@ -65,7 +65,7 @@ def test_predict_result_conversion(mock_ensure, mock_inferencer_cls):
     
     # Mock cv2.imread
     with patch("cv2.imread", return_value=np.zeros((100, 100, 3), dtype=np.uint8)):
-        detector = RTMDet(ModelName.RTM_DET_TINY)
+        detector = RTMDet(model=ModelName.RTM_DET_TINY)
         results = detector.predict(image_path="dummy.jpg")
     
     assert isinstance(results, list)

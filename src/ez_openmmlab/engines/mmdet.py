@@ -22,11 +22,11 @@ class EZMMDetector(EZMMLab):
 
     def __init__(
         self,
-        model_name: ModelName | str,
+        model: Union[ModelName, str, Path],
         checkpoint_path: Optional[Union[str, Path]] = None,
         log_level: str = "INFO",
     ):
-        super().__init__(model_name, checkpoint_path, log_level)
+        super().__init__(model, checkpoint_path, log_level)
         self._inferencer: Optional[DetInferencer] = None
 
     def predict(
@@ -66,12 +66,12 @@ class EZMMDetector(EZMMLab):
     def _init_inferencer(self, device: str):
         """Lazy initialization of the DetInferencer."""
         if self._inferencer is None:
-            config_path = get_config_file(self.model_name)
+            # self.config_path is set by base class
             logger.info(
-                f"Initializing inferencer for model: {self.model_name} (using config: {config_path})"
+                f"Initializing inferencer for model: {self.model} (using config: {self.config_path})"
             )
             self._inferencer = DetInferencer(
-                model=str(config_path),
+                model=str(self.config_path),
                 weights=str(self.checkpoint_path),
                 device=device,
             )

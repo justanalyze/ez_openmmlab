@@ -31,3 +31,7 @@ This file tracks all major tracks for the project. Each track has its own detail
   *Link: [./tracks/unified_inference_result_20260131/](./tracks/unified_inference_result_20260131/)*
 
 
+---
+
+- [~] **Track: Support Custom Model Loading via config.toml**
+*Link: [./tracks/custom_config_loading_20260202/](./tracks/custom_config_loading_20260202/)*

@@ -34,9 +34,9 @@ def test_rtmpose_predict_converts_results(mock_ensure, mock_inferencer_cls, mock
     
     # Mock cv2.imread
     with patch("cv2.imread", return_value=np.zeros((480, 640, 3), dtype=np.uint8)):
-        model = RTMPose(ModelName.RTM_POSE_TINY)
+        model_obj = RTMPose(model=ModelName.RTM_POSE_TINY)
         image_path = "demos/demo.jpg"
-        results = model.predict(image_path, device="cpu", bbox_thr=0.4, kpt_thr=0.4)
+        results = model_obj.predict(image_path, device="cpu", bbox_thr=0.4, kpt_thr=0.4)
     
     # Verify inferencer was initialized
     mock_inferencer_cls.assert_called_once()

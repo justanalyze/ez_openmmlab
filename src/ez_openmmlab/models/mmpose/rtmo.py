@@ -21,11 +21,11 @@ class RTMO(EZMMPose):
 
     def __init__(
         self,
-        model_name: ModelName | str,
+        model: Union[ModelName, str, Path],
         checkpoint_path: Optional[Union[str, Path]] = None,
         log_level: str = "INFO",
     ):
-        super().__init__(model_name, checkpoint_path, log_level)
+        super().__init__(model, checkpoint_path, log_level)
         self._inferencer: Optional[MMPoseInferencer] = None
 
     def predict(
@@ -63,9 +63,9 @@ class RTMO(EZMMPose):
     def _init_inferencer(self, device: str, **kwargs):
         """Lazy initialization of the RTMO inferencer."""
         if self._inferencer is None:
-            config_path = get_config_file(self.model_name)
+            config_path = get_config_file(self.model)
 
-            logger.info(f"Initializing RTMO inferencer: {self.model_name}")
+            logger.info(f"Initializing RTMO inferencer: {self.model}")
             with self.switch_to_lib_root():
                 # Load config to check if we need to override keypoints
                 cfg = Config.fromfile(str(config_path))
