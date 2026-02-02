@@ -2,10 +2,10 @@
 
 ## Phase 1: Core Base Enhancements
 
-- [x] Task: Update `EZMMLab` constructor signature [04bcbd9]
-    - [ ] Modify `__init__` in `src/ez_openmmlab/core/base.py` to accept `model: Union[str, Path, ModelName]`.
-    - [ ] Update type hints and docstrings.
-- [x] Task: Implement Custom Config Loading Logic [ee120ea]
+- [x] Task: Update `EZMMLab` constructor signature [f8bd4dd]
+    - [x] Modify `__init__` in `src/ez_openmmlab/core/base.py` to accept `model: Union[str, Path, ModelName]`.
+    - [x] Update type hints and docstrings.
+- [x] Task: Implement Custom Config Loading Logic [f8bd4dd]
     - [x] Create private method `_resolve_model_config(self, model_input: Union[str, Path, ModelName])`.
     - [x] Implement logic:
         - [x] If input is `ModelName` (or string equivalent): Use existing default behavior (fetch base weights/config).
@@ -15,9 +15,9 @@
             - [x] Resolve base config path using `ModelName(model_name).config_path`.
             - [x] Create a temporary `.py` config file that inherits from the base config and applies overrides from `.toml`.
             - [x] Return the path to this temporary `.py` file as the config to be used.
-- [x] Task: Cleanup Mechanism [ee120ea]
+- [x] Task: Cleanup Mechanism [f8bd4dd]
     - [x] Ensure temporary `.py` files are deleted after initialization (or use `tempfile` module contexts).
-- [ ] Task: Conductor - User Manual Verification 'Core Base Enhancements' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Core Base Enhancements' (Protocol in workflow.md) [f8bd4dd]
 
 ## Phase 2: Engine Updates
 
