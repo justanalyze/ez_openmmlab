@@ -30,14 +30,14 @@ class EZMMLab(ABC):
 
     def __init__(
         self,
-        model_name: ModelName | str,
+        model_name: Union[ModelName, str, Path],
         checkpoint_path: Optional[Union[str, Path]] = None,
         log_level: str = "INFO",
     ):
         """Initializes the library wrapper with a base model.
 
         Args:
-            model_name: The name of the architecture (e.g., 'rtmdet_tiny').
+            model_name: The name of the architecture (e.g., 'rtmdet_tiny') OR path to a config.toml.
             checkpoint_path: Path to a specific checkpoint (.pth or .pt).
             log_level: Global logging level. Default is 'INFO'.
         """
@@ -49,9 +49,13 @@ class EZMMLab(ABC):
 
         mute_warnings()
 
-        self.model_name: str = (
-            model_name.value if isinstance(model_name, ModelName) else model_name
-        )
+        if isinstance(model_name, Path):
+            self.model_name = str(model_name)
+        elif isinstance(model_name, ModelName):
+            self.model_name = model_name.value
+        else:
+            self.model_name = model_name
+
         self.log_level: str = log_level
         self.num_classes: Optional[int] = None
         self.num_keypoints: Optional[int] = None
