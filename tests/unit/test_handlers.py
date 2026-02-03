@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from mmengine.config import Config, ConfigDict
-from ez_openmmlab.core.handlers import DataloaderHandler, RuntimeHandler
+from ez_openmmlab.core.handlers.common import DataloaderHandler, RuntimeHandler
 from ez_openmmlab.utils.toml_config import UserConfig, DataSection, TrainingSection, ModelSection
 
 @pytest.fixture
@@ -58,7 +58,8 @@ def test_runtime_handler_applies_settings(mock_user_config):
     """Test that RuntimeHandler correctly sets optimizer, visualizer, and runtime params."""
     cfg = Config(dict(
         train_cfg=dict(),
-        optim_wrapper=dict(optimizer=dict())
+        optim_wrapper=dict(optimizer=dict()),
+        visualizer=dict(vis_backends=[])
     ))
     
     handler = RuntimeHandler()

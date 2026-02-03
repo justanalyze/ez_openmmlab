@@ -10,7 +10,8 @@ from ez_openmmlab.core.config_loader import get_config_file
 from ez_openmmlab.core.results import InferenceResult
 from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.utils.download import ensure_model_checkpoint
-from ez_openmmlab.utils.toml_config import UserConfig
+from ez_openmmlab.utils.toml_config import UserConfig, ModelSection, DataSection, TrainingSection
+from ez_openmmlab.core.handlers.mmpose import MMPoseHandler
 
 
 class RTMPose(EZMMPose):
@@ -116,26 +117,20 @@ class RTMPose(EZMMPose):
         return det_config, det_weights, det_cat_ids
 
     def _load_and_patch_config(self) -> Config:
-        """Loads the pose config and applies runtime patches (like keypoint counts). for initializing the inferencer"""
+        """Loads the pose config and applies runtime patches using the plugin system."""
         config_path = get_config_file(self.model)
         with self.switch_to_lib_root():
             cfg = Config.fromfile(str(config_path))
-            self._apply_head_patch(cfg)
+            
+            # Wrap current state into a dummy UserConfig to reuse MMPoseHandler logic
+            dummy_user_cfg = UserConfig(
+                model=ModelSection(
+                    name=self.model,
+                    num_classes=self.num_classes or 1,
+                    num_keypoints=self.num_keypoints
+                ),
+                training=TrainingSection(num_workers=0, learning_rate=0.001),
+                data=DataSection(root="")
+            )
+            MMPoseHandler().apply(cfg, dummy_user_cfg)
             return cfg
-
-    def _configure_model_specifics(self, config: UserConfig) -> None:
-        """Architecture-specific overrides for training."""
-        if not self._cfg:
-            raise RuntimeError("Config not loaded.")
-        self._apply_head_patch(self._cfg)
-
-    def _apply_head_patch(self, cfg: Config) -> None:
-        """Shared logic to patch the model head for custom keypoints."""
-        if hasattr(cfg.model, "head"):
-            # Use auto-loaded metadata if available
-            target = self.num_keypoints or self.num_classes
-            if target:
-                logger.info(
-                    f"[{self.__class__.__name__}] Patching model.head.out_channels to {target}"
-                )
-                cfg.model.head.out_channels = target

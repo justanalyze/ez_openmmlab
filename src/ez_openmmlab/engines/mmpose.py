@@ -198,11 +198,6 @@ class EZMMPose(EZMMLab):
         )
 
     @abstractmethod
-    def _configure_model_specifics(self, config):
-        """Subclasses must implement architecture-specific overrides."""
-        pass
-
-    @abstractmethod
     def _init_inferencer(self, device: str, **kwargs):
         """Lazy initialization of the MMPose inferencer."""
         pass

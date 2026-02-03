@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 from ez_openmmlab.schemas.model import ModelName
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, computed_field
 
 
 # --- Pydantic Models for Validation ---
@@ -33,6 +33,36 @@ class DataSection(BaseModel):
     test_img: Optional[str] = None
     classes: Optional[List[str]] = None
     metainfo: Optional[dict] = None
+
+    @computed_field
+    @property
+    def train_ann_path(self) -> str:
+        return str(Path(self.root) / self.train_ann)
+
+    @computed_field
+    @property
+    def train_img_path(self) -> str:
+        return str(Path(self.root) / self.train_img)
+
+    @computed_field
+    @property
+    def val_ann_path(self) -> str:
+        return str(Path(self.root) / self.val_ann)
+
+    @computed_field
+    @property
+    def val_img_path(self) -> str:
+        return str(Path(self.root) / self.val_img)
+
+    @computed_field
+    @property
+    def test_ann_path(self) -> Optional[str]:
+        return str(Path(self.root) / self.test_ann) if self.test_ann else None
+
+    @computed_field
+    @property
+    def test_img_path(self) -> Optional[str]:
+        return str(Path(self.root) / self.test_img) if self.test_img else None
 
 
 class TrainingSection(BaseModel):

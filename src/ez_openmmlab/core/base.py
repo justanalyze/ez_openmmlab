@@ -8,7 +8,7 @@ from mmengine.config import Config
 from mmengine.runner import Runner
 
 from ez_openmmlab.core.config_loader import get_config_file
-from ez_openmmlab.core.handlers import DataloaderHandler, RuntimeHandler
+from ez_openmmlab.core.handlers import get_handlers
 from ez_openmmlab.schemas.dataset import DatasetConfig
 from ez_openmmlab.core.results import InferenceResult
 from ez_openmmlab.schemas.model import ModelName
@@ -333,11 +333,6 @@ class EZMMLab(ABC):
         self._cfg = self._load_base_config(config.model.name)
         self._apply_common_overrides(config)
 
-        logger.info(
-            f"Configuring architecture specifics for {self.__class__.__name__}..."
-        )
-        self._configure_model_specifics(config)
-
         logger.info("Starting MMEngine Runner...")
         runner = Runner.from_cfg(self._cfg)
         runner.train()
@@ -353,14 +348,9 @@ class EZMMLab(ABC):
         return cfg
 
     def _apply_common_overrides(self, config: UserConfig) -> None:
-        """Applies configuration changes common to all architectures."""
+        """Applies configuration changes using the registered plugin handlers."""
         if not self._cfg:
             raise RuntimeError("Base config not loaded.")
 
-        DataloaderHandler().apply(self._cfg, config)
-        RuntimeHandler().apply(self._cfg, config)
-
-    @abstractmethod
-    def _configure_model_specifics(self, config: UserConfig) -> None:
-        """Architecture-specific overrides."""
-        pass
+        for handler in get_handlers(self.model):
+            handler.apply(self._cfg, config)

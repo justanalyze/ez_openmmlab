@@ -153,7 +153,3 @@ class EZMMDetector(EZMMLab):
             names=names,
             boxes=boxes,
         )
-
-    def _configure_model_specifics(self, config):
-        """Detection specific overrides are handled by subclasses."""
-        pass

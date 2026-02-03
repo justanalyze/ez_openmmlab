@@ -9,7 +9,8 @@ from ez_openmmlab.engines.mmpose import EZMMPose
 from ez_openmmlab.core.config_loader import get_config_file
 from ez_openmmlab.core.results import InferenceResult
 from ez_openmmlab.schemas.model import ModelName
-from ez_openmmlab.utils.toml_config import UserConfig
+from ez_openmmlab.utils.toml_config import UserConfig, ModelSection, TrainingSection, DataSection
+from ez_openmmlab.core.handlers.mmpose import MMPoseHandler
 
 
 class RTMO(EZMMPose):
@@ -67,38 +68,22 @@ class RTMO(EZMMPose):
 
             logger.info(f"Initializing RTMO inferencer: {self.model}")
             with self.switch_to_lib_root():
-                # Load config to check if we need to override keypoints
                 cfg = Config.fromfile(str(config_path))
 
-                if self.num_keypoints:
-                    logger.info(
-                        f"Overriding model.head.num_keypoints to {self.num_keypoints} for inference"
-                    )
-                    if hasattr(cfg.model, "head"):
-                        cfg.model.head.num_keypoints = self.num_keypoints
+                # Apply pose-specific patches using the handler
+                dummy_user_cfg = UserConfig(
+                    model=ModelSection(
+                        name=self.model,
+                        num_classes=self.num_classes or 1,
+                        num_keypoints=self.num_keypoints
+                    ),
+                    training=TrainingSection(num_workers=0, learning_rate=0.001),
+                    data=DataSection(root="")
+                )
+                MMPoseHandler().apply(cfg, dummy_user_cfg)
 
                 self._inferencer = MMPoseInferencer(
                     pose2d=cfg,
                     pose2d_weights=str(self.checkpoint_path),
                     device=device,
                 )
-
-    def _configure_model_specifics(self, config: UserConfig) -> None:
-        """RTMO specific head overrides."""
-        if not self._cfg:
-            raise RuntimeError("Config not loaded.")
-
-        if hasattr(self._cfg.model, "head"):
-            head = self._cfg.model.head
-            # For pose, num_keypoints is the target
-            target_kpts = config.model.num_keypoints or config.model.num_classes
-            logger.info(
-                f"[{self.__class__.__name__}] Setting RTMO model.head.num_keypoints to {target_kpts}"
-            )
-            head.num_keypoints = target_kpts
-
-            if hasattr(head, "head_module_cfg"):
-                logger.info(
-                    f"[{self.__class__.__name__}] Setting RTMO model.head.head_module_cfg.num_classes to 1"
-                )
-                head.head_module_cfg.num_classes = 1
