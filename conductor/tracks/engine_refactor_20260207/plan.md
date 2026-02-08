@@ -29,7 +29,7 @@ Extract the logic for building `UserConfig` and preparing the dummy configuratio
     - [x] Write unit tests for config lifecycle
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Centralize UserConfig Construction' (Protocol in workflow.md)
 
-## Phase 3: Refactor EZMMLab Base Class [checkpoint: ]
+## Phase 3: Refactor EZMMLab Base Class [checkpoint: 668503a]
 Final cleanup of `EZMMLab` to focus purely on high-level orchestration.
 
 - [x] Task: Move Auxiliary Helpers to Utilities

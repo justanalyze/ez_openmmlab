@@ -38,5 +38,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [~] **Track: Refactor @src/ez_openmmlab/core/base.py and its children @src/ez_openmmlab/engines/**
+- [x] **Track: Refactor @src/ez_openmmlab/core/base.py and its children @src/ez_openmmlab/engines/**
 *Link: [./tracks/engine_refactor_20260207/](./tracks/engine_refactor_20260207/)*
