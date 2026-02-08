@@ -27,7 +27,7 @@
 - [x] Task: Update `EZMMPose` [e25cfd7]
     - [ ] Ensure `EZMMPose` (and subclasses `RTMPose`, `RTMO`) inherits the new constructor logic.
     - [ ] Verify `_init_inferencer` uses the resolved config path.
-- [ ] Task: Conductor - User Manual Verification 'Engine Updates' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Engine Updates' (Protocol in workflow.md) [c413e50]
 
 ## Phase 3: Artifact Management
 
