@@ -14,6 +14,7 @@ from ez_openmmlab.utils.toml_config import (
     load_user_config,
 )
 
+
 class UserConfigBuilder:
     """Utility class for constructing and managing UserConfig objects and temporary files."""
 
@@ -78,12 +79,12 @@ class UserConfigBuilder:
         """Attempts to find and load training metadata from nearby config files."""
         search_dirs = [checkpoint_path.parent, checkpoint_path.parent.parent]
         config_files = ["user_config.toml", "dataset.toml"]
-        
+
         metadata = {
             "num_classes": None,
             "num_keypoints": None,
             "metainfo": None,
-            "model_name": None
+            "model_name": None,
         }
 
         for d in search_dirs:
@@ -100,36 +101,42 @@ class UserConfigBuilder:
                             logger.info(f"Auto-loaded metadata from: {path}")
                         else:
                             ds_cfg = DatasetConfig.from_toml(path)
-                            metadata["num_classes"] = len(ds_cfg.classes) if ds_cfg.classes else None
+                            metadata["num_classes"] = (
+                                len(ds_cfg.classes) if ds_cfg.classes else None
+                            )
                             metadata["metainfo"] = ds_cfg.metainfo
                             if ds_cfg.metainfo and "keypoint_info" in ds_cfg.metainfo:
-                                metadata["num_keypoints"] = len(ds_cfg.metainfo["keypoint_info"])
+                                metadata["num_keypoints"] = len(
+                                    ds_cfg.metainfo["keypoint_info"]
+                                )
                             logger.info(f"Auto-loaded metadata from: {path}")
                         return metadata
                     except Exception as e:
                         logger.warning(f"Failed to auto-load metadata from {path}: {e}")
         return metadata
 
-    def prepare_config_file(self, toml_path: Path, checkpoint_path: Optional[Path] = None) -> Path:
+    def prepare_config_file(
+        self, toml_path: Path, checkpoint_path: Optional[Path] = None
+    ) -> Path:
         """Generates a temporary python config file from a custom config.toml."""
         if not toml_path.exists():
             raise FileNotFoundError(f"Custom config file not found: {toml_path}")
 
         user_cfg = load_user_config(toml_path)
-        
+
         # Resolve base config
         base_config_path = get_config_file(user_cfg.model.name.value)
         base_config_str = str(base_config_path.absolute())
-        
+
         # Create content for temp config
         content = f'_base_ = ["{base_config_str}"]\n'
-        
+
         # Create temp file
         # We use NamedTemporaryFile but don't delete on close so it can be used by OpenMMLab
         temp_file = tempfile.NamedTemporaryFile(suffix=".py", mode="w", delete=False)
         temp_file.write(content)
         temp_file.close()
-        
+
         logger.debug(f"Created temporary config file: {temp_file.name}")
         return Path(temp_file.name)
 

@@ -2,8 +2,9 @@ from pathlib import Path
 from typing import Union, List, Optional
 from loguru import logger
 
+
 def normalize_inputs(
-    inputs: Union[str, Path, List[Union[str, Path]]]
+    inputs: Union[str, Path, List[Union[str, Path]]],
 ) -> Union[str, List[str]]:
     """Normalizes input paths (single, list, or directory) into a format engines accept.
 

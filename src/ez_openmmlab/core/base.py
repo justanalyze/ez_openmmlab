@@ -15,6 +15,7 @@ from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.utils.download import ensure_model_checkpoint
 from ez_openmmlab.utils.path import get_unique_dir
 from ez_openmmlab.utils.input import normalize_inputs
+from ez_openmmlab.utils.context import switch_to_lib_root
 from ez_openmmlab.core.config_builder import UserConfigBuilder
 from ez_openmmlab.utils.toml_config import (
     save_user_config,
@@ -66,8 +67,12 @@ class EZMMLab(ABC):
         # Resolve model configuration
         if isinstance(model, (Path, str)) and str(model).endswith(".toml"):
             if not self.checkpoint_path:
-                raise ValueError("Checkpoint path is required when using a custom config.toml")
-            self._temp_config_file = self._config_builder.prepare_config_file(Path(model), Path(self.checkpoint_path))
+                raise ValueError(
+                    "Checkpoint path is required when using a custom config.toml"
+                )
+            self._temp_config_file = self._config_builder.prepare_config_file(
+                Path(model), Path(self.checkpoint_path)
+            )
             self.config_path = self._temp_config_file
         else:
             self.config_path = get_config_file(model)
@@ -77,14 +82,18 @@ class EZMMLab(ABC):
             if isinstance(model, ModelName):
                 self.model = model.value
             elif isinstance(model, (Path, str)) and str(model).endswith(".toml"):
-                meta = self._config_builder.load_metadata_from_checkpoint(Path(self.checkpoint_path))
+                meta = self._config_builder.load_metadata_from_checkpoint(
+                    Path(self.checkpoint_path)
+                )
                 self.model = meta["model_name"]
             else:
                 self.model = str(model)
 
         # If a custom checkpoint is used, try to auto-load metadata
         if self.checkpoint_path:
-            meta = self._config_builder.load_metadata_from_checkpoint(Path(self.checkpoint_path))
+            meta = self._config_builder.load_metadata_from_checkpoint(
+                Path(self.checkpoint_path)
+            )
             self.num_classes = meta["num_classes"]
             self.num_keypoints = meta["num_keypoints"]
             self.metainfo = meta["metainfo"]
@@ -107,41 +116,6 @@ class EZMMLab(ABC):
     def predict(self, *args, **kwargs) -> List[InferenceResult]:
         """Abstract method for performing inference."""
         pass
-
-    def _resolve_out_dir(self, out_dir: Optional[str]) -> str:
-        """Returns a unique output directory if one is provided."""
-        return str(get_unique_dir(out_dir)) if out_dir else ""
-
-    def _normalize_inputs(
-        self, inputs: Union[str, Path, List[Union[str, Path]]]
-    ) -> Union[str, List[str]]:
-        """Wraps the utility helper for backward compatibility/internal use."""
-        return normalize_inputs(inputs)
-
-    def switch_to_lib_root(self):
-        """Context manager to temporarily switch to the appropriate library root.
-
-        This is necessary because OpenMMLab configs use relative paths
-        that expect to be resolved from the library root (libs/mmdet or libs/mmpose).
-        """
-        import os
-        from contextlib import contextmanager
-
-        @contextmanager
-        def _switch():
-            if "rtmpose" in self.model or "rtmo" in self.model:
-                lib_root = Path.cwd() / "libs" / "mmpose"
-            else:
-                lib_root = Path.cwd() / "libs" / "mmdetection"
-
-            old_cwd = os.getcwd()
-            try:
-                os.chdir(lib_root)
-                yield lib_root
-            finally:
-                os.chdir(old_cwd)
-
-        return _switch()
 
     def train(
         self,
@@ -173,7 +147,7 @@ class EZMMLab(ABC):
         target_log_level = log_level or self.log_level
 
         logger.info(f"Loading dataset configuration from: {dataset_config_path}")
-        
+
         user_config = self._config_builder.build(
             model=self.model,
             dataset_config_path=dataset_config_path,
@@ -186,7 +160,7 @@ class EZMMLab(ABC):
             amp=amp,
             num_workers=num_workers,
             enable_tensorboard=enable_tensorboard,
-            log_level=target_log_level
+            log_level=target_log_level,
         )
 
         self._run_training_workflow(user_config)
@@ -208,7 +182,7 @@ class EZMMLab(ABC):
     def _load_base_config(self, model: str) -> Config:
         config_path = get_config_file(model)
 
-        with self.switch_to_lib_root() as lib_root:
+        with switch_to_lib_root(self.model) as lib_root:
             # Use relative path from lib_root
             rel_config_path = config_path.relative_to(lib_root)
             cfg = Config.fromfile(str(rel_config_path))

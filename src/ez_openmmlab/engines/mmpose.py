@@ -12,6 +12,7 @@ from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.core.results import InferenceResult, Boxes, Keypoints
 from ez_openmmlab.core.formatters import PoseResultFormatter
 from ez_openmmlab.utils.input import normalize_inputs
+from ez_openmmlab.utils.path import get_unique_dir
 
 
 class EZMMPose(EZMMLab):
@@ -63,7 +64,7 @@ class EZMMPose(EZMMLab):
 
         logger.info(f"Running pose estimation on: {image_path}")
 
-        actual_out_dir = self._resolve_out_dir(out_dir)
+        actual_out_dir = str(get_unique_dir(out_dir)) if out_dir else ""
         inputs = normalize_inputs(image_path)
 
         inferencer_kwargs = {
@@ -80,9 +81,7 @@ class EZMMPose(EZMMLab):
         results_gen = self._inferencer(**inferencer_kwargs)
         all_results = list(results_gen)
 
-        return self._formatter.map_results(
-            all_results, inputs, self._get_class_names()
-        )
+        return self._formatter.map_results(all_results, inputs, self._get_class_names())
 
     def _get_class_names(self) -> dict:
         """Retrieves class names from local metainfo or inferencer.

@@ -3,7 +3,7 @@ from loguru import logger
 from ez_openmmlab.schemas.model import ModelName
 
 
-class ConfigLoader:
+class BaseConfigLoader:
     """Resolves model names to absolute paths of official OpenMMLab config files."""
 
     def __init__(self):
@@ -15,7 +15,9 @@ class ConfigLoader:
         )
         self._mmpose_config_root = self._project_root / "libs" / "mmpose" / "configs"
 
-        logger.info(f"Initializing ConfigLoader. Project root: {self._project_root}")
+        logger.info(
+            f"Initializing BaseConfigLoader. Project root: {self._project_root}"
+        )
         self._validate_root()
 
     def _validate_root(self):
@@ -32,7 +34,9 @@ class ConfigLoader:
 
     def get_config_path(self, model_name: str | ModelName) -> Path:
         """Resolves a model name to its absolute config path."""
-        actual_name = model_name.value if isinstance(model_name, ModelName) else model_name
+        actual_name = (
+            model_name.value if isinstance(model_name, ModelName) else model_name
+        )
         try:
             model = ModelName(actual_name)
             rel_path = model.config_path
@@ -64,8 +68,10 @@ class ConfigLoader:
 
 
 # Global instance
-_LOADER = ConfigLoader()
+_LOADER = BaseConfigLoader()
 
 
 def get_config_file(model_name: str | ModelName) -> Path:
-    return _LOADER.get_config_path(str(model_name.value) if isinstance(model_name, ModelName) else model_name)
+    return _LOADER.get_config_path(
+        str(model_name.value) if isinstance(model_name, ModelName) else model_name
+    )
