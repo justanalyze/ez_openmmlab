@@ -15,9 +15,9 @@ register_mmdet(init_default_scope=True)
 
 from .models.mmdet import RTMDet
 from .models.mmpose import RTMPose, RTMO
-from .core.base import EZMMLab
-from .engines.mmdet import EZMMDetector
-from .engines.mmpose import EZMMPose
+from .core.engines.engine_base import EZMMLab
+from .core.engines.mmdet import EZMMDetector
+from .core.engines.mmpose import EZMMPose
 
 __all__ = [
     "RTMDet",

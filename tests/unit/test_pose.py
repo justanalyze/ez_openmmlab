@@ -9,7 +9,7 @@ from ez_openmmlab.schemas.model import ModelName
 @patch("mmengine.infer.infer._load_checkpoint")
 @patch("pathlib.Path.exists")
 @patch("ez_openmmlab.models.mmpose.rtmpose.MMPoseInferencer")
-@patch("ez_openmmlab.core.base.ensure_model_checkpoint")
+@patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
 def test_rtmpose_predict_converts_results(mock_ensure, mock_inferencer_cls, mock_exists, mock_load):
     """Verifies that RTMPose correctly calls MMPoseInferencer and converts results."""
     mock_ensure.return_value = Path("dummy.pth")

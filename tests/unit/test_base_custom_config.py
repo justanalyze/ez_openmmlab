@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
-from ez_openmmlab.core.base import EZMMLab
+from ez_openmmlab.core.engines.engine_base import EZMMLab
 from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.utils.toml_config import UserConfig
 from typing import List
@@ -89,7 +89,7 @@ def test_temp_config_cleanup(tmp_path):
         mock_user_config.model.name = ModelName.RTM_DET_TINY
         mock_load.return_value = mock_user_config
         
-        with patch("ez_openmmlab.core.base.get_config_file") as mock_get:
+        with patch("ez_openmmlab.core.engines.engine_base.get_config_file") as mock_get:
             mock_get.return_value = Path("/dummy.py")
             
             model_obj = ConcreteEZMMLab(model=config_file, checkpoint_path=checkpoint_file)

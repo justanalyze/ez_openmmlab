@@ -5,7 +5,7 @@ from loguru import logger
 from mmengine.config import Config
 from mmpose.apis import MMPoseInferencer
 
-from ez_openmmlab.engines.mmpose import EZMMPose
+from ez_openmmlab.core.engines.mmpose import EZMMPose
 from ez_openmmlab.core.config_manager import get_config_file
 from ez_openmmlab.core.results import InferenceResult
 from ez_openmmlab.schemas.model import ModelName

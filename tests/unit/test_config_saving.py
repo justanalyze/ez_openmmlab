@@ -9,8 +9,8 @@ class ConcreteEZDetector(RTMDet):
     def _init_inferencer(self, device):
         pass
 
-@patch("ez_openmmlab.core.base.Runner")
-@patch("ez_openmmlab.core.base.ensure_model_checkpoint")
+@patch("ez_openmmlab.core.engines.engine_base.Runner")
+@patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
 @patch("ez_openmmlab.schemas.dataset.DatasetConfig.from_toml")
 def test_train_saves_base_config_path(mock_ds_from_toml, mock_ensure, mock_runner, tmp_path):
     """Test that training saves the absolute path to the base python config."""
@@ -36,7 +36,7 @@ def test_train_saves_base_config_path(mock_ds_from_toml, mock_ensure, mock_runne
     
     # Set the absolute path to the base python config for artifact tracking
     expected_path = Path.cwd() / "libs" / "mmdetection" / "configs" / "rtmdet" / "tiny.py"
-    with patch("ez_openmmlab.core.base.get_config_file") as mock_get_cfg:
+    with patch("ez_openmmlab.core.engines.engine_base.get_config_file") as mock_get_cfg:
         mock_get_cfg.return_value = expected_path
         
         # Mock _apply_common_overrides to avoid needing a real config object

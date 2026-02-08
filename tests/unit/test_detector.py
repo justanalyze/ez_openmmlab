@@ -6,7 +6,7 @@ from ez_openmmlab import RTMDet
 from ez_openmmlab.core.results import InferenceResult
 
 
-@patch("ez_openmmlab.engines.mmdet.ensure_model_checkpoint")
+@patch("ez_openmmlab.core.engines.mmdet.ensure_model_checkpoint")
 def test_predict_initializes_inferencer_and_calls_it(mock_ensure):
     """
     Test that predict() initializes DetInferencer with correct params
@@ -24,7 +24,7 @@ def test_predict_initializes_inferencer_and_calls_it(mock_ensure):
         ]
     }
 
-    with patch("ez_openmmlab.engines.mmdet.DetInferencer") as mock_inferencer_cls:
+    with patch("ez_openmmlab.core.engines.mmdet.DetInferencer") as mock_inferencer_cls:
         # Configure mock inferencer instance
         mock_inferencer_instance = MagicMock()
         mock_inferencer_instance.return_value = mock_result
@@ -60,7 +60,7 @@ def test_predict_initializes_inferencer_and_calls_it(mock_ensure):
         assert isinstance(results[0], InferenceResult)
 
 
-@patch("ez_openmmlab.engines.mmdet.ensure_model_checkpoint")
+@patch("ez_openmmlab.core.engines.mmdet.ensure_model_checkpoint")
 def test_predict_with_out_dir_creates_directory(mock_ensure, tmp_path):
     """
     Test that predict() passes out_dir to the inferencer.
@@ -71,7 +71,7 @@ def test_predict_with_out_dir_creates_directory(mock_ensure, tmp_path):
     out_dir = tmp_path / "results"
     mock_ensure.return_value = Path(checkpoint_path)
 
-    with patch("ez_openmmlab.engines.mmdet.DetInferencer") as mock_inferencer_cls:
+    with patch("ez_openmmlab.core.engines.mmdet.DetInferencer") as mock_inferencer_cls:
         mock_inferencer_instance = MagicMock()
         mock_inferencer_instance.return_value = {"predictions": [
             {"labels": [], "scores": [], "bboxes": []}

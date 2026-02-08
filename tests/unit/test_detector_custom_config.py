@@ -5,10 +5,10 @@ from ez_openmmlab import RTMDet
 from ez_openmmlab.schemas.model import ModelName
 import numpy as np
 
-@patch("ez_openmmlab.engines.mmdet.DetInferencer")
+@patch("ez_openmmlab.core.engines.mmdet.DetInferencer")
 @patch("ez_openmmlab.core.config_manager.toml_config.load_user_config")
-@patch("ez_openmmlab.core.base.get_config_file")
-@patch("ez_openmmlab.core.base.ensure_model_checkpoint")
+@patch("ez_openmmlab.core.engines.engine_base.get_config_file")
+@patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
 def test_rtmdet_init_with_custom_config(mock_ensure, mock_get_config, mock_load_config, mock_inferencer_cls, tmp_path):
     """Test that RTMDet correctly initializes using a custom config.toml."""
     config_file = tmp_path / "config.toml"
