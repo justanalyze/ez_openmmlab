@@ -38,10 +38,10 @@
 
 ## Phase 4: Verification
 
-- [ ] Task: Unit Tests
+- [x] Task: Unit Tests [10e0b99]
     - [ ] Test `EZMMLab` constructor with valid `ModelName`.
     - [ ] Test `EZMMLab` constructor with `config.toml` + `checkpoint`.
     - [ ] Test `EZMMLab` constructor with `config.toml` missing `checkpoint` (expect failure).
-- [ ] Task: Integration Test
+- [x] Task: Integration Test [10e0b99]
     - [ ] Simulate a full flow: Train a model -> Save `config.toml` -> Load new model instance using that `config.toml` + checkpoint -> Run inference.
-- [ ] Task: Conductor - User Manual Verification 'Verification' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Verification' (Protocol in workflow.md) [10e0b99]

@@ -81,7 +81,9 @@ class UserConfigBuilder:
 
     def load_metadata_from_checkpoint(self, checkpoint_path: Path) -> Dict[str, Any]:
         """Attempts to find and load training metadata from nearby config files."""
+        # TODO: DONT SEARCH ON checkpoint_path.parent.parent
         search_dirs = [checkpoint_path.parent, checkpoint_path.parent.parent]
+        # TODO: DONT LOOK FOR dataset.toml only user_config
         config_files = ["user_config.toml", "dataset.toml"]
 
         metadata = {
