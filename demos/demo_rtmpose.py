@@ -2,10 +2,9 @@ from typing import List
 from ez_openmmlab import RTMPose
 from ez_openmmlab.core.results import InferenceResult
 from loguru import logger
-from ez_openmmlab.schemas.model import ModelName
 
 # RTMPose is a TOP-DOWN model.
-model = RTMPose(model_name=ModelName.RTM_POSE_S, log_level="DEBUG")
+model = RTMPose(model="rtmpose_tiny", log_level="INFO")
 
 image_path = "./demos/demo.jpg"
 

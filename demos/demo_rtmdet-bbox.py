@@ -15,7 +15,7 @@ images = [image_path, image_path]
 batch_results: List[InferenceResult] = model.predict(
     image_path=images,
     device="cpu",
-    show=False,
+    show=True,
     confidence=0.5,
     out_dir="./runs/demo_detection_batch",
 )
