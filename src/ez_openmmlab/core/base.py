@@ -171,7 +171,9 @@ class EZMMLab(ABC):
         work_dir.mkdir(parents=True, exist_ok=True)
 
         # Set the absolute path to the base python config for artifact tracking
-        config.model.base_config_path = str(get_config_file(config.model.name).absolute())
+        config.model.base_config_path = str(
+            get_config_file(config.model.name).absolute()
+        )
 
         save_user_config(config, work_dir / "user_config.toml")
         logger.info(f"User configuration saved to: {work_dir / 'user_config.toml'}")

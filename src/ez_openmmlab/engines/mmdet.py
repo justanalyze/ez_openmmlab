@@ -66,9 +66,7 @@ class EZMMDetector(EZMMLab):
             inputs, out_dir=actual_out_dir, show=show, pred_score_thr=confidence
         )
 
-        return self._formatter.map_results(
-            results, inputs, self._get_class_names()
-        )
+        return self._formatter.map_results(results, inputs, self._get_class_names())
 
     def _init_inferencer(self, device: str):
         """Lazy initialization of the DetInferencer."""
@@ -101,3 +99,4 @@ class EZMMDetector(EZMMLab):
 
         # 3. No fallback to COCO - return empty or generic mapping
         return {}
+

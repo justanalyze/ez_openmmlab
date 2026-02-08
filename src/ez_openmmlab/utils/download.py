@@ -82,4 +82,3 @@ def ensure_model_checkpoint(
     logger.info(f"Checkpoint not found. Attempting automatic download to {path}...")
     download_checkpoint(url, path)
     return path
-
