@@ -10,8 +10,9 @@ from mmdet.utils import register_all_modules
 from ez_openmmlab.core.base import EZMMLab
 from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.core.config_loader import get_config_file
-from ez_openmmlab.core.results import InferenceResult, Boxes
+from ez_openmmlab.core.results import InferenceResult
 from ez_openmmlab.utils.download import ensure_model_checkpoint
+from ez_openmmlab.core.formatters import DetectionResultFormatter
 
 # Force registration of MMDet modules
 register_all_modules(init_default_scope=True)
@@ -28,6 +29,7 @@ class EZMMDetector(EZMMLab):
     ):
         super().__init__(model, checkpoint_path, log_level)
         self._inferencer: Optional[DetInferencer] = None
+        self._formatter = DetectionResultFormatter()
 
     def predict(
         self,
@@ -61,7 +63,9 @@ class EZMMDetector(EZMMLab):
             inputs, out_dir=actual_out_dir, show=show, pred_score_thr=confidence
         )
 
-        return self._map_inference_results(results, inputs)
+        return self._formatter.map_results(
+            results, inputs, self._get_class_names()
+        )
 
     def _init_inferencer(self, device: str):
         """Lazy initialization of the DetInferencer."""
@@ -75,35 +79,6 @@ class EZMMDetector(EZMMLab):
                 weights=str(self.checkpoint_path),
                 device=device,
             )
-
-    def _map_inference_results(
-        self, results: dict, inputs: Union[str, List[str]]
-    ) -> List[InferenceResult]:
-        """Maps raw MMDetection results to vectorized InferenceResult objects.
-
-        Args:
-            results: Raw dictionary output from DetInferencer.
-            inputs: Original input path(s) passed to predict().
-
-        Returns:
-            A list of InferenceResult objects.
-        """
-        names = self._get_class_names()
-        predictions = results.get("predictions", [])
-
-        # Normalize inputs to a list for consistent iteration
-        input_list = inputs if isinstance(inputs, list) else [inputs]
-
-        # Handle cases where inferencer returns fewer predictions than inputs (should not happen normally)
-        if not predictions and input_list:
-            predictions = [
-                {"labels": [], "scores": [], "bboxes": []} for _ in range(len(input_list))
-            ]
-
-        return [
-            self._process_single_prediction(pred, path, names)
-            for pred, path in zip(predictions, input_list)
-        ]
 
     def _get_class_names(self) -> dict:
         """Retrieves class names from local metainfo or inferencer.
@@ -123,33 +98,3 @@ class EZMMDetector(EZMMLab):
 
         # 3. No fallback to COCO - return empty or generic mapping
         return {}
-
-    def _process_single_prediction(
-        self, raw_pred: dict, img_path: str, names: dict
-    ) -> InferenceResult:
-        """Converts a single raw prediction dict into an InferenceResult object."""
-        # Extract and convert components to NumPy arrays
-        bboxes = np.array(raw_pred.get("bboxes", []), dtype=np.float32)
-        scores = np.array(raw_pred.get("scores", []), dtype=np.float32)
-        labels = np.array(raw_pred.get("labels", []), dtype=np.int32)
-
-        # Package Boxes: [N, 6] -> [x1, y1, x2, y2, score, label]
-        if len(bboxes) > 0:
-            data = np.concatenate([bboxes, scores[:, None], labels[:, None]], axis=1)
-        else:
-            data = np.zeros((0, 6), dtype=np.float32)
-
-        # Load original image for shape metadata and plotting support
-        orig_img = cv2.imread(img_path)
-        if orig_img is None:
-            logger.warning(f"Could not read image for result container: {img_path}")
-            orig_img = np.zeros((100, 100, 3), dtype=np.uint8)
-
-        boxes = Boxes(data, orig_img.shape[:2])
-
-        return InferenceResult(
-            orig_img=orig_img,
-            path=str(Path(img_path).absolute()),
-            names=names,
-            boxes=boxes,
-        )
