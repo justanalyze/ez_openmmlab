@@ -29,7 +29,7 @@
     - [ ] Verify `_init_inferencer` uses the resolved config path.
 - [x] Task: Conductor - User Manual Verification 'Engine Updates' (Protocol in workflow.md) [c413e50]
 
-## Phase 3: Artifact Management
+## Phase 3: Artifact Management [checkpoint: 98ce668]
 
 - [x] Task: Update Config Saving [d1c479a]
     - [ ] Modify `save_user_config` (or call site in `base.py`) to include `model.base_config_path` in the saved `user_config.toml`.
