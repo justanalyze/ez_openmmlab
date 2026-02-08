@@ -31,7 +31,7 @@
 
 ## Phase 3: Artifact Management
 
-- [ ] Task: Update Config Saving
+- [x] Task: Update Config Saving [d1c479a]
     - [ ] Modify `save_user_config` (or call site in `base.py`) to include `model.base_config_path` in the saved `user_config.toml`.
     - [ ] Ensure this path resolves to the absolute path of the generated `.py` config file created in the workdir during training.
 - [ ] Task: Conductor - User Manual Verification 'Artifact Management' (Protocol in workflow.md)
