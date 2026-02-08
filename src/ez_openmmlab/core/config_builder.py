@@ -14,10 +14,14 @@ from ez_openmmlab.utils.toml_config import (
     load_user_config,
 )
 
+# TODO: Consolidate @src/ez_openmmlab/core/config_loader.py here.
 
+
+# TODO: RENAME TO ConfigManager
 class UserConfigBuilder:
     """Utility class for constructing and managing UserConfig objects and temporary files."""
 
+    # TODO: RENAME TO build_user_config
     def build(
         self,
         model: str,
@@ -97,6 +101,10 @@ class UserConfigBuilder:
                             metadata["num_classes"] = user_cfg.model.num_classes
                             metadata["num_keypoints"] = user_cfg.model.num_keypoints
                             metadata["metainfo"] = user_cfg.data.metainfo
+                            if user_cfg.data.classes:
+                                if metadata["metainfo"] is None:
+                                    metadata["metainfo"] = {}
+                                metadata["metainfo"]["classes"] = user_cfg.data.classes
                             metadata["model_name"] = user_cfg.model.name.value
                             logger.info(f"Auto-loaded metadata from: {path}")
                         else:
@@ -122,6 +130,7 @@ class UserConfigBuilder:
         if not toml_path.exists():
             raise FileNotFoundError(f"Custom config file not found: {toml_path}")
 
+        # TODO: use toml_config.load_user_config(toml_path) to make it obvious that this is from toml_config do it with all the functions from the toml_config module
         user_cfg = load_user_config(toml_path)
 
         # Resolve base config
