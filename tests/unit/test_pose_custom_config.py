@@ -30,7 +30,7 @@ def test_rtmpose_init_with_custom_config(mock_ensure, mock_get_config, mock_load
     mock_user_config.data.metainfo = {"classes": ["bird"]}
     mock_load_config.return_value = mock_user_config
     
-    mock_get_config.return_value = Path("/abs/path/to/base_pose_config.py")
+    mock_get_config.return_value = Path.cwd() / "libs/mmpose/configs/rtmpose/tiny.py"
     mock_ensure.return_value = checkpoint_file
     
     # Initialize RTMPose
@@ -79,7 +79,7 @@ def test_rtmo_init_with_custom_config(mock_ensure, mock_get_config, mock_load_co
     mock_user_config.data.metainfo = {"classes": ["bird"]}
     mock_load_config.return_value = mock_user_config
     
-    mock_get_config.return_value = Path("/abs/path/to/base_rtmo_config.py")
+    mock_get_config.return_value = Path.cwd() / "libs/mmpose/configs/rtmo/s.py"
     mock_ensure.return_value = checkpoint_file
     
     # Initialize RTMO

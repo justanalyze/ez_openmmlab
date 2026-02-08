@@ -35,8 +35,9 @@ def test_train_saves_base_config_path(mock_ds_from_toml, mock_ensure, mock_runne
     detector = ConcreteEZDetector(model=ModelName.RTM_DET_TINY)
     
     # Set the absolute path to the base python config for artifact tracking
+    expected_path = Path.cwd() / "libs" / "mmdetection" / "configs" / "rtmdet" / "tiny.py"
     with patch("ez_openmmlab.core.base.get_config_file") as mock_get_cfg:
-        mock_get_cfg.return_value = Path("/home/just/Projects/ez_openmmlab/libs/mmdetection/configs/rtmdet/tiny.py")
+        mock_get_cfg.return_value = expected_path
         
         # Mock _apply_common_overrides to avoid needing a real config object
         with patch.object(detector, "_apply_common_overrides"):
@@ -51,4 +52,4 @@ def test_train_saves_base_config_path(mock_ds_from_toml, mock_ensure, mock_runne
     assert saved_config_path.exists()
     
     user_cfg = load_user_config(saved_config_path)
-    assert user_cfg.model.base_config_path == "/home/just/Projects/ez_openmmlab/libs/mmdetection/configs/rtmdet/tiny.py"
+    assert user_cfg.model.base_config_path == str(expected_path)
