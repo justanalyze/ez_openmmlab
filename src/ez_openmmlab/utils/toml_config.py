@@ -19,6 +19,7 @@ class ModelSection(BaseModel):
     num_classes: int = Field(..., gt=0)
     num_keypoints: Optional[int] = Field(None, gt=0)
     load_from: Optional[str] = None
+    base_config_path: Optional[str] = None
 
 
 class DataSection(BaseModel):
