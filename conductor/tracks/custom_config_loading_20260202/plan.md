@@ -19,7 +19,7 @@
     - [x] Ensure temporary `.py` files are deleted after initialization (or use `tempfile` module contexts).
 - [x] Task: Conductor - User Manual Verification 'Core Base Enhancements' (Protocol in workflow.md) [f8bd4dd]
 
-## Phase 2: Engine Updates
+## Phase 2: Engine Updates [checkpoint: 6f2b430]
 
 - [x] Task: Update `EZMMDetector` [4c805eb]
     - [x] Ensure `EZMMDetector` inherits the new constructor logic.
