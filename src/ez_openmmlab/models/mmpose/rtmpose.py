@@ -12,6 +12,7 @@ from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.utils.download import ensure_model_checkpoint
 from ez_openmmlab.utils.toml_config import UserConfig, ModelSection, DataSection, TrainingSection
 from ez_openmmlab.core.handlers.mmpose import MMPoseHandler
+from ez_openmmlab.utils.context import switch_to_lib_root
 
 
 class RTMPose(EZMMPose):
@@ -91,7 +92,7 @@ class RTMPose(EZMMPose):
         logger.info(f"Initializing RTMPose inferencer: {self.model}")
 
         # 3. Instantiate the inferencer
-        with self.switch_to_lib_root():
+        with switch_to_lib_root(self.model):
             self._inferencer = MMPoseInferencer(
                 pose2d=pose_cfg,
                 pose2d_weights=str(self.checkpoint_path),
@@ -118,9 +119,8 @@ class RTMPose(EZMMPose):
 
     def _load_and_patch_config(self) -> Config:
         """Loads the pose config and applies runtime patches using the plugin system."""
-        config_path = get_config_file(self.model)
-        with self.switch_to_lib_root():
-            cfg = Config.fromfile(str(config_path))
+        with switch_to_lib_root(self.model):
+            cfg = Config.fromfile(str(self.config_path))
             
             # Wrap current state into a dummy UserConfig to reuse MMPoseHandler logic
             dummy_user_cfg = UserConfig(

@@ -43,6 +43,7 @@ def test_rtmpose_init_with_custom_config(mock_ensure, mock_get_config, mock_load
         mock_cfg = MagicMock()
         mock_cfg_fromfile.return_value = mock_cfg
         pose._init_inferencer(device="cpu")
+        mock_cfg_fromfile.assert_called_once_with(str(pose.config_path))
     
     # Verify MMPoseInferencer was called with the Config object (patched)
     mock_inferencer_cls.assert_called_once()
@@ -89,6 +90,7 @@ def test_rtmo_init_with_custom_config(mock_ensure, mock_get_config, mock_load_co
         mock_cfg = MagicMock()
         mock_cfg_fromfile.return_value = mock_cfg
         pose._init_inferencer(device="cpu")
+        mock_cfg_fromfile.assert_called_once_with(str(pose.config_path))
     
     # Verify MMPoseInferencer was called
     mock_inferencer_cls.assert_called_once()

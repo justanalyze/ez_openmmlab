@@ -11,6 +11,7 @@ from ez_openmmlab.core.results import InferenceResult
 from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.utils.toml_config import UserConfig, ModelSection, TrainingSection, DataSection
 from ez_openmmlab.core.handlers.mmpose import MMPoseHandler
+from ez_openmmlab.utils.context import switch_to_lib_root
 
 
 class RTMO(EZMMPose):
@@ -64,11 +65,9 @@ class RTMO(EZMMPose):
     def _init_inferencer(self, device: str, **kwargs):
         """Lazy initialization of the RTMO inferencer."""
         if self._inferencer is None:
-            config_path = get_config_file(self.model)
-
             logger.info(f"Initializing RTMO inferencer: {self.model}")
-            with self.switch_to_lib_root():
-                cfg = Config.fromfile(str(config_path))
+            with switch_to_lib_root(self.model):
+                cfg = Config.fromfile(str(self.config_path))
 
                 # Apply pose-specific patches using the handler
                 dummy_user_cfg = UserConfig(
