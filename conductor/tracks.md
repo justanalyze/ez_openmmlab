@@ -50,3 +50,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: Consolidate and Refine Configuration Management**
 *Link: [./tracks/consolidate_config_20260209/](./tracks/consolidate_config_20260209/)*
+
+---
+
+- [x] **Track: Architectural Reorganization - Move Engines to Core**
+*Link: [./tracks/move_engines_to_core_20260209/](./tracks/move_engines_to_core_20260209/)*
