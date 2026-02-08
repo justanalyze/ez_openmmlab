@@ -4,6 +4,7 @@ from .common import DataloaderHandler, RuntimeHandler
 from .mmdet import MMDetHandler
 from .mmpose import MMPoseHandler
 
+
 def get_handlers(model_name: str) -> List[BaseConfigHandler]:
     """Registry that returns the list of handlers required for a specific model."""
     # 1. Common handlers
@@ -17,5 +18,6 @@ def get_handlers(model_name: str) -> List[BaseConfigHandler]:
         handlers.append(MMPoseHandler())
     else:
         handlers.append(MMDetHandler())
-    
+
     return handlers
+

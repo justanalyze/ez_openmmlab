@@ -3,6 +3,7 @@ from mmengine.config import Config
 from ez_openmmlab.utils.toml_config import UserConfig
 from .base import BaseConfigHandler
 
+
 class DataloaderHandler(BaseConfigHandler):
     """Configures dataset paths, batch sizes, and workers for all loaders."""
 
@@ -15,7 +16,9 @@ class DataloaderHandler(BaseConfigHandler):
 
         for name in ["train_dataloader", "val_dataloader", "test_dataloader"]:
             if hasattr(cfg, name):
-                self._configure_dataloader(getattr(cfg, name), name, user_config, metainfo)
+                self._configure_dataloader(
+                    getattr(cfg, name), name, user_config, metainfo
+                )
 
     def _assemble_metainfo(self, user_config: UserConfig) -> Dict[str, Any]:
         metainfo = {}
@@ -25,7 +28,9 @@ class DataloaderHandler(BaseConfigHandler):
             metainfo.update(self._process_metainfo(user_config.data.metainfo))
         return metainfo
 
-    def _configure_dataloader(self, dl: Config, name: str, user_config: UserConfig, metainfo: Dict[str, Any]) -> None:
+    def _configure_dataloader(
+        self, dl: Config, name: str, user_config: UserConfig, metainfo: Dict[str, Any]
+    ) -> None:
         dl.dataset.data_root = ""
         dl.batch_size = user_config.training.batch_size
         dl.num_workers = user_config.training.num_workers
@@ -40,6 +45,7 @@ class DataloaderHandler(BaseConfigHandler):
 
         if metainfo:
             dl.dataset.metainfo = metainfo
+
 
 class RuntimeHandler(BaseConfigHandler):
     """Configures optimizer, AMP, epochs, and basic logging."""

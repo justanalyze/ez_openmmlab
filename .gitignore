@@ -30,3 +30,8 @@ output_test/
 runs/
 dummy_data/
 datasets/
+
+.gemini/
+gha-creds-*.json
+
+todo.md

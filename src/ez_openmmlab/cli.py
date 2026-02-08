@@ -4,7 +4,7 @@ from typing import Optional
 import typer
 
 from ez_openmmlab.models.mmdet import RTMDet
-from ez_openmmlab.models.mmpose import RTMPose
+from ez_openmmlab.models.mmpose import RTMPose, RTMO
 from ez_openmmlab.schemas.model import ModelName
 
 app = typer.Typer(help="ez_mmdet: A user-friendly CLI for MMDetection")
@@ -12,7 +12,7 @@ app = typer.Typer(help="ez_mmdet: A user-friendly CLI for MMDetection")
 
 @app.command()
 def train(
-    model_name: ModelName = typer.Argument(..., help="Name of the model architecture"),
+    model_name: str = typer.Argument(..., help="Name of the model architecture or path to config.toml"),
     dataset_config_path: Path = typer.Argument(
         ..., help="Path to the dataset.toml file"
     ),
@@ -28,8 +28,12 @@ def train(
     tensorboard: bool = typer.Option(False, help="Enable TensorBoard logging"),
 ):
     """Starts model training using a dataset configuration."""
-    detector = RTMDet(model_name=model_name)
-    detector.train(
+    if "rtmpose" in model_name or "rtmo" in model_name:
+        model = RTMPose(model=model_name)
+    else:
+        model = RTMDet(model=model_name)
+
+    model.train(
         dataset_config_path=dataset_config_path,
         epochs=epochs,
         batch_size=batch_size,
@@ -44,7 +48,7 @@ def train(
 
 @app.command()
 def predict(
-    model_name: ModelName = typer.Argument(..., help="Name of the model architecture"),
+    model_name: str = typer.Argument(..., help="Name of the model architecture or path to config.toml"),
     image_path: Path = typer.Argument(..., help="Path to the image for inference"),
     checkpoint_path: Optional[Path] = typer.Option(
         None, help="Optional path to a custom model checkpoint (.pth)"
@@ -62,9 +66,18 @@ def predict(
     device: str = typer.Option("cpu", help="Computing device"),
 ):
     """Performs object detection or pose estimation on an image."""
-    if "rtmpose" in model_name.value:
-        detector = RTMPose(model_name=model_name, checkpoint_path=checkpoint_path)
-        detector.predict(
+    if "rtmpose" in model_name:
+        model = RTMPose(model=model_name, checkpoint_path=checkpoint_path)
+        model.predict(
+            image_path=image_path,
+            bbox_thr=bbox_thr,
+            kpt_thr=kpt_thr,
+            out_dir=out_dir,
+            device=device,
+        )
+    elif "rtmo" in model_name:
+        model = RTMO(model=model_name, checkpoint_path=checkpoint_path)
+        model.predict(
             image_path=image_path,
             bbox_thr=bbox_thr,
             kpt_thr=kpt_thr,
@@ -72,8 +85,8 @@ def predict(
             device=device,
         )
     else:
-        detector = RTMDet(model_name=model_name, checkpoint_path=checkpoint_path)
-        detector.predict(
+        model = RTMDet(model=model_name, checkpoint_path=checkpoint_path)
+        model.predict(
             image_path=image_path,
             confidence=confidence,
             out_dir=out_dir,

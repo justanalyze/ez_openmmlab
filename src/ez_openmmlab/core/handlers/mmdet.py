@@ -3,6 +3,7 @@ from mmengine.config import Config
 from ez_openmmlab.utils.toml_config import UserConfig
 from .base import BaseConfigHandler
 
+
 class MMDetHandler(BaseConfigHandler):
     """Handles MMDetection-specific configuration patches."""
 
@@ -13,9 +14,11 @@ class MMDetHandler(BaseConfigHandler):
 
         model_cfg = user_config.model
         num_classes = model_cfg.num_classes
-        
-        logger.info(f"[MMDetHandler] Patching model.bbox_head.num_classes to {num_classes}")
-        
+
+        logger.info(
+            f"[MMDetHandler] Patching model.bbox_head.num_classes to {num_classes}"
+        )
+
         bbox_head = cfg.model.bbox_head
         if isinstance(bbox_head, list):
             for head in bbox_head:

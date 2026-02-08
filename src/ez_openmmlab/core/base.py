@@ -59,22 +59,22 @@ class EZMMLab(ABC):
         self._temp_config_file: Optional[Path] = None
 
         # Resolve or download checkpoint (might be None if training from scratch, but required for custom inference)
-        # Note: ensure_model_checkpoint might need adjustment if model is a path, 
+        # Note: ensure_model_checkpoint might need adjustment if model is a path,
         # but for now we assume if it's a path, the user MUST provide a checkpoint_path.
         if isinstance(model, (Path, str)) and str(model).endswith(".toml"):
-             self.checkpoint_path = Path(checkpoint_path) if checkpoint_path else None
+            self.checkpoint_path = Path(checkpoint_path) if checkpoint_path else None
         else:
-             self.checkpoint_path = ensure_model_checkpoint(model, checkpoint_path)
+            self.checkpoint_path = ensure_model_checkpoint(model, checkpoint_path)
 
         # Resolve model configuration
         # This will set self.config_path to either a standard config or a temp config
         self.config_path = self._resolve_model_config(model)
-        
+
         # If we loaded from a config.toml, we should set the internal model attribute to the base model
         # so other parts of the system (like training logs) make sense.
         # _resolve_model_config sets self.model as a side effect if it parses a toml.
-        if not hasattr(self, 'model'):
-             self.model = model.value if isinstance(model, ModelName) else str(model)
+        if not hasattr(self, "model"):
+            self.model = model.value if isinstance(model, ModelName) else str(model)
 
         # If a custom checkpoint is used, try to auto-load metadata from accompanying config
         if self.checkpoint_path:
@@ -99,14 +99,16 @@ class EZMMLab(ABC):
         toml_path = Path(model_input)
         if toml_path.suffix == ".toml":
             if not self.checkpoint_path:
-                raise ValueError("Checkpoint path is required when using a custom config.toml")
-            
+                raise ValueError(
+                    "Checkpoint path is required when using a custom config.toml"
+                )
+
             if not toml_path.exists():
                 raise FileNotFoundError(f"Custom config file not found: {toml_path}")
 
             logger.info(f"Loading custom configuration from: {toml_path}")
             user_cfg = load_user_config(toml_path)
-            
+
             # Set internal state from config
             self.model = user_cfg.model.name.value
             self.num_classes = user_cfg.model.num_classes
@@ -116,25 +118,31 @@ class EZMMLab(ABC):
 
             # Resolve base config
             base_config_path = get_config_file(self.model)
-            
+
             # Create temporary config inheriting from base
             # We use the absolute path of the base config
             base_config_str = str(base_config_path.absolute())
-            
+
             # Create content for temp config
             # We override essential parameters. Detailed dataset/pipeline overrides happen in handlers during training,
             # but for inference or initial setup, we might need basic model structure.
             # Ideally, the engine's _init_inferencer will load this config.
             content = f'_base_ = ["{base_config_str}"]\n'
-            
+
             # Create temp file
             # We keep it until the object is destroyed or explicitly cleaned up.
             # Using NamedTemporaryFile with delete=False so we can pass the path around.
-            temp_file = tempfile.NamedTemporaryFile(suffix=".py", mode="w", delete=False)
-            temp_file.write(temp_file.name if isinstance(temp_file.name, str) else str(temp_file.name)) # Dummy use to avoid lint issue if any, but NamedTemporaryFile returns name as attribute
+            temp_file = tempfile.NamedTemporaryFile(
+                suffix=".py", mode="w", delete=False
+            )
+            temp_file.write(
+                temp_file.name
+                if isinstance(temp_file.name, str)
+                else str(temp_file.name)
+            )  # Dummy use to avoid lint issue if any, but NamedTemporaryFile returns name as attribute
             temp_file.write(content)
             temp_file.close()
-            
+
             self._temp_config_file = Path(temp_file.name)
             logger.debug(f"Created temporary config file: {self._temp_config_file}")
             return self._temp_config_file
@@ -145,7 +153,11 @@ class EZMMLab(ABC):
 
     def __del__(self):
         """Cleanup temporary files."""
-        if hasattr(self, '_temp_config_file') and self._temp_config_file and self._temp_config_file.exists():
+        if (
+            hasattr(self, "_temp_config_file")
+            and self._temp_config_file
+            and self._temp_config_file.exists()
+        ):
             try:
                 self._temp_config_file.unlink()
                 logger.debug(f"Removed temporary config file: {self._temp_config_file}")
@@ -164,6 +176,7 @@ class EZMMLab(ABC):
                     try:
                         if f == "user_config.toml":
                             from ez_openmmlab.utils.toml_config import load_user_config
+
                             user_cfg = load_user_config(path)
                             self.num_classes = user_cfg.model.num_classes
                             self.num_keypoints = user_cfg.model.num_keypoints
@@ -171,12 +184,17 @@ class EZMMLab(ABC):
                             logger.info(f"Auto-loaded metadata from: {path}")
                         else:
                             from ez_openmmlab.schemas.dataset import DatasetConfig
+
                             ds_cfg = DatasetConfig.from_toml(path)
-                            self.num_classes = len(ds_cfg.classes) if ds_cfg.classes else None
+                            self.num_classes = (
+                                len(ds_cfg.classes) if ds_cfg.classes else None
+                            )
                             if ds_cfg.metainfo:
                                 self.metainfo = ds_cfg.metainfo
                                 if "keypoint_info" in ds_cfg.metainfo:
-                                    self.num_keypoints = len(ds_cfg.metainfo["keypoint_info"])
+                                    self.num_keypoints = len(
+                                        ds_cfg.metainfo["keypoint_info"]
+                                    )
                             logger.info(f"Auto-loaded metadata from: {path}")
                         return
                     except Exception as e:

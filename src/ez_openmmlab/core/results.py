@@ -67,22 +67,40 @@ class InferenceResult:
     """Standardized container for all inference results."""
     def __init__(
         self,
-        orig_img: np.ndarray,
         path: str,
         names: dict,
+        orig_img: Optional[np.ndarray] = None,
+        orig_shape: Optional[tuple] = None,
         boxes: Optional[Boxes] = None,
         keypoints: Optional[Keypoints] = None,
         masks: Optional[Masks] = None,
         speed: Optional[dict] = None,
     ):
-        self.orig_img = orig_img
-        self.orig_shape = orig_img.shape[:2]
+        self._orig_img = orig_img
         self.path = path
         self.names = names
         self.boxes = boxes
         self.keypoints = keypoints
         self.masks = masks
         self.speed = speed or {}
+        
+        if orig_shape:
+            self.orig_shape = orig_shape
+        elif orig_img is not None:
+            self.orig_shape = orig_img.shape[:2]
+        else:
+            # Fallback to loading image header/info if absolutely needed,
+            # but for now we assume shape was provided if image wasn't.
+            self.orig_shape = (0, 0)
+
+    @property
+    def orig_img(self) -> np.ndarray:
+        """Lazily loads the original image if not already present."""
+        if self._orig_img is None:
+            self._orig_img = cv2.imread(self.path)
+            if self._orig_img is None:
+                raise FileNotFoundError(f"Could not read image at: {self.path}")
+        return self._orig_img
 
     def plot(self, line_width: int = 2, font_size: float = 0.5) -> np.ndarray:
         """Plots boxes, masks, and keypoints on the original image."""

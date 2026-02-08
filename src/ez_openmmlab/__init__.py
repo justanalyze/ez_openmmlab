@@ -3,10 +3,15 @@ import warnings
 # Suppress noisy library warnings immediately on import
 warnings.filterwarnings("ignore", message=".*pkg_resources is deprecated")
 
-from mmdet.utils import register_all_modules
+from mmdet.utils import register_all_modules as register_mmdet
+try:
+    from mmpose.utils import register_all_modules as register_mmpose
+    register_mmpose(init_default_scope=False)
+except ImportError:
+    pass
 
 # Ensure MMDet modules are registered with default scope immediately
-register_all_modules(init_default_scope=True)
+register_mmdet(init_default_scope=True)
 
 from .models.mmdet import RTMDet
 from .models.mmpose import RTMPose, RTMO

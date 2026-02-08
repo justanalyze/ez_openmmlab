@@ -7,8 +7,9 @@ class ConfigLoader:
     """Resolves model names to absolute paths of official OpenMMLab config files."""
 
     def __init__(self):
-        # Assumes the script is running from the project root
-        self._project_root = Path.cwd()
+        # Resolve relative to the installed package location
+        # Structure: ez_openmmlab/core/config_loader.py -> ez_openmmlab/../../libs
+        self._project_root = Path(__file__).resolve().parents[3]
         self._mmdet_config_root = (
             self._project_root / "libs" / "mmdetection" / "configs"
         )

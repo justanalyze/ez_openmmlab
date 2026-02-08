@@ -126,11 +126,13 @@ class RTMPose(EZMMPose):
             dummy_user_cfg = UserConfig(
                 model=ModelSection(
                     name=self.model,
-                    num_classes=self.num_classes or 1,
+                    num_classes=self.num_classes if self.num_classes is not None else 80, # Dummy valid value
                     num_keypoints=self.num_keypoints
                 ),
                 training=TrainingSection(num_workers=0, learning_rate=0.001),
                 data=DataSection(root="")
             )
-            MMPoseHandler().apply(cfg, dummy_user_cfg)
+            # If both are None, MMPoseHandler won't patch anything (which we want for standard models)
+            if self.num_classes is not None or self.num_keypoints is not None:
+                MMPoseHandler().apply(cfg, dummy_user_cfg)
             return cfg

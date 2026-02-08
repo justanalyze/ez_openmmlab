@@ -51,13 +51,13 @@ def ensure_model_checkpoint(
     """Checks if a checkpoint exists. If not, attempts to download it if it's a known model.
     Simplified names like 'rtmdet_tiny.pth' are used for auto-downloads.
     """
-    project_root = Path.cwd()
-    checkpoint_dir = project_root / "checkpoints"
+    # Use centralized cache directory
+    checkpoint_dir = Path.home() / ".cache" / "ez_openmmlab" / "checkpoints"
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     if checkpoint_path:
         path = Path(checkpoint_path)
-        # If it's just a filename, put it in checkpoints dir
+        # If it's just a filename, put it in cache dir
         if not path.parent or str(path.parent) == ".":
             path = checkpoint_dir / path
     else:
