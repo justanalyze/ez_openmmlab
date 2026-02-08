@@ -1,10 +1,10 @@
 from typing import Any, Dict
 from mmengine.config import Config
 from ez_openmmlab.utils.toml_config import UserConfig
-from .base import BaseConfigHandler
+from .base import BaseConfigInjector
 
 
-class DataloaderHandler(BaseConfigHandler):
+class DataloaderInjector(BaseConfigInjector):
     """Configures dataset paths, batch sizes, and workers for all loaders."""
 
     def apply(self, cfg: Config, user_config: UserConfig) -> None:
@@ -47,7 +47,7 @@ class DataloaderHandler(BaseConfigHandler):
             dl.dataset.metainfo = metainfo
 
 
-class RuntimeHandler(BaseConfigHandler):
+class RuntimeInjector(BaseConfigInjector):
     """Configures optimizer, AMP, epochs, and basic logging."""
 
     def apply(self, cfg: Config, user_config: UserConfig) -> None:

@@ -11,7 +11,7 @@ from ez_openmmlab.core.results import InferenceResult
 from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.utils.download import ensure_model_checkpoint
 from ez_openmmlab.utils.toml_config import UserConfig, ModelSection, DataSection, TrainingSection
-from ez_openmmlab.core.handlers.mmpose import MMPoseHandler
+from ez_openmmlab.core.injectors.mmpose import MMPoseInjector
 from ez_openmmlab.utils.context import switch_to_lib_root
 
 
@@ -122,7 +122,7 @@ class RTMPose(EZMMPose):
         with switch_to_lib_root(self.model):
             cfg = Config.fromfile(str(self.config_path))
             
-            # Wrap current state into a dummy UserConfig to reuse MMPoseHandler logic
+            # Wrap current state into a dummy UserConfig to reuse MMPoseInjector logic
             dummy_user_cfg = UserConfig(
                 model=ModelSection(
                     name=self.model,
@@ -132,7 +132,7 @@ class RTMPose(EZMMPose):
                 training=TrainingSection(num_workers=0, learning_rate=0.001),
                 data=DataSection(root="")
             )
-            # If both are None, MMPoseHandler won't patch anything (which we want for standard models)
+            # If both are None, MMPoseInjector won't patch anything (which we want for standard models)
             if self.num_classes is not None or self.num_keypoints is not None:
-                MMPoseHandler().apply(cfg, dummy_user_cfg)
+                MMPoseInjector().apply(cfg, dummy_user_cfg)
             return cfg

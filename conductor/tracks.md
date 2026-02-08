@@ -43,7 +43,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [~] **Track: Rename @src/ez_openmmlab/core/handlers/** to injectors**
+- [x] **Track: Rename @src/ez_openmmlab/core/handlers/** to injectors**
 *Link: [./tracks/rename_injectors_20260208/](./tracks/rename_injectors_20260208/)*
 
 ---

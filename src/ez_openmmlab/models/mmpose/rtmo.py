@@ -10,7 +10,7 @@ from ez_openmmlab.core.config_loader import get_config_file
 from ez_openmmlab.core.results import InferenceResult
 from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.utils.toml_config import UserConfig, ModelSection, TrainingSection, DataSection
-from ez_openmmlab.core.handlers.mmpose import MMPoseHandler
+from ez_openmmlab.core.injectors.mmpose import MMPoseInjector
 from ez_openmmlab.utils.context import switch_to_lib_root
 
 
@@ -69,7 +69,7 @@ class RTMO(EZMMPose):
             with switch_to_lib_root(self.model):
                 cfg = Config.fromfile(str(self.config_path))
 
-                # Apply pose-specific patches using the handler
+                # Apply pose-specific patches using the injector
                 dummy_user_cfg = UserConfig(
                     model=ModelSection(
                         name=self.model,
@@ -80,7 +80,7 @@ class RTMO(EZMMPose):
                     data=DataSection(root="")
                 )
                 if self.num_classes is not None or self.num_keypoints is not None:
-                    MMPoseHandler().apply(cfg, dummy_user_cfg)
+                    MMPoseInjector().apply(cfg, dummy_user_cfg)
 
                 self._inferencer = MMPoseInferencer(
                     pose2d=cfg,

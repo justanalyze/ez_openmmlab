@@ -1,10 +1,10 @@
 from loguru import logger
 from mmengine.config import Config
 from ez_openmmlab.utils.toml_config import UserConfig
-from .base import BaseConfigHandler
+from .base import BaseConfigInjector
 
 
-class MMPoseHandler(BaseConfigHandler):
+class MMPoseInjector(BaseConfigInjector):
     """Handles MMPose-specific configuration patches."""
 
     def apply(self, cfg: Config, user_config: UserConfig) -> None:
@@ -19,7 +19,7 @@ class MMPoseHandler(BaseConfigHandler):
         if not target:
             return
 
-        logger.info(f"[MMPoseHandler] Patching model head with {target} keypoints")
+        logger.info(f"[MMPoseInjector] Patching model head with {target} keypoints")
 
         # 1. RTMPose style
         if hasattr(head, "out_channels"):

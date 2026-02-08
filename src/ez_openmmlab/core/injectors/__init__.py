@@ -1,23 +1,22 @@
 from typing import List
-from .base import BaseConfigHandler
-from .common import DataloaderHandler, RuntimeHandler
-from .mmdet import MMDetHandler
-from .mmpose import MMPoseHandler
+from .base import BaseConfigInjector
+from .common import DataloaderInjector, RuntimeInjector
+from .mmdet import MMDetInjector
+from .mmpose import MMPoseInjector
 
 
-def get_handlers(model_name: str) -> List[BaseConfigHandler]:
-    """Registry that returns the list of handlers required for a specific model."""
-    # 1. Common handlers
-    handlers: List[BaseConfigHandler] = [
-        DataloaderHandler(),
-        RuntimeHandler(),
+def get_injectors(model_name: str) -> List[BaseConfigInjector]:
+    """Registry that returns the list of injectors required for a specific model."""
+    # 1. Common injectors
+    injectors: List[BaseConfigInjector] = [
+        DataloaderInjector(),
+        RuntimeInjector(),
     ]
 
     # 2. Dynamic Library Selection
     if "rtmpose" in model_name or "rtmo" in model_name:
-        handlers.append(MMPoseHandler())
+        injectors.append(MMPoseInjector())
     else:
-        handlers.append(MMDetHandler())
+        injectors.append(MMDetInjector())
 
-    return handlers
-
+    return injectors

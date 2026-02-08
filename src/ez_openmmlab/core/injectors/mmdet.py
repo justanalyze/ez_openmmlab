@@ -1,10 +1,10 @@
 from loguru import logger
 from mmengine.config import Config
 from ez_openmmlab.utils.toml_config import UserConfig
-from .base import BaseConfigHandler
+from .base import BaseConfigInjector
 
 
-class MMDetHandler(BaseConfigHandler):
+class MMDetInjector(BaseConfigInjector):
     """Handles MMDetection-specific configuration patches."""
 
     def apply(self, cfg: Config, user_config: UserConfig) -> None:
@@ -16,7 +16,7 @@ class MMDetHandler(BaseConfigHandler):
         num_classes = model_cfg.num_classes
 
         logger.info(
-            f"[MMDetHandler] Patching model.bbox_head.num_classes to {num_classes}"
+            f"[MMDetInjector] Patching model.bbox_head.num_classes to {num_classes}"
         )
 
         bbox_head = cfg.model.bbox_head
