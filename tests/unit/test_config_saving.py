@@ -1,11 +1,11 @@
 import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-from ez_openmmlab.engines.mmdet import EZMMDetector
+from ez_openmmlab.models.mmdet import RTMDet
 from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.utils.toml_config import load_user_config
 
-class ConcreteEZDetector(EZMMDetector):
+class ConcreteEZDetector(RTMDet):
     def _init_inferencer(self, device):
         pass
 
@@ -34,18 +34,21 @@ def test_train_saves_base_config_path(mock_ds_from_toml, mock_ensure, mock_runne
     
     detector = ConcreteEZDetector(model=ModelName.RTM_DET_TINY)
     
-    # Mock _apply_common_overrides to avoid needing a real config object
-    with patch.object(detector, "_apply_common_overrides"):
-        detector.train(
-            dataset_config_path=dataset_toml,
-            work_dir=str(work_dir),
-            epochs=1
-        )
+    # Set the absolute path to the base python config for artifact tracking
+    with patch("ez_openmmlab.core.base.get_config_file") as mock_get_cfg:
+        mock_get_cfg.return_value = Path("/home/just/Projects/ez_openmmlab/libs/mmdetection/configs/rtmdet/tiny.py")
+        
+        # Mock _apply_common_overrides to avoid needing a real config object
+        with patch.object(detector, "_apply_common_overrides"):
+            with patch("mmengine.config.Config.fromfile"): # Also mock fromfile to avoid real IO
+                detector.train(
+                    dataset_config_path=dataset_toml,
+                    work_dir=str(work_dir),
+                    epochs=1
+                )
     
     saved_config_path = work_dir / "user_config.toml"
     assert saved_config_path.exists()
     
     user_cfg = load_user_config(saved_config_path)
-    assert user_cfg.model.base_config_path is not None
-    assert Path(user_cfg.model.base_config_path).is_absolute()
-    assert "rtmdet_tiny" in user_cfg.model.base_config_path
+    assert user_cfg.model.base_config_path == "/home/just/Projects/ez_openmmlab/libs/mmdetection/configs/rtmdet/tiny.py"

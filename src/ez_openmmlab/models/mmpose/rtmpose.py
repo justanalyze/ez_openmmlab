@@ -6,11 +6,16 @@ from mmengine.config import Config
 from mmpose.apis import MMPoseInferencer
 
 from ez_openmmlab.engines.mmpose import EZMMPose
-from ez_openmmlab.core.config_loader import get_config_file
+from ez_openmmlab.core.config_manager import get_config_file
 from ez_openmmlab.core.results import InferenceResult
 from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.utils.download import ensure_model_checkpoint
-from ez_openmmlab.utils.toml_config import UserConfig, ModelSection, DataSection, TrainingSection
+from ez_openmmlab.utils.toml_config import (
+    UserConfig,
+    ModelSection,
+    DataSection,
+    TrainingSection,
+)
 from ez_openmmlab.core.injectors.mmpose import MMPoseInjector
 from ez_openmmlab.utils.context import switch_to_lib_root
 
@@ -121,18 +126,21 @@ class RTMPose(EZMMPose):
         """Loads the pose config and applies runtime patches using the plugin system."""
         with switch_to_lib_root(self.model):
             cfg = Config.fromfile(str(self.config_path))
-            
+
             # Wrap current state into a dummy UserConfig to reuse MMPoseInjector logic
             dummy_user_cfg = UserConfig(
                 model=ModelSection(
                     name=self.model,
-                    num_classes=self.num_classes if self.num_classes is not None else 80, # Dummy valid value
-                    num_keypoints=self.num_keypoints
+                    num_classes=self.num_classes
+                    if self.num_classes is not None
+                    else 80,  # Dummy valid value
+                    num_keypoints=self.num_keypoints,
                 ),
                 training=TrainingSection(num_workers=0, learning_rate=0.001),
-                data=DataSection(root="")
+                data=DataSection(root=""),
             )
             # If both are None, MMPoseInjector won't patch anything (which we want for standard models)
             if self.num_classes is not None or self.num_keypoints is not None:
                 MMPoseInjector().apply(cfg, dummy_user_cfg)
             return cfg
+

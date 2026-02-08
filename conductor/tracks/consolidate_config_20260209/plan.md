@@ -18,12 +18,12 @@ Focus on creating the new `config_manager.py` and consolidating logic.
 
 ## Phase 2: Integration and Cleanup
 
-- [ ] Task: Update Internal References
-    - [ ] Update all imports in `src/ez_openmmlab/core/base.py` to point to `config_manager`
-    - [ ] Update engines and models referencing `get_config_file` to use the new path
-    - [ ] Update all tests to use the consolidated `config_manager`
-- [ ] Task: Final Cleanup and Regression Testing
-    - [ ] Delete `src/ez_openmmlab/core/config_loader.py`
-    - [ ] Delete `src/ez_openmmlab/core/config_builder.py`
-    - [ ] Run full project test suite (`uv run pytest`) to ensure no regressions
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Integration and Cleanup' (Protocol in workflow.md)
+- [x] Task: Update Internal References
+    - [x] Update all imports in `src/ez_openmmlab/core/base.py` to point to `config_manager`
+    - [x] Update engines and models referencing `get_config_file` to use the new path
+    - [x] Update all tests to use the consolidated `config_manager`
+- [x] Task: Final Cleanup and Regression Testing
+    - [x] Delete `src/ez_openmmlab/core/config_loader.py`
+    - [x] Delete `src/ez_openmmlab/core/config_builder.py`
+    - [x] Run full project test suite (`uv run pytest`) to ensure no regressions
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Integration and Cleanup' (Protocol in workflow.md)

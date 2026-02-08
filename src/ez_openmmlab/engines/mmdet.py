@@ -9,7 +9,7 @@ from mmdet.utils import register_all_modules
 
 from ez_openmmlab.core.base import EZMMLab
 from ez_openmmlab.schemas.model import ModelName
-from ez_openmmlab.core.config_loader import get_config_file
+from ez_openmmlab.core.config_manager import get_config_file
 from ez_openmmlab.core.results import InferenceResult
 from ez_openmmlab.utils.download import ensure_model_checkpoint
 from ez_openmmlab.core.formatters import DetectionResultFormatter

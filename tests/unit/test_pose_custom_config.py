@@ -4,9 +4,9 @@ from unittest.mock import patch, MagicMock
 from ez_openmmlab import RTMPose, RTMO
 from ez_openmmlab.schemas.model import ModelName
 
-@patch("ez_openmmlab.core.config_builder.UserConfigBuilder.load_metadata_from_checkpoint")
+@patch("ez_openmmlab.core.config_manager.ConfigManager.load_metadata_from_checkpoint")
 @patch("ez_openmmlab.models.mmpose.rtmpose.MMPoseInferencer")
-@patch("ez_openmmlab.core.config_builder.load_user_config")
+@patch("ez_openmmlab.core.config_manager.toml_config.load_user_config")
 @patch("ez_openmmlab.core.base.get_config_file")
 @patch("ez_openmmlab.core.base.ensure_model_checkpoint")
 def test_rtmpose_init_with_custom_config(mock_ensure, mock_get_config, mock_load_config, mock_inferencer_cls, mock_load_meta, tmp_path):
@@ -53,9 +53,9 @@ def test_rtmpose_init_with_custom_config(mock_ensure, mock_get_config, mock_load
     # Check if head was patched
     assert mock_cfg.model.head.out_channels == 15
 
-@patch("ez_openmmlab.core.config_builder.UserConfigBuilder.load_metadata_from_checkpoint")
+@patch("ez_openmmlab.core.config_manager.ConfigManager.load_metadata_from_checkpoint")
 @patch("ez_openmmlab.models.mmpose.rtmo.MMPoseInferencer")
-@patch("ez_openmmlab.core.config_builder.load_user_config")
+@patch("ez_openmmlab.core.config_manager.toml_config.load_user_config")
 @patch("ez_openmmlab.core.base.get_config_file")
 @patch("ez_openmmlab.core.base.ensure_model_checkpoint")
 def test_rtmo_init_with_custom_config(mock_ensure, mock_get_config, mock_load_config, mock_inferencer_cls, mock_load_meta, tmp_path):

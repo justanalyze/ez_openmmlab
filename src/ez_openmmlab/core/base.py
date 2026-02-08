@@ -7,7 +7,7 @@ from loguru import logger
 from mmengine.config import Config
 from mmengine.runner import Runner
 
-from ez_openmmlab.core.config_loader import get_config_file
+from ez_openmmlab.core.config_manager import ConfigManager, get_config_file
 from ez_openmmlab.core.injectors import get_injectors
 from ez_openmmlab.schemas.dataset import DatasetConfig
 from ez_openmmlab.core.results import InferenceResult
@@ -16,7 +16,7 @@ from ez_openmmlab.utils.download import ensure_model_checkpoint
 from ez_openmmlab.utils.path import get_unique_dir
 from ez_openmmlab.utils.input import normalize_inputs
 from ez_openmmlab.utils.context import switch_to_lib_root
-from ez_openmmlab.core.config_builder import UserConfigBuilder
+from ez_openmmlab.core.config_manager import ConfigManager, get_config_file
 from ez_openmmlab.utils.toml_config import (
     save_user_config,
     UserConfig,
@@ -56,7 +56,7 @@ class EZMMLab(ABC):
         self.metainfo: Optional[dict] = None
         self._cfg: Optional[Config] = None
         self._temp_config_file: Optional[Path] = None
-        self._config_builder = UserConfigBuilder()
+        self._config_manager = ConfigManager()
 
         # Resolve or download checkpoint
         if isinstance(model, (Path, str)) and str(model).endswith(".toml"):
@@ -70,7 +70,7 @@ class EZMMLab(ABC):
                 raise ValueError(
                     "Checkpoint path is required when using a custom config.toml"
                 )
-            self._temp_config_file = self._config_builder.prepare_config_file(
+            self._temp_config_file = self._config_manager.prepare_config_file(
                 Path(model), Path(self.checkpoint_path)
             )
             self.config_path = self._temp_config_file
@@ -82,7 +82,7 @@ class EZMMLab(ABC):
             if isinstance(model, ModelName):
                 self.model = model.value
             elif isinstance(model, (Path, str)) and str(model).endswith(".toml"):
-                meta = self._config_builder.load_metadata_from_checkpoint(
+                meta = self._config_manager.load_metadata_from_checkpoint(
                     Path(self.checkpoint_path)
                 )
                 self.model = meta["model_name"]
@@ -91,7 +91,7 @@ class EZMMLab(ABC):
 
         # If a custom checkpoint is used, try to auto-load metadata
         if self.checkpoint_path:
-            meta = self._config_builder.load_metadata_from_checkpoint(
+            meta = self._config_manager.load_metadata_from_checkpoint(
                 Path(self.checkpoint_path)
             )
             self.num_classes = meta["num_classes"]
@@ -110,7 +110,7 @@ class EZMMLab(ABC):
     def __del__(self):
         """Cleanup temporary files."""
         if hasattr(self, "_temp_config_file"):
-            self._config_builder.cleanup_temp_config(self._temp_config_file)
+            self._config_manager.cleanup_temp_config(self._temp_config_file)
 
     @abstractmethod
     def predict(self, *args, **kwargs) -> List[InferenceResult]:
@@ -148,7 +148,7 @@ class EZMMLab(ABC):
 
         logger.info(f"Loading dataset configuration from: {dataset_config_path}")
 
-        user_config = self._config_builder.build(
+        user_config = self._config_manager.build_user_config(
             model=self.model,
             dataset_config_path=dataset_config_path,
             checkpoint_path=self.checkpoint_path,

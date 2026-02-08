@@ -33,9 +33,9 @@ def test_ezmmlab_init_with_config_path_no_checkpoint(tmp_path):
     with pytest.raises(ValueError, match="Checkpoint path is required"):
         ConcreteEZMMLab(model=config_file)
 
-@patch("ez_openmmlab.core.config_builder.UserConfigBuilder.load_metadata_from_checkpoint")
-@patch("ez_openmmlab.core.config_builder.get_config_file")
-@patch("ez_openmmlab.core.config_builder.load_user_config")
+@patch("ez_openmmlab.core.config_manager.ConfigManager.load_metadata_from_checkpoint")
+@patch("ez_openmmlab.core.config_manager.get_config_file")
+@patch("ez_openmmlab.core.config_manager.toml_config.load_user_config")
 def test_resolve_model_config_with_toml_valid(mock_load_config, mock_get_config, mock_load_meta, tmp_path):
     """Test _resolve_model_config with valid TOML creates temp file."""
     config_file = tmp_path / "config.toml"
@@ -84,7 +84,7 @@ def test_temp_config_cleanup(tmp_path):
     checkpoint_file = tmp_path / "epoch_10.pth"
     checkpoint_file.touch()
     
-    with patch("ez_openmmlab.core.config_builder.load_user_config") as mock_load:
+    with patch("ez_openmmlab.core.config_manager.toml_config.load_user_config") as mock_load:
         mock_user_config = MagicMock()
         mock_user_config.model.name = ModelName.RTM_DET_TINY
         mock_load.return_value = mock_user_config
