@@ -36,7 +36,7 @@
     - [ ] Ensure this path resolves to the absolute path of the generated `.py` config file created in the workdir during training.
 - [x] Task: Conductor - User Manual Verification 'Artifact Management' (Protocol in workflow.md) [f3bcddb]
 
-## Phase 4: Verification
+## Phase 4: Verification [checkpoint: bc466ce]
 
 - [x] Task: Unit Tests [10e0b99]
     - [ ] Test `EZMMLab` constructor with valid `ModelName`.
