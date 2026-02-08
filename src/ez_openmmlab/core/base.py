@@ -14,6 +14,7 @@ from ez_openmmlab.core.results import InferenceResult
 from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.utils.download import ensure_model_checkpoint
 from ez_openmmlab.utils.path import get_unique_dir
+from ez_openmmlab.utils.input import normalize_inputs
 from ez_openmmlab.core.config_builder import UserConfigBuilder
 from ez_openmmlab.utils.toml_config import (
     save_user_config,
@@ -76,9 +77,6 @@ class EZMMLab(ABC):
             if isinstance(model, ModelName):
                 self.model = model.value
             elif isinstance(model, (Path, str)) and str(model).endswith(".toml"):
-                # Load from toml if needed, but builder already did this. 
-                # For simplicity, we can load it again or update builder to return it.
-                # Let's just use metadata loader for now.
                 meta = self._config_builder.load_metadata_from_checkpoint(Path(self.checkpoint_path))
                 self.model = meta["model_name"]
             else:
@@ -117,36 +115,8 @@ class EZMMLab(ABC):
     def _normalize_inputs(
         self, inputs: Union[str, Path, List[Union[str, Path]]]
     ) -> Union[str, List[str]]:
-        """Normalizes input paths (single, list, or directory) into a format engines accept.
-
-        Args:
-            inputs: A single path, a list of paths, or a directory path.
-
-        Returns:
-            A list of image paths (strings) if the input was a list or directory,
-            or a single string path if the input was a single file.
-        """
-        # Case 1: List of paths -> Convert all to strings
-        if isinstance(inputs, list):
-            return [str(p) for p in inputs]
-
-        path_obj = Path(inputs)
-
-        # Case 2: Directory -> Glob all images
-        if path_obj.is_dir():
-            extensions = {"*.jpg", "*.jpeg", "*.png", "*.bmp", "*.webp"}
-            images = []
-            for ext in extensions:
-                # Case insensitive globbing is harder in pure pathlib, so we iterate
-                images.extend([str(p) for p in path_obj.glob(ext)])
-                images.extend([str(p) for p in path_obj.glob(ext.upper())])
-
-            if not images:
-                logger.warning(f"No images found in directory: {inputs}")
-            return sorted(list(set(images)))
-
-        # Case 3: Single file path -> Return as string
-        return str(path_obj)
+        """Wraps the utility helper for backward compatibility/internal use."""
+        return normalize_inputs(inputs)
 
     def switch_to_lib_root(self):
         """Context manager to temporarily switch to the appropriate library root.

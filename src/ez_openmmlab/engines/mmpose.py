@@ -11,6 +11,7 @@ from ez_openmmlab.core.base import EZMMLab
 from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.core.results import InferenceResult, Boxes, Keypoints
 from ez_openmmlab.core.formatters import PoseResultFormatter
+from ez_openmmlab.utils.input import normalize_inputs
 
 
 class EZMMPose(EZMMLab):
@@ -63,7 +64,7 @@ class EZMMPose(EZMMLab):
         logger.info(f"Running pose estimation on: {image_path}")
 
         actual_out_dir = self._resolve_out_dir(out_dir)
-        inputs = self._normalize_inputs(image_path)
+        inputs = normalize_inputs(image_path)
 
         inferencer_kwargs = {
             "inputs": inputs,

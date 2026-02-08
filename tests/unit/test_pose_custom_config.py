@@ -4,11 +4,12 @@ from unittest.mock import patch, MagicMock
 from ez_openmmlab import RTMPose, RTMO
 from ez_openmmlab.schemas.model import ModelName
 
+@patch("ez_openmmlab.core.config_builder.UserConfigBuilder.load_metadata_from_checkpoint")
 @patch("ez_openmmlab.models.mmpose.rtmpose.MMPoseInferencer")
-@patch("ez_openmmlab.core.base.load_user_config")
+@patch("ez_openmmlab.core.config_builder.load_user_config")
 @patch("ez_openmmlab.core.base.get_config_file")
 @patch("ez_openmmlab.core.base.ensure_model_checkpoint")
-def test_rtmpose_init_with_custom_config(mock_ensure, mock_get_config, mock_load_config, mock_inferencer_cls, tmp_path):
+def test_rtmpose_init_with_custom_config(mock_ensure, mock_get_config, mock_load_config, mock_inferencer_cls, mock_load_meta, tmp_path):
     """Test that RTMPose correctly initializes using a custom config.toml."""
     config_file = tmp_path / "config.toml"
     config_file.touch()
@@ -16,6 +17,12 @@ def test_rtmpose_init_with_custom_config(mock_ensure, mock_get_config, mock_load
     checkpoint_file.touch()
     
     # Setup mocks
+    mock_load_meta.return_value = {
+        "num_classes": 1,
+        "num_keypoints": 15,
+        "metainfo": {"classes": ["bird"]},
+        "model_name": "rtmpose_tiny"
+    }
     mock_user_config = MagicMock()
     mock_user_config.model.name = ModelName.RTM_POSE_TINY
     mock_user_config.model.num_classes = 1
@@ -45,11 +52,12 @@ def test_rtmpose_init_with_custom_config(mock_ensure, mock_get_config, mock_load
     # Check if head was patched
     assert mock_cfg.model.head.out_channels == 15
 
+@patch("ez_openmmlab.core.config_builder.UserConfigBuilder.load_metadata_from_checkpoint")
 @patch("ez_openmmlab.models.mmpose.rtmo.MMPoseInferencer")
-@patch("ez_openmmlab.core.base.load_user_config")
+@patch("ez_openmmlab.core.config_builder.load_user_config")
 @patch("ez_openmmlab.core.base.get_config_file")
 @patch("ez_openmmlab.core.base.ensure_model_checkpoint")
-def test_rtmo_init_with_custom_config(mock_ensure, mock_get_config, mock_load_config, mock_inferencer_cls, tmp_path):
+def test_rtmo_init_with_custom_config(mock_ensure, mock_get_config, mock_load_config, mock_inferencer_cls, mock_load_meta, tmp_path):
     """Test that RTMO correctly initializes using a custom config.toml."""
     config_file = tmp_path / "config.toml"
     config_file.touch()
@@ -57,6 +65,12 @@ def test_rtmo_init_with_custom_config(mock_ensure, mock_get_config, mock_load_co
     checkpoint_file.touch()
     
     # Setup mocks
+    mock_load_meta.return_value = {
+        "num_classes": 1,
+        "num_keypoints": 15,
+        "metainfo": {"classes": ["bird"]},
+        "model_name": "rtmo_s"
+    }
     mock_user_config = MagicMock()
     mock_user_config.model.name = ModelName.RTMO_S
     mock_user_config.model.num_classes = 1

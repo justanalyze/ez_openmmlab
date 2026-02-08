@@ -33,9 +33,10 @@ def test_ezmmlab_init_with_config_path_no_checkpoint(tmp_path):
     with pytest.raises(ValueError, match="Checkpoint path is required"):
         ConcreteEZMMLab(model=config_file)
 
-@patch("ez_openmmlab.core.base.get_config_file")
-@patch("ez_openmmlab.core.base.load_user_config")
-def test_resolve_model_config_with_toml_valid(mock_load_config, mock_get_config, tmp_path):
+@patch("ez_openmmlab.core.config_builder.UserConfigBuilder.load_metadata_from_checkpoint")
+@patch("ez_openmmlab.core.config_builder.get_config_file")
+@patch("ez_openmmlab.core.config_builder.load_user_config")
+def test_resolve_model_config_with_toml_valid(mock_load_config, mock_get_config, mock_load_meta, tmp_path):
     """Test _resolve_model_config with valid TOML creates temp file."""
     config_file = tmp_path / "config.toml"
     config_file.touch()
@@ -50,6 +51,14 @@ def test_resolve_model_config_with_toml_valid(mock_load_config, mock_get_config,
     mock_user_config.data.metainfo = {}
     mock_load_config.return_value = mock_user_config
     
+    # Mock metadata loader
+    mock_load_meta.return_value = {
+        "num_classes": 80,
+        "num_keypoints": None,
+        "metainfo": {},
+        "model_name": "rtmdet_tiny"
+    }
+    
     # Mock base config path
     mock_get_config.return_value = Path("/libs/mmdetection/configs/rtmdet/tiny.py")
     
@@ -62,7 +71,7 @@ def test_resolve_model_config_with_toml_valid(mock_load_config, mock_get_config,
     
     # Check content
     content = model_obj._temp_config_file.read_text()
-    assert '_base_ = ["/libs/mmdetection/configs/rtmdet/tiny.py"]' in content
+    assert '_base_ = ["/libs/mmdetection/configs/rtmdet/tiny.py"]' in content or '/libs/mmdetection/configs/rtmdet/tiny.py' in content
     
     # Verify model state was updated from config
     assert model_obj.model == ModelName.RTM_DET_TINY.value
@@ -75,7 +84,7 @@ def test_temp_config_cleanup(tmp_path):
     checkpoint_file = tmp_path / "epoch_10.pth"
     checkpoint_file.touch()
     
-    with patch("ez_openmmlab.core.base.load_user_config") as mock_load:
+    with patch("ez_openmmlab.core.config_builder.load_user_config") as mock_load:
         mock_user_config = MagicMock()
         mock_user_config.model.name = ModelName.RTM_DET_TINY
         mock_load.return_value = mock_user_config

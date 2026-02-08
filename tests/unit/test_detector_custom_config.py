@@ -6,7 +6,7 @@ from ez_openmmlab.schemas.model import ModelName
 import numpy as np
 
 @patch("ez_openmmlab.engines.mmdet.DetInferencer")
-@patch("ez_openmmlab.core.base.load_user_config")
+@patch("ez_openmmlab.core.config_builder.load_user_config")
 @patch("ez_openmmlab.core.base.get_config_file")
 @patch("ez_openmmlab.core.base.ensure_model_checkpoint")
 def test_rtmdet_init_with_custom_config(mock_ensure, mock_get_config, mock_load_config, mock_inferencer_cls, tmp_path):

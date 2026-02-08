@@ -13,6 +13,8 @@ from ez_openmmlab.core.config_loader import get_config_file
 from ez_openmmlab.core.results import InferenceResult
 from ez_openmmlab.utils.download import ensure_model_checkpoint
 from ez_openmmlab.core.formatters import DetectionResultFormatter
+from ez_openmmlab.utils.input import normalize_inputs
+
 
 # Force registration of MMDet modules
 register_all_modules(init_default_scope=True)
@@ -54,7 +56,7 @@ class EZMMDetector(EZMMLab):
         logger.info(f"Running inference on: {image_path} (threshold: {confidence})")
 
         actual_out_dir = self._resolve_out_dir(out_dir)
-        inputs = self._normalize_inputs(image_path)
+        inputs = normalize_inputs(image_path)
 
         assert self._inferencer is not None, "Inferencer failed to initialize."
 
