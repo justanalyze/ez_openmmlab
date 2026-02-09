@@ -69,7 +69,6 @@ class EZMMLab(ABC):
         # --- 4. Initialization Sequence ---
         self._validate_inputs(model, checkpoint_path)
         self._resolve_resources(model, checkpoint_path)
-        self._initialize_model_state(model)
 
     def _configure_logging(self, log_level: str) -> None:
         """Configures the global logger level."""
@@ -98,44 +97,35 @@ class EZMMLab(ABC):
         model: Union[ModelName, str, Path],
         checkpoint_path: Optional[Union[str, Path]],
     ) -> None:
-        """Resolves absolute paths for the model checkpoint and configuration."""
-        # Resolve or download checkpoint
+        """Resolves absolute paths for resources and initializes model state.
+
+        Args:
+            model: ModelName enum or path to config.toml.
+            checkpoint_path: Path to model weights (.pth).
+        """
+        # Case 1: Custom Configuration via TOML
         if isinstance(model, (Path, str)) and str(model).endswith(".toml"):
+            config_toml = Path(model)
             self.checkpoint_path = Path(checkpoint_path) if checkpoint_path else None
-        else:
-            self.checkpoint_path = ensure_model_checkpoint(model, checkpoint_path)
 
-        # Resolve model configuration path
-        if isinstance(model, (Path, str)) and str(model).endswith(".toml"):
-            self._temp_config_file = self._config_manager.prepare_config_file(
-                Path(model),
-                Path(self.checkpoint_path) if self.checkpoint_path else None,
-            )
-            self.config_path = self._temp_config_file
-        else:
-            self.config_path = get_config_file(model)
-
-    def _initialize_model_state(self, model: Union[ModelName, str, Path]) -> None:
-        """Initializes the model name and loads metadata from the checkpoint."""
-        # Determine model name
-        if isinstance(model, ModelName):
-            self.model = model.value
-        elif isinstance(model, (Path, str)) and str(model).endswith(".toml"):
-            meta = self._config_manager.load_metadata_from_checkpoint(
-                Path(self.checkpoint_path) if self.checkpoint_path else Path(".")
-            )
+            # 1.1 Load explicit metadata from TOML
+            meta = self._config_manager.load_metadata_from_toml(config_toml)
             self.model = meta.get("model_name")
-        else:
-            self.model = str(model)
-
-        # Auto-load metadata if a checkpoint is present
-        if self.checkpoint_path:
-            meta = self._config_manager.load_metadata_from_checkpoint(
-                Path(self.checkpoint_path)
-            )
             self.num_classes = meta.get("num_classes")
             self.num_keypoints = meta.get("num_keypoints")
             self.metainfo = meta.get("metainfo")
+
+            # 1.2 Generate temporary Python config
+            self._temp_config_file = self._config_manager.prepare_config_file(
+                config_toml, self.checkpoint_path
+            )
+            self.config_path = self._temp_config_file
+
+        # Case 2: Standard Model Name
+        else:
+            self.model = model.value if isinstance(model, ModelName) else str(model)
+            self.checkpoint_path = ensure_model_checkpoint(model, checkpoint_path)
+            self.config_path = get_config_file(model)
 
     def __del__(self):
         """Cleanup temporary files."""

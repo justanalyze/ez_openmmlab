@@ -33,7 +33,7 @@ def test_ezmmlab_init_with_config_path_no_checkpoint(tmp_path):
     with pytest.raises(ValueError, match="Checkpoint path is required"):
         ConcreteEZMMLab(model=config_file)
 
-@patch("ez_openmmlab.core.config_manager.ConfigManager.load_metadata_from_checkpoint")
+@patch("ez_openmmlab.core.config_manager.ConfigManager.load_metadata_from_toml")
 @patch("ez_openmmlab.core.config_manager.get_config_file")
 @patch("ez_openmmlab.core.config_manager.toml_config.load_user_config")
 def test_resolve_model_config_with_toml_valid(mock_load_config, mock_get_config, mock_load_meta, tmp_path):

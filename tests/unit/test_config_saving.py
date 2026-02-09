@@ -39,8 +39,8 @@ def test_train_saves_base_config_path(mock_ds_from_toml, mock_ensure, mock_runne
     with patch("ez_openmmlab.core.engines.engine_base.get_config_file") as mock_get_cfg:
         mock_get_cfg.return_value = expected_path
         
-        # Mock _apply_common_overrides to avoid needing a real config object
-        with patch.object(detector, "_apply_common_overrides"):
+        # Mock _inject_user_configs to avoid needing a real config object
+        with patch.object(detector, "_inject_user_configs"):
             with patch("mmengine.config.Config.fromfile"): # Also mock fromfile to avoid real IO
                 detector.train(
                     dataset_config_path=dataset_toml,

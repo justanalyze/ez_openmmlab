@@ -44,7 +44,7 @@ def test_full_custom_config_flow(mock_imread, mock_inferencer_cls, mock_ds_from_
     # --- STEP 1: TRAIN ---
     detector = RTMDet(model=ModelName.RTM_DET_TINY)
     
-    with patch.object(detector, "_apply_common_overrides"):
+    with patch.object(detector, "_inject_user_configs"):
         detector.train(
             dataset_config_path=dataset_toml,
             work_dir=str(work_dir),

@@ -1,10 +1,15 @@
 import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-from ez_openmmlab.core.config_manager import ConfigManager, get_config_file, BaseConfigLoader
+from ez_openmmlab.core.config_manager import (
+    ConfigManager,
+    get_config_file,
+    BaseConfigLoader,
+)
 from ez_openmmlab.schemas.model import ModelName, MODEL_URLS
 from ez_openmmlab.utils import toml_config
 from ez_openmmlab.utils.download import ensure_model_checkpoint
+
 
 @pytest.fixture
 def mock_project_root(tmp_path):
@@ -14,6 +19,7 @@ def mock_project_root(tmp_path):
     mmpose_root = tmp_path / "libs" / "mmpose" / "configs"
     mmpose_root.mkdir(parents=True)
     return tmp_path
+
 
 class TestConfigManager:
     def test_get_config_file_valid(self):
@@ -27,39 +33,33 @@ class TestConfigManager:
         manager = ConfigManager()
         dataset_toml = tmp_path / "dataset.toml"
         dataset_toml.touch()
-        
-        with patch("ez_openmmlab.core.config_manager.DatasetConfig.from_toml") as mock_ds:
+
+        with patch(
+            "ez_openmmlab.core.config_manager.DatasetConfig.from_toml"
+        ) as mock_ds:
             mock_ds.return_value = MagicMock(
                 classes=["cat"],
                 data_root="/data",
                 train=MagicMock(ann_file="t.json", img_dir="t/"),
                 val=MagicMock(ann_file="v.json", img_dir="v/"),
                 test=None,
-                metainfo=None
+                metainfo=None,
             )
-            
+
             user_cfg = manager.build_user_config(
                 model="rtmdet_tiny",
                 dataset_config_path=dataset_toml,
-                checkpoint_path="ckpt.pth"
+                checkpoint_path="ckpt.pth",
             )
-            
+
             assert user_cfg.model.name == "rtmdet_tiny"
             assert user_cfg.model.num_classes == 1
 
-    def test_load_metadata_restricted_search(self, tmp_path):
-        """Test that metadata is only loaded from immediate parent's user_config.toml."""
+    def test_load_metadata_from_toml(self, tmp_path):
+        """Test that metadata is correctly loaded from a specific user_config.toml."""
         manager = ConfigManager()
-        checkpoint_dir = tmp_path / "ckpt"
-        checkpoint_dir.mkdir()
-        checkpoint = checkpoint_dir / "best.pth"
+        config_path = tmp_path / "user_config.toml"
         
-        # Scenario 1: No user_config.toml -> return empty metadata
-        meta = manager.load_metadata_from_checkpoint(checkpoint)
-        assert meta["num_classes"] is None
-        
-        # Scenario 2: user_config.toml in parent
-        config_path = checkpoint_dir / "user_config.toml"
         config_path.write_text("""
 [model]
 name = "rtmdet_tiny"
@@ -75,7 +75,7 @@ epochs = 1
 batch_size = 1
 """)
         
-        meta = manager.load_metadata_from_checkpoint(checkpoint)
+        meta = manager.load_metadata_from_toml(config_path)
         assert meta["num_classes"] == 5
         assert meta["model_name"] == "rtmdet_tiny"
 
@@ -97,7 +97,7 @@ val_img = "d"
 epochs = 1
 batch_size = 1
 """)
-        
+
         temp_file = manager.prepare_config_file(config_toml)
         try:
             assert temp_file.exists()
@@ -111,9 +111,10 @@ batch_size = 1
         temp_file = tmp_path / "temp.py"
         temp_file.touch()
         assert temp_file.exists()
-        
+
         manager.cleanup_temp_config(temp_file)
         assert not temp_file.exists()
+
 
 def test_config_loader_init_validation(tmp_path):
     """Test that ConfigLoader validates the config root existence."""
@@ -126,6 +127,7 @@ def test_config_loader_init_validation(tmp_path):
         FileNotFoundError, match="Could not find local mmdetection or mmpose configs"
     ):
         loader._validate_root()
+
 
 def test_config_loader_get_config_path_success(mock_project_root):
     """Test successful config path resolution."""
@@ -152,12 +154,14 @@ def test_config_loader_get_config_path_success(mock_project_root):
         path = loader.get_config_path("rtmdet_tiny")
         assert path.resolve() == config_file.resolve()
 
+
 def test_config_loader_invalid_model():
     """Test ConfigLoader with an unsupported model name."""
     with patch.object(BaseConfigLoader, "_validate_root", return_value=None):
         loader = BaseConfigLoader()
         with pytest.raises(ValueError, match="not found in internal map"):
             loader.get_config_path("invalid_model")
+
 
 def test_config_loader_missing_file(mock_project_root):
     """Test ConfigLoader when the mapped file is missing on disk."""
@@ -170,6 +174,7 @@ def test_config_loader_missing_file(mock_project_root):
 
         with pytest.raises(FileNotFoundError, match="not found at"):
             loader.get_config_path("rtmdet_tiny")
+
 
 @patch("ez_openmmlab.utils.download.download_checkpoint")
 def test_ensure_model_checkpoint_existing(mock_download, tmp_path):
@@ -185,6 +190,7 @@ def test_ensure_model_checkpoint_existing(mock_download, tmp_path):
         assert path == checkpoint_file
         mock_download.assert_not_called()
 
+
 @patch("ez_openmmlab.utils.download.download_checkpoint")
 def test_ensure_model_checkpoint_download_trigger(mock_download, tmp_path):
     """Test that ensure_model_checkpoint triggers download if file is missing."""
@@ -195,6 +201,7 @@ def test_ensure_model_checkpoint_download_trigger(mock_download, tmp_path):
         )
         assert path == expected_path
         mock_download.assert_called_once_with(MODEL_URLS["rtmdet_tiny"], expected_path)
+
 
 def test_ensure_model_checkpoint_missing_url(tmp_path):
     """Test ensure_model_checkpoint when model has no URL and path is missing."""

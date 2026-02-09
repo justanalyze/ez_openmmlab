@@ -62,5 +62,6 @@ def test_inference_result_container():
     )
     
     assert res.orig_shape == (480, 640)
-    assert res.boxes is None
+    assert isinstance(res.boxes, Boxes)
+    assert len(res.boxes) == 0
     assert res.speed["inference"] == 10.5

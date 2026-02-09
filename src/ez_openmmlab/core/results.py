@@ -17,46 +17,56 @@ class BaseData:
 
 class Boxes(BaseData):
     """Vectorized bounding boxes.
-    
+
     Data format: [N, 6] -> [x1, y1, x2, y2, score, label]
     """
+
     @property
     def xyxy(self) -> np.ndarray:
-        return self.data[:, :4]
+        return self.data[..., :4]
 
     @property
     def conf(self) -> np.ndarray:
-        return self.data[:, 4]
+        return self.data[..., 4]
 
     @property
     def cls(self) -> np.ndarray:
-        return self.data[:, 5]
+        return self.data[..., 5]
+
 
 class Keypoints(BaseData):
     """Vectorized keypoints.
-    
+
     Data format: [N, K, 3] -> [x, y, score]
     """
+
     @property
     def xy(self) -> np.ndarray:
-        return self.data[:, :, :2]
+        return self.data[..., :2]
 
     @property
     def conf(self) -> np.ndarray:
-        return self.data[:, :, 2]
+        return self.data[..., 2]
+
 
 class Masks(BaseData):
     """Vectorized segmentation masks.
-    
+
     Data format: [N, H, W]
     """
+
     @property
     def xy(self) -> List[np.ndarray]:
         """Returns polygon segments for each mask."""
         segments = []
-        for mask in self.data:
+        # Handle both [N, H, W] and [H, W] (after indexing)
+        masks = self.data if self.data.ndim == 3 else [self.data]
+
+        for mask in masks:
             mask = mask.astype(np.uint8) * 255
-            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            contours, _ = cv2.findContours(
+                mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+            )
             if contours:
                 segments.append(contours[0].reshape(-1, 2))
             else:
@@ -65,6 +75,7 @@ class Masks(BaseData):
 
 class InferenceResult:
     """Standardized container for all inference results."""
+
     def __init__(
         self,
         path: str,
@@ -79,11 +90,9 @@ class InferenceResult:
         self._orig_img = orig_img
         self.path = path
         self.names = names
-        self.boxes = boxes
-        self.keypoints = keypoints
-        self.masks = masks
         self.speed = speed or {}
-        
+
+        # 1. Resolve original shape
         if orig_shape:
             self.orig_shape = orig_shape
         elif orig_img is not None:
@@ -92,6 +101,21 @@ class InferenceResult:
             # Fallback to loading image header/info if absolutely needed,
             # but for now we assume shape was provided if image wasn't.
             self.orig_shape = (0, 0)
+
+        # 2. Ensure data containers are never None (for better DX and linting)
+        self.boxes: Boxes = (
+            boxes if boxes is not None else Boxes(np.zeros((0, 6)), self.orig_shape)
+        )
+        self.keypoints: Keypoints = (
+            keypoints
+            if keypoints is not None
+            else Keypoints(np.zeros((0, 0, 3)), self.orig_shape)
+        )
+        self.masks: Masks = (
+            masks
+            if masks is not None
+            else Masks(np.zeros((0, 0, 0), dtype=bool), self.orig_shape)
+        )
 
     @property
     def orig_img(self) -> np.ndarray:
@@ -105,30 +129,39 @@ class InferenceResult:
     def plot(self, line_width: int = 2, font_size: float = 0.5) -> np.ndarray:
         """Plots boxes, masks, and keypoints on the original image."""
         img = self.orig_img.copy()
-        
+
         # 1. Draw Masks
-        if self.masks is not None:
-            for seg in self.masks.xy:
-                if seg.size > 0:
-                    cv2.polylines(img, [seg.astype(np.int32)], True, (0, 255, 0), thickness=line_width)
+        for seg in self.masks.xy:
+            if seg.size > 0:
+                cv2.polylines(
+                    img, [seg.astype(np.int32)], True, (0, 255, 0), thickness=line_width
+                )
 
         # 2. Draw Boxes
-        if self.boxes is not None:
-            for i in range(len(self.boxes)):
-                box = self.boxes.xyxy[i].astype(np.int32)
-                conf = self.boxes.conf[i]
-                cls_id = int(self.boxes.cls[i])
-                name = self.names.get(cls_id, str(cls_id))
-                
-                label = f"{name} {conf:.2f}"
-                cv2.rectangle(img, (box[0], box[1]), (box[2], box[3]), (255, 0, 0), line_width)
-                cv2.putText(img, label, (box[0], box[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, font_size, (255, 0, 0), line_width)
+        for i in range(len(self.boxes)):
+            box = self.boxes.xyxy[i].astype(np.int32)
+            conf = self.boxes.conf[i]
+            cls_id = int(self.boxes.cls[i])
+            name = self.names.get(cls_id, str(cls_id))
+
+            label = f"{name} {conf:.2f}"
+            cv2.rectangle(
+                img, (box[0], box[1]), (box[2], box[3]), (255, 0, 0), line_width
+            )
+            cv2.putText(
+                img,
+                label,
+                (box[0], box[1] - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                font_size,
+                (255, 0, 0),
+                line_width,
+            )
 
         # 3. Draw Keypoints
-        if self.keypoints is not None:
-            for i in range(len(self.keypoints)):
-                for kpt in self.keypoints.xy[i]:
-                    cv2.circle(img, (int(kpt[0]), int(kpt[1])), 3, (0, 0, 255), -1)
+        for i in range(len(self.keypoints)):
+            for kpt in self.keypoints.xy[i]:
+                cv2.circle(img, (int(kpt[0]), int(kpt[1])), 3, (0, 0, 255), -1)
 
         return img
 

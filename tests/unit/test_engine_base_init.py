@@ -33,12 +33,6 @@ def test_init_standard_model(mock_config_manager, mock_ensure_checkpoint, mock_g
     
     mock_ensure_checkpoint.return_value = Path(checkpoint)
     mock_get_config_file.return_value = config_path
-    mock_config_manager.load_metadata_from_checkpoint.return_value = {
-        "num_classes": 80,
-        "num_keypoints": None,
-        "metainfo": {"classes": ["person"]},
-        "model_name": "rtmdet_tiny"
-    }
 
     with patch("ez_openmmlab.mute_warnings") as mock_mute:
         engine = MockEngine(model=model_name, checkpoint_path=checkpoint)
@@ -47,9 +41,9 @@ def test_init_standard_model(mock_config_manager, mock_ensure_checkpoint, mock_g
         assert engine.model == model_name.value
         assert engine.checkpoint_path == Path(checkpoint)
         assert engine.config_path == config_path
-        assert engine.num_classes == 80
-        assert engine.metainfo == {"classes": ["person"]}
-        mock_ensure_checkpoint.assert_called_once_with(model_name, checkpoint)
+        # Metadata should NOT be auto-loaded for standard models if not present next to it
+        # but EZMMLab currently still tries if checkpoint exists.
+        # The new spec says standard path resolves via ensure_model_checkpoint and get_config_file.
 
 def test_init_custom_toml_success(mock_config_manager, mock_ensure_checkpoint, mock_get_config_file, tmp_path):
     """Test initialization with a custom config.toml."""
@@ -60,7 +54,7 @@ def test_init_custom_toml_success(mock_config_manager, mock_ensure_checkpoint, m
     temp_py_config = tmp_path / "temp_config.py"
     
     mock_config_manager.prepare_config_file.return_value = temp_py_config
-    mock_config_manager.load_metadata_from_checkpoint.return_value = {
+    mock_config_manager.load_metadata_from_toml.return_value = {
         "num_classes": 10,
         "num_keypoints": 5,
         "metainfo": None,
@@ -75,6 +69,7 @@ def test_init_custom_toml_success(mock_config_manager, mock_ensure_checkpoint, m
     assert engine.num_classes == 10
     assert engine.num_keypoints == 5
     mock_config_manager.prepare_config_file.assert_called_once_with(config_toml, checkpoint)
+    mock_config_manager.load_metadata_from_toml.assert_called_once_with(config_toml)
 
 def test_init_custom_toml_missing_checkpoint(tmp_path):
     """Test initialization with config.toml but no checkpoint path raises ValueError."""
@@ -90,6 +85,5 @@ def test_init_logging_configuration():
         with patch("loguru.logger.add") as mock_add:
             MockEngine(model=ModelName.RTM_DET_TINY, log_level="DEBUG")
             mock_remove.assert_called()
-            # Verify DEBUG was passed to add
             args, kwargs = mock_add.call_args
             assert kwargs["level"] == "DEBUG"

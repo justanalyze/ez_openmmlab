@@ -8,4 +8,10 @@ model = RTMDet(
 results = model.predict(
     "demos/demo.jpg", device="cpu", out_dir="runs/test_user_config_input"
 )
-print(results[0].boxes.xyxy[0])
+
+for result in results:
+    for bbox in result.boxes:
+        if bbox.conf > 0.6:
+            print(bbox.conf)
+            print(bbox.xyxy)
+            print(bbox.cls)

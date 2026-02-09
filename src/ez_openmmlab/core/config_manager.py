@@ -145,10 +145,17 @@ class ConfigManager:
             ),
         )
 
-    def load_metadata_from_checkpoint(self, checkpoint_path: Path) -> Dict[str, Any]:
-        """Attempts to find and load training metadata from user_config.toml in the same directory."""
-        search_dir = checkpoint_path.parent
-        config_path = search_dir / "user_config.toml"
+    def load_metadata_from_toml(self, config_path: Path) -> Dict[str, Any]:
+        """Extracts training metadata from a user_config.toml file.
+
+        Args:
+            config_path: Path to the user_config.toml file.
+
+        Returns:
+            A dictionary containing model_name, num_classes, num_keypoints, and metainfo.
+        """
+        if not config_path.exists():
+            raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
         metadata = {
             "num_classes": None,
@@ -157,20 +164,22 @@ class ConfigManager:
             "model_name": None,
         }
 
-        if config_path.exists():
-            try:
-                user_cfg = toml_config.load_user_config(config_path)
-                metadata["num_classes"] = user_cfg.model.num_classes
-                metadata["num_keypoints"] = user_cfg.model.num_keypoints
-                metadata["metainfo"] = user_cfg.data.metainfo
-                if user_cfg.data.classes:
-                    if metadata["metainfo"] is None:
-                        metadata["metainfo"] = {}
-                    metadata["metainfo"]["classes"] = user_cfg.data.classes
-                metadata["model_name"] = user_cfg.model.name.value
-                logger.info(f"Auto-loaded metadata from: {config_path}")
-            except Exception as e:
-                logger.warning(f"Failed to auto-load metadata from {config_path}: {e}")
+        try:
+            user_cfg = toml_config.load_user_config(config_path)
+            metadata["num_classes"] = user_cfg.model.num_classes
+            metadata["num_keypoints"] = user_cfg.model.num_keypoints
+            metadata["metainfo"] = user_cfg.data.metainfo
+            
+            # Explicitly include classes in metainfo if defined in DataSection
+            if user_cfg.data.classes:
+                if metadata["metainfo"] is None:
+                    metadata["metainfo"] = {}
+                metadata["metainfo"]["classes"] = user_cfg.data.classes
+                
+            metadata["model_name"] = user_cfg.model.name.value
+            logger.debug(f"Loaded metadata from: {config_path}")
+        except Exception as e:
+            logger.warning(f"Failed to load metadata from {config_path}: {e}")
 
         return metadata
 
