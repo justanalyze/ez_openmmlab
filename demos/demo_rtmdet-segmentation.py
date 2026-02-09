@@ -22,14 +22,6 @@ results: List[InferenceResult] = model.predict(
     out_dir="./runs/demo_segmentation_batch",
 )
 
-logger.info(f"Segmented instances across {len(results)} images")
-
-# Accessing the first image's results
-first_image_results = results[0]
-if first_image_results.boxes is None:
-    logger.info("No instances found in the first image.")
-else:
-    for i in range(len(first_image_results.boxes)):
-        logger.info(
-            f"Image 0, Instance [{i}] Label: {int(first_image_results.boxes.cls[i])}, Score: {first_image_results.boxes.conf[i]:.2f}"
-        )
+for result in results:
+    for mask in result.masks:
+        print(mask)
