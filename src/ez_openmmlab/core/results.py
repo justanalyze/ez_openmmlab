@@ -4,6 +4,7 @@ from typing import Optional, List, Union
 
 class BaseData:
     """Base class for vectorized inference data."""
+
     def __init__(self, data: np.ndarray, orig_shape: tuple):
         self.data = data
         self.orig_shape = orig_shape
@@ -14,6 +15,9 @@ class BaseData:
     def __getitem__(self, index):
         """Allows for slicing and boolean indexing."""
         return self.__class__(self.data[index], self.orig_shape)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(len={len(self)}, shape={self.data.shape})"
 
 class Boxes(BaseData):
     """Vectorized bounding boxes.

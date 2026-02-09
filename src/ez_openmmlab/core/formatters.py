@@ -2,8 +2,9 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Union, Any
 import numpy as np
 from pathlib import Path
+from loguru import logger
 
-from ez_openmmlab.core.results import InferenceResult, Boxes, Keypoints
+from ez_openmmlab.core.results import InferenceResult, Boxes, Keypoints, Masks
 
 class ResultFormatter(ABC):
     """Abstract base class for formatting inference results."""
@@ -27,7 +28,8 @@ class DetectionResultFormatter(ResultFormatter):
         # Handle mismatch case
         if not predictions and input_list:
             predictions = [
-                {"labels": [], "scores": [], "bboxes": []} for _ in range(len(input_list))
+                {"labels": [], "scores": [], "bboxes": [], "masks": []}
+                for _ in range(len(input_list))
             ]
 
         return [
@@ -41,6 +43,7 @@ class DetectionResultFormatter(ResultFormatter):
         bboxes = np.array(raw_pred.get("bboxes", []), dtype=np.float32)
         scores = np.array(raw_pred.get("scores", []), dtype=np.float32)
         labels = np.array(raw_pred.get("labels", []), dtype=np.int32)
+        masks_data = raw_pred.get("masks", [])
 
         if len(bboxes) > 0:
             data = np.concatenate([bboxes, scores[:, None], labels[:, None]], axis=1)
@@ -49,10 +52,25 @@ class DetectionResultFormatter(ResultFormatter):
 
         boxes = Boxes(data, (0, 0))  # Placeholder shape for lazy loading
 
+        masks = None
+        if len(masks_data) > 0:
+            # Handle RLE format (dicts) or binary masks (numpy)
+            decoded_masks = []
+            for m in masks_data:
+                if isinstance(m, dict) and "counts" in m:
+                    import pycocotools.mask as mask_utils
+
+                    decoded_masks.append(mask_utils.decode(m))
+                else:
+                    decoded_masks.append(m)
+
+            masks = Masks(np.array(decoded_masks), (0, 0))
+
         return InferenceResult(
             path=str(Path(img_path).absolute()),
             names=names,
             boxes=boxes,
+            masks=masks,
         )
 
 class PoseResultFormatter(ResultFormatter):

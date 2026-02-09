@@ -60,6 +60,32 @@ class TestDetectionResultFormatter:
             assert len(results[1].boxes) == 1
             assert results[1].boxes.cls[0] == 1
 
+    def test_map_results_segmentation(self):
+        formatter = DetectionResultFormatter()
+        raw_results = {
+            "predictions": [
+                {
+                    "bboxes": [[10, 10, 50, 50]],
+                    "scores": [0.9],
+                    "labels": [0],
+                    "masks": [np.zeros((100, 100), dtype=bool)]
+                }
+            ]
+        }
+        inputs = ["img1.jpg"]
+        names = {0: "person"}
+        
+        with pytest.MonkeyPatch.context() as m:
+            m.setattr("cv2.imread", lambda x: np.zeros((100, 100, 3), dtype=np.uint8))
+            
+            results = formatter.map_results(raw_results, inputs, names)
+            
+            assert len(results) == 1
+            res = results[0]
+            assert res.masks is not None
+            assert len(res.masks) == 1
+            assert res.masks.data.shape == (1, 100, 100)
+
 class TestPoseResultFormatter:
     def test_map_results_single_image(self):
         from ez_openmmlab.core.formatters import PoseResultFormatter
