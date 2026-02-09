@@ -36,53 +36,6 @@ class RTMPose(EZMMPose):
         super().__init__(model, checkpoint_path, log_level)
         self._inferencer: Optional[MMPoseInferencer] = None
 
-    def predict(
-        self,
-        image_path: Union[str, Path, list],
-        *,
-        bbox_thr: float = 0.3,
-        kpt_thr: float = 0.3,
-        device: str = "cuda",
-        show: bool = False,
-        out_dir: Optional[str] = None,
-        det_model: Optional[str] = "rtmdet_tiny",
-        det_weights: Optional[str] = None,
-        det_cat_ids: Optional[Union[int, list[int]]] = [0],
-        **kwargs,
-    ) -> List[InferenceResult]:
-        """Runs RTMPose inference with a person detector.
-
-        Note:
-            RTMPose is a top-down model, meaning it first detects objects and then
-            estimates poses for each detection. The `det_cat_ids` parameter is **crucial**.
-            If it is missing or incorrect, the engine may fail to find targets and fall
-            back to "Whole Image" inference (returning only 1 low-quality person).
-
-        Args:
-            image_path: Path to a single image, a list of paths, or a directory.
-            bbox_thr: Bounding box score threshold.
-            kpt_thr: Keypoint score threshold.
-            device: Computing device ('cuda', 'cpu').
-            show: Whether to display results.
-            out_dir: Directory to save visualization.
-            det_model: Detector model name or config path.
-            det_weights: Path to custom detector weights.
-            det_cat_ids: Category IDs for detection filtering (default: [0] for person).
-                See `ez_openmmlab.utils.constants.COCO_CLASSES` for ID mappings.
-        """
-        return super().predict(
-            image_path=image_path,
-            bbox_thr=bbox_thr,
-            kpt_thr=kpt_thr,
-            device=device,
-            show=show,
-            out_dir=out_dir,
-            det_model=det_model,
-            det_weights=det_weights,
-            det_cat_ids=det_cat_ids,
-            **kwargs,
-        )
-
     def _init_inferencer(self, device: str, **kwargs):
         """Lazy initialization of the RTMPose inferencer."""
         if self._inferencer is not None:

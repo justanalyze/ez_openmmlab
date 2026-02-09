@@ -7,8 +7,12 @@ from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.core.results import InferenceResult
 
 class MockEngine(EZMMLab):
-    def predict(self, *args, **kwargs) -> List[InferenceResult]:
+    def _init_inferencer(self, device: str, **kwargs):
+        pass
+
+    def _run_inference(self, inputs: list, out_dir: str, show: bool, **kwargs):
         return []
+
 
 @pytest.fixture
 def mock_config_manager():

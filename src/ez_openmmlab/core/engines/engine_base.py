@@ -132,10 +132,76 @@ class EZMMLab(ABC):
         if hasattr(self, "_temp_config_file"):
             self._config_manager.cleanup_temp_config(self._temp_config_file)
 
+    def predict(
+        self,
+        image_path: Union[str, Path, list],
+        *,
+        device: str = "cuda",
+        out_dir: Optional[str] = None,
+        show: bool = False,
+        **kwargs,
+    ) -> List[InferenceResult]:
+        """Universal prediction entry point (Template Method).
+
+        Args:
+            image_path: Path to a single image, a list of paths, or a directory.
+            device: Computing device ('cuda', 'cpu').
+            out_dir: Directory to save visualization images.
+            show: Whether to pop up a window with the result.
+            **kwargs: Library-specific inference arguments.
+        """
+        # 1. Lazy Initialization
+        self._init_inferencer(device, **kwargs)
+
+        # 2. Setup Resources
+        actual_out_dir = str(get_unique_dir(out_dir)) if out_dir else ""
+        inputs = normalize_inputs(image_path)
+
+        if not hasattr(self, "_inferencer") or self._inferencer is None:
+            raise RuntimeError("Inferencer failed to initialize.")
+
+        # 3. Delegate execution to child (The Hook)
+        raw_results = self._run_inference(inputs, actual_out_dir, show, **kwargs)
+
+        # 4. Format results
+        if not hasattr(self, "_formatter") or self._formatter is None:
+            raise RuntimeError("Result formatter not initialized.")
+
+        return self._formatter.map_results(raw_results, inputs, self._get_class_names())
+
     @abstractmethod
-    def predict(self, *args, **kwargs) -> List[InferenceResult]:
-        """Abstract method for performing inference."""
+    def _init_inferencer(self, device: str, **kwargs) -> None:
+        """Library-specific inferencer initialization."""
         pass
+
+    @abstractmethod
+    def _run_inference(
+        self, inputs: list, out_dir: str, show: bool, **kwargs
+    ) -> Union[dict, list]:
+        """Library-specific inference execution."""
+        pass
+
+    def _get_class_names(self) -> dict:
+        """Retrieves class names from local metainfo or inferencer.
+
+        Returns:
+            A dictionary mapping class IDs to names.
+        """
+        # 1. Check local metainfo (auto-loaded from config near checkpoint)
+        if self.metainfo and "classes" in self.metainfo:
+            return {i: name for i, name in enumerate(self.metainfo["classes"])}
+
+        # 2. Check inferencer model metadata (contains model's original training classes)
+        if hasattr(self, "_inferencer") and self._inferencer:
+            # Handle MMDet/MMPose internal model metadata
+            model = getattr(self._inferencer, "model", None)
+            if model:
+                meta = getattr(model, "dataset_meta", {})
+                if "classes" in meta:
+                    return {i: name for i, name in enumerate(meta["classes"])}
+
+        # 3. No fallback
+        return {}
 
     def train(
         self,

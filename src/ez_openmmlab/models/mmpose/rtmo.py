@@ -30,38 +30,6 @@ class RTMO(EZMMPose):
         super().__init__(model, checkpoint_path, log_level)
         self._inferencer: Optional[MMPoseInferencer] = None
 
-    def predict(
-        self,
-        image_path: Union[str, Path, list],
-        *,
-        bbox_thr: float = 0.3,
-        kpt_thr: float = 0.3,
-        device: str = "cuda",
-        show: bool = False,
-        out_dir: Optional[str] = None,
-        **kwargs,
-    ) -> List[InferenceResult]:
-        """Runs RTMO inference
-
-        Args:
-            image_path: Path to a single image, a list of paths, or a directory.
-            bbox_thr: Bounding box score threshold.
-            kpt_thr: Keypoint score threshold.
-            device: Computing device ('cuda', 'cpu').
-            show: Whether to display results.
-            out_dir: Directory to save visualization.
-            det_cat_ids: Category IDs (not typically used by bottom-up RTMO).
-        """
-        return super().predict(
-            image_path=image_path,
-            bbox_thr=bbox_thr,
-            kpt_thr=kpt_thr,
-            device=device,
-            show=show,
-            out_dir=out_dir,
-            **kwargs,
-        )
-
     def _init_inferencer(self, device: str, **kwargs):
         """Lazy initialization of the RTMO inferencer."""
         if self._inferencer is None:

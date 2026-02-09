@@ -65,3 +65,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: Refine Resource Resolution and Enforce Explicit Configuration**
 *Link: [./tracks/refine_resource_resolution_20260209/](./tracks/refine_resource_resolution_20260209/)*
+
+---
+
+- [~] **Track: SOLID Refactoring of Engine Inheritance**
+*Link: [./tracks/engine_solid_refactor_20260209/](./tracks/engine_solid_refactor_20260209/)*

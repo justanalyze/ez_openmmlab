@@ -9,11 +9,13 @@ from ez_openmmlab.core.results import InferenceResult
 
 class ConcreteEZMMLab(EZMMLab):
     """Concrete implementation for testing abstract EZMMLab."""
-    def predict(self, *args, **kwargs) -> List[InferenceResult]:
-        return []
-    
-    def _configure_model_specifics(self, config):
+
+    def _init_inferencer(self, device: str, **kwargs):
         pass
+
+    def _run_inference(self, inputs: list, out_dir: str, show: bool, **kwargs):
+        return []
+
 
 def test_ezmmlab_init_with_model_name_enum():
     """Test initialization with ModelName enum."""
