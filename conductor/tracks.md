@@ -60,3 +60,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: Enhance the readability of @src/ez_openmmlab/core/engines/engine_base.py EZMMLab __init__**
 *Link: [./tracks/improve_engine_init_20260209/](./tracks/improve_engine_init_20260209/)*
+
+---
+
+- [x] **Track: Refine Resource Resolution and Enforce Explicit Configuration**
+*Link: [./tracks/refine_resource_resolution_20260209/](./tracks/refine_resource_resolution_20260209/)*
