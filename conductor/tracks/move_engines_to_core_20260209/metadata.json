@@ -1,0 +1,8 @@
+{
+  "track_id": "move_engines_to_core_20260209",
+  "type": "refactor",
+  "status": "new",
+  "created_at": "2026-02-09T02:00:00Z",
+  "updated_at": "2026-02-09T02:00:00Z",
+  "description": "Architectural Reorganization - Move Engines to Core"
+}

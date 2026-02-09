@@ -55,3 +55,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: Architectural Reorganization - Move Engines to Core**
 *Link: [./tracks/move_engines_to_core_20260209/](./tracks/move_engines_to_core_20260209/)*
+
+---
+
+- [x] **Track: Enhance the readability of @src/ez_openmmlab/core/engines/engine_base.py EZMMLab __init__**
+*Link: [./tracks/improve_engine_init_20260209/](./tracks/improve_engine_init_20260209/)*
