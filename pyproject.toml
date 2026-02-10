@@ -136,7 +136,7 @@ target-version = "py39"
 
 [tool.ruff.lint]
 select = ["e", "f", "i", "n", "w", "d"]
-ignore = ["d100", "d104"]
+ignore = ["D100", "D104"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

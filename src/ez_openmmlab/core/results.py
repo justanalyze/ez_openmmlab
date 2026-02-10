@@ -12,8 +12,7 @@ class BaseData:
     def __len__(self):
         return len(self.data)
 
-    def __getitem__(self, index):
-        """Allows for slicing and boolean indexing."""
+    def __getitem__(self, index): """Allows for slicing and boolean indexing."""
         return self.__class__(self.data[index], self.orig_shape)
 
     def __repr__(self):

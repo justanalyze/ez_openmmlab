@@ -68,5 +68,10 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [~] **Track: SOLID Refactoring of Engine Inheritance**
+- [x] **Track: SOLID Refactoring of Engine Inheritance**
 *Link: [./tracks/engine_solid_refactor_20260209/](./tracks/engine_solid_refactor_20260209/)*
+
+---
+
+- [ ] **Track: implementing lazy loading/initialization for InferenceResult**
+*Link: [./tracks/lazy_result_formatting_20260210/](./tracks/lazy_result_formatting_20260210/)*

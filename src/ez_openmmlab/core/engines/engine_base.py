@@ -160,7 +160,7 @@ class EZMMLab(ABC):
         if not hasattr(self, "_inferencer") or self._inferencer is None:
             raise RuntimeError("Inferencer failed to initialize.")
 
-        # 3. Delegate execution to child (The Hook)
+        # 3. Delegate execution to child
         raw_results = self._run_inference(inputs, actual_out_dir, show, **kwargs)
 
         # 4. Format results
