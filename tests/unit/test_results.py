@@ -64,3 +64,35 @@ def test_inference_result_container():
     assert isinstance(res.boxes, Boxes)
     assert len(res.boxes) == 0
     assert res.speed["inference"] == 10.5
+
+
+def test_inference_result_lazy_loading():
+    call_count = 0
+
+    def mock_format_fn(result, attr, raw_data):
+        nonlocal call_count
+        call_count += 1
+        if attr == "boxes":
+            return Boxes(np.zeros((1, 6)), result.orig_shape)
+        return None
+
+    res = InferenceResult(
+        path="test.jpg",
+        names={0: "person"},
+        boxes={"some": "raw_data"},
+        format_fn=mock_format_fn,
+        orig_shape=(480, 640),
+    )
+
+    # 1. Before access, call_count should be 0
+    assert call_count == 0
+
+    # 2. First access should trigger formatting
+    boxes = res.boxes
+    assert call_count == 1
+    assert len(boxes) == 1
+
+    # 3. Subsequent access should use cache (call_count stays 1)
+    boxes2 = res.boxes
+    assert call_count == 1
+    assert boxes2 is boxes

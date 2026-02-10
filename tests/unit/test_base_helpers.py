@@ -38,7 +38,7 @@ def test_normalize_inputs_directory(tmp_path):
     img_dir.mkdir()
     (img_dir / "1.jpg").touch()
     (img_dir / "2.PNG").touch()
-    (img_dir / "text.txt").touch()  # Should be ignored
+    (img_dir / "text.txt").touch() # Should be ignored
 
     result = normalize_inputs(img_dir)
     assert isinstance(result, list)

@@ -30,9 +30,7 @@ def dummy_dataset_config(tmp_path):
 
 @patch("ez_openmmlab.core.engines.engine_base.Runner")
 @patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
-def test_train_orchestration_and_artifact_creation(
-    mock_ensure, mock_runner, dummy_dataset_config, tmp_path
-):
+def test_train_orchestration_and_artifact_creation(mock_ensure, mock_runner, dummy_dataset_config, tmp_path):
     """Integration test for EZMMDetector.train:
     Verifies that handlers are called and user_config.toml is created.
     """

@@ -12,14 +12,7 @@ from ez_openmmlab.schemas.model import ModelName
 @patch("ez_openmmlab.schemas.dataset.DatasetConfig.from_toml")
 @patch("ez_openmmlab.core.engines.mmdet.DetInferencer")
 @patch("cv2.imread")
-def test_full_custom_config_flow(
-    mock_imread,
-    mock_inferencer_cls,
-    mock_ds_from_toml,
-    mock_ensure,
-    mock_runner,
-    tmp_path,
-):
+def test_full_custom_config_flow(mock_imread, mock_inferencer_cls, mock_ds_from_toml, mock_ensure, mock_runner, tmp_path):
     """Integration test for the full flow:
     1. Train a model (mocked runner) -> saves user_config.toml with base_config_path.
     2. Initialize a new model using that saved config.toml.
@@ -63,13 +56,8 @@ def test_full_custom_config_flow(
 
     # Re-mock ensure_model_checkpoint for the new instance
     # In a real scenario, this would just return the path as it's already local
-    with patch(
-        "ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint",
-        return_value=custom_checkpoint,
-    ):
-        custom_detector = RTMDet(
-            model=saved_config_path, checkpoint_path=custom_checkpoint
-        )
+    with patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint", return_value=custom_checkpoint):
+        custom_detector = RTMDet(model=saved_config_path, checkpoint_path=custom_checkpoint)
 
         assert custom_detector.model == ModelName.RTM_DET_TINY.value
         assert custom_detector.num_classes == 2

@@ -78,10 +78,7 @@ def test_resolve_model_config_with_toml_valid(
 
     # Check content
     content = model_obj._temp_config_file.read_text()
-    assert (
-        '_base_ = ["/libs/mmdetection/configs/rtmdet/tiny.py"]' in content
-        or "/libs/mmdetection/configs/rtmdet/tiny.py" in content
-    )
+    assert '_base_ = ["/libs/mmdetection/configs/rtmdet/tiny.py"]' in content or '/libs/mmdetection/configs/rtmdet/tiny.py' in content
 
     # Verify model state was updated from config
     assert model_obj.model == ModelName.RTM_DET_TINY.value
@@ -95,9 +92,7 @@ def test_temp_config_cleanup(tmp_path):
     checkpoint_file = tmp_path / "epoch_10.pth"
     checkpoint_file.touch()
 
-    with patch(
-        "ez_openmmlab.core.config_manager.toml_config.load_user_config"
-    ) as mock_load:
+    with patch("ez_openmmlab.core.config_manager.toml_config.load_user_config") as mock_load:
         mock_user_config = MagicMock()
         mock_user_config.model.name = ModelName.RTM_DET_TINY
         mock_load.return_value = mock_user_config
@@ -105,9 +100,7 @@ def test_temp_config_cleanup(tmp_path):
         with patch("ez_openmmlab.core.engines.engine_base.get_config_file") as mock_get:
             mock_get.return_value = Path("/dummy.py")
 
-            model_obj = ConcreteEZMMLab(
-                model=config_file, checkpoint_path=checkpoint_file
-            )
+            model_obj = ConcreteEZMMLab(model=config_file, checkpoint_path=checkpoint_file)
             temp_path = model_obj._temp_config_file
             assert temp_path.exists()
 

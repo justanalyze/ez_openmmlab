@@ -35,9 +35,10 @@ def mock_user_config():
 
 def test_dataloader_injector_applies_paths_and_params(mock_user_config):
     """Test that DataloaderInjector correctly sets paths and parameters."""
-    cfg = Config(
-        dict(train_dataloader=dict(dataset=dict()), val_dataloader=dict(dataset=dict()))
-    )
+    cfg = Config(dict(
+        train_dataloader=dict(dataset=dict()),
+        val_dataloader=dict(dataset=dict())
+    ))
 
     injector = DataloaderInjector()
     injector.apply(cfg, mock_user_config)
@@ -51,7 +52,9 @@ def test_dataloader_injector_applies_paths_and_params(mock_user_config):
 def test_dataloader_injector_no_classes(mock_user_config):
     """Test injector when classes list is None."""
     mock_user_config.data.classes = None
-    cfg = Config(dict(train_dataloader=dict(dataset=dict())))
+    cfg = Config(dict(
+        train_dataloader=dict(dataset=dict())
+    ))
 
     injector = DataloaderInjector()
     injector.apply(cfg, mock_user_config)
@@ -62,13 +65,11 @@ def test_dataloader_injector_no_classes(mock_user_config):
 
 def test_runtime_injector_applies_settings(mock_user_config):
     """Test that RuntimeInjector correctly sets optimizer, visualizer, and runtime params."""
-    cfg = Config(
-        dict(
-            train_cfg=dict(),
-            optim_wrapper=dict(optimizer=dict()),
-            visualizer=dict(vis_backends=[]),
-        )
-    )
+    cfg = Config(dict(
+        train_cfg=dict(),
+        optim_wrapper=dict(optimizer=dict()),
+        visualizer=dict(vis_backends=[])
+    ))
 
     injector = RuntimeInjector()
     injector.apply(cfg, mock_user_config)
@@ -86,7 +87,10 @@ def test_runtime_injector_disabled_features(mock_user_config):
     """Test injector when AMP and TensorBoard are disabled."""
     mock_user_config.training.amp = False
     mock_user_config.training.enable_tensorboard = False
-    cfg = Config(dict(train_cfg=dict(), optim_wrapper=dict(optimizer=dict())))
+    cfg = Config(dict(
+        train_cfg=dict(),
+        optim_wrapper=dict(optimizer=dict())
+    ))
 
     injector = RuntimeInjector()
     injector.apply(cfg, mock_user_config)
@@ -100,6 +104,6 @@ def test_runtime_injector_missing_optim_wrapper(mock_user_config):
     cfg = Config(dict(train_cfg=dict()))
 
     injector = RuntimeInjector()
-    injector.apply(cfg, mock_user_config)  # Should not raise
+    injector.apply(cfg, mock_user_config) # Should not raise
 
     assert cfg.work_dir == "./runs/train"

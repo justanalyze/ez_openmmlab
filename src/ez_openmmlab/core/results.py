@@ -1,6 +1,8 @@
-import numpy as np
+from typing import Any, Callable, List, Optional, Union
+
 import cv2
-from typing import Optional, List, Union
+import numpy as np
+
 
 class BaseData:
     """Base class for vectorized inference data."""
@@ -12,7 +14,8 @@ class BaseData:
     def __len__(self):
         return len(self.data)
 
-    def __getitem__(self, index): """Allows for slicing and boolean indexing."""
+    def __getitem__(self, index):
+        """Allows for slicing and boolean indexing."""
         return self.__class__(self.data[index], self.orig_shape)
 
     def __repr__(self):
@@ -85,17 +88,29 @@ class InferenceResult:
         names: dict,
         orig_img: Optional[np.ndarray] = None,
         orig_shape: Optional[tuple] = None,
-        boxes: Optional[Boxes] = None,
-        keypoints: Optional[Keypoints] = None,
-        masks: Optional[Masks] = None,
+        boxes: Optional[Union[Boxes, Any]] = None,
+        keypoints: Optional[Union[Keypoints, Any]] = None,
+        masks: Optional[Union[Masks, Any]] = None,
         speed: Optional[dict] = None,
+        format_fn: Optional[Callable] = None,
     ):
         self._orig_img = orig_img
         self.path = path
         self.names = names
         self.speed = speed or {}
+        self._format_fn = format_fn
 
-        # 1. Resolve original shape
+        # Internal storage for potentially raw data
+        self._boxes_raw = boxes
+        self._keypoints_raw = keypoints
+        self._masks_raw = masks
+
+        # Cached processed objects
+        self._boxes: Optional[Boxes] = None
+        self._keypoints: Optional[Keypoints] = None
+        self._masks: Optional[Masks] = None
+
+        # Resolve original shape
         if orig_shape:
             self.orig_shape = orig_shape
         elif orig_img is not None:
@@ -105,20 +120,42 @@ class InferenceResult:
             # but for now we assume shape was provided if image wasn't.
             self.orig_shape = (0, 0)
 
-        # 2. Ensure data containers are never None (for better DX and linting)
-        self.boxes: Boxes = (
-            boxes if boxes is not None else Boxes(np.zeros((0, 6)), self.orig_shape)
-        )
-        self.keypoints: Keypoints = (
-            keypoints
-            if keypoints is not None
-            else Keypoints(np.zeros((0, 0, 3)), self.orig_shape)
-        )
-        self.masks: Masks = (
-            masks
-            if masks is not None
-            else Masks(np.zeros((0, 0, 0), dtype=bool), self.orig_shape)
-        )
+    @property
+    def boxes(self) -> Boxes:
+        """Lazily processes and returns bounding boxes."""
+        if self._boxes is None:
+            if isinstance(self._boxes_raw, Boxes):
+                self._boxes = self._boxes_raw
+            elif self._format_fn and self._boxes_raw is not None:
+                # The format_fn should handle extracting and converting raw data
+                self._boxes = self._format_fn(self, "boxes", self._boxes_raw)
+            else:
+                self._boxes = Boxes(np.zeros((0, 6)), self.orig_shape)
+        return self._boxes
+
+    @property
+    def keypoints(self) -> Keypoints:
+        """Lazily processes and returns keypoints."""
+        if self._keypoints is None:
+            if isinstance(self._keypoints_raw, Keypoints):
+                self._keypoints = self._keypoints_raw
+            elif self._format_fn and self._keypoints_raw is not None:
+                self._keypoints = self._format_fn(self, "keypoints", self._keypoints_raw)
+            else:
+                self._keypoints = Keypoints(np.zeros((0, 0, 3)), self.orig_shape)
+        return self._keypoints
+
+    @property
+    def masks(self) -> Masks:
+        """Lazily processes and returns masks."""
+        if self._masks is None:
+            if isinstance(self._masks_raw, Masks):
+                self._masks = self._masks_raw
+            elif self._format_fn and self._masks_raw is not None:
+                self._masks = self._format_fn(self, "masks", self._masks_raw)
+            else:
+                self._masks = Masks(np.zeros((0, 0, 0), dtype=bool), self.orig_shape)
+        return self._masks
 
     @property
     def orig_img(self) -> np.ndarray:

@@ -25,9 +25,7 @@ def test_rtmdet_init_with_custom_config(
     mock_user_config.data.metainfo = {"classes": ["cat", "dog"]}
     mock_load_config.return_value = mock_user_config
 
-    mock_get_config.return_value = (
-        Path.cwd() / "libs/mmdetection/configs/rtmdet/tiny.py"
-    )
+    mock_get_config.return_value = Path.cwd() / "libs/mmdetection/configs/rtmdet/tiny.py"
     mock_ensure.return_value = checkpoint_file
 
     # Initialize RTMDet

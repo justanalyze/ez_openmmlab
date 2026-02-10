@@ -41,10 +41,7 @@ def test_predict_template_workflow():
     """Verify that EZMMLab.predict calls the hooks in the correct order."""
     engine = ConcreteMockEngine()
 
-    with patch(
-        "ez_openmmlab.core.engines.engine_base.normalize_inputs",
-        return_value=["img.jpg"],
-    ):
+    with patch("ez_openmmlab.core.engines.engine_base.normalize_inputs", return_value=["img.jpg"]):
         results = engine.predict("img.jpg", device="cpu", confidence=0.5)
 
         assert engine.init_called
