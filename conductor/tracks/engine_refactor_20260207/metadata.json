@@ -1,0 +1,8 @@
+{
+  "track_id": "engine_refactor_20260207",
+  "type": "refactor",
+  "status": "new",
+  "created_at": "2026-02-07T09:15:00Z",
+  "updated_at": "2026-02-07T09:15:00Z",
+  "description": "Refactor @src/ez_openmmlab/core/base.py and its children @src/ez_openmmlab/engines/** to follow SOLID Principles and reduce bloat."
+}
