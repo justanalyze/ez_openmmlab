@@ -1,26 +1,34 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Union, Any
-import numpy as np
 from pathlib import Path
-from loguru import logger
+from typing import Any, Dict, List, Union
 
-from ez_openmmlab.core.results import InferenceResult, Boxes, Keypoints, Masks
+import numpy as np
+
+from ez_openmmlab.core.results import Boxes, InferenceResult, Keypoints, Masks
+
 
 class ResultFormatter(ABC):
     """Abstract base class for formatting inference results."""
 
     @abstractmethod
     def map_results(
-        self, results: Union[Dict[str, Any], List[Any]], inputs: Union[str, List[str]], names: Dict[int, str]
+        self,
+        results: Union[Dict[str, Any], List[Any]],
+        inputs: Union[str, List[str]],
+        names: Dict[int, str],
     ) -> List[InferenceResult]:
         """Maps raw inference results to vectorized InferenceResult objects."""
         pass
+
 
 class DetectionResultFormatter(ResultFormatter):
     """Formatter for object detection results."""
 
     def map_results(
-        self, results: Dict[str, Any], inputs: Union[str, List[str]], names: Dict[int, str]
+        self,
+        results: Dict[str, Any],
+        inputs: Union[str, List[str]],
+        names: Dict[int, str],
     ) -> List[InferenceResult]:
         predictions = results.get("predictions", [])
         input_list = inputs if isinstance(inputs, list) else [inputs]
@@ -72,6 +80,7 @@ class DetectionResultFormatter(ResultFormatter):
             boxes=boxes,
             masks=masks,
         )
+
 
 class PoseResultFormatter(ResultFormatter):
     """Formatter for pose estimation results."""

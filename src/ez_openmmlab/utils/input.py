@@ -1,5 +1,6 @@
 from pathlib import Path
-from typing import Union, List, Optional
+from typing import List, Union
+
 from loguru import logger
 
 

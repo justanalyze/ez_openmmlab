@@ -1,7 +1,14 @@
 import pytest
 from mmengine.config import Config
+
 from ez_openmmlab.core.injectors.common import DataloaderInjector, RuntimeInjector
-from ez_openmmlab.utils.toml_config import UserConfig, DataSection, TrainingSection, ModelSection
+from ez_openmmlab.utils.toml_config import (
+    DataSection,
+    ModelSection,
+    TrainingSection,
+    UserConfig,
+)
+
 
 @pytest.fixture
 def mock_user_config():
@@ -13,7 +20,7 @@ def mock_user_config():
             train_img="train2017",
             val_ann="annotations/val.json",
             val_img="val2017",
-            classes=["cat", "dog"]
+            classes=["cat", "dog"],
         ),
         training=TrainingSection(
             epochs=10,
@@ -21,77 +28,78 @@ def mock_user_config():
             num_workers=2,
             learning_rate=0.01,
             amp=True,
-            enable_tensorboard=True
-        )
+            enable_tensorboard=True,
+        ),
     )
+
 
 def test_dataloader_injector_applies_paths_and_params(mock_user_config):
     """Test that DataloaderInjector correctly sets paths and parameters."""
-    cfg = Config(dict(
-        train_dataloader=dict(dataset=dict()),
-        val_dataloader=dict(dataset=dict())
-    ))
-    
+    cfg = Config(
+        dict(train_dataloader=dict(dataset=dict()), val_dataloader=dict(dataset=dict()))
+    )
+
     injector = DataloaderInjector()
     injector.apply(cfg, mock_user_config)
-    
+
     assert cfg.data_root == "data/coco"
     assert cfg.train_dataloader.num_workers == 2
     assert cfg.train_dataloader.dataset.ann_file == "data/coco/annotations/train.json"
     assert cfg.train_dataloader.dataset.metainfo.classes == ["cat", "dog"]
 
+
 def test_dataloader_injector_no_classes(mock_user_config):
     """Test injector when classes list is None."""
     mock_user_config.data.classes = None
-    cfg = Config(dict(
-        train_dataloader=dict(dataset=dict())
-    ))
-    
+    cfg = Config(dict(train_dataloader=dict(dataset=dict())))
+
     injector = DataloaderInjector()
     injector.apply(cfg, mock_user_config)
-    
+
     assert "metainfo" not in cfg.train_dataloader.dataset
     assert "metainfo" not in cfg
 
+
 def test_runtime_injector_applies_settings(mock_user_config):
     """Test that RuntimeInjector correctly sets optimizer, visualizer, and runtime params."""
-    cfg = Config(dict(
-        train_cfg=dict(),
-        optim_wrapper=dict(optimizer=dict()),
-        visualizer=dict(vis_backends=[])
-    ))
-    
+    cfg = Config(
+        dict(
+            train_cfg=dict(),
+            optim_wrapper=dict(optimizer=dict()),
+            visualizer=dict(vis_backends=[]),
+        )
+    )
+
     injector = RuntimeInjector()
     injector.apply(cfg, mock_user_config)
-    
+
     assert cfg.work_dir == "./runs/train"
     assert cfg.train_cfg.max_epochs == 10
     assert cfg.optim_wrapper.type == "AmpOptimWrapper"
-    
+
     # Check TensorBoard
-    backends = [b['type'] for b in cfg.visualizer.vis_backends]
+    backends = [b["type"] for b in cfg.visualizer.vis_backends]
     assert "TensorboardVisBackend" in backends
+
 
 def test_runtime_injector_disabled_features(mock_user_config):
     """Test injector when AMP and TensorBoard are disabled."""
     mock_user_config.training.amp = False
     mock_user_config.training.enable_tensorboard = False
-    cfg = Config(dict(
-        train_cfg=dict(),
-        optim_wrapper=dict(optimizer=dict())
-    ))
-    
+    cfg = Config(dict(train_cfg=dict(), optim_wrapper=dict(optimizer=dict())))
+
     injector = RuntimeInjector()
     injector.apply(cfg, mock_user_config)
-    
+
     assert cfg.optim_wrapper.type == "OptimWrapper"
     assert "visualizer" not in cfg
+
 
 def test_runtime_injector_missing_optim_wrapper(mock_user_config):
     """Test that injector doesn't crash if optim_wrapper is missing."""
     cfg = Config(dict(train_cfg=dict()))
-    
+
     injector = RuntimeInjector()
-    injector.apply(cfg, mock_user_config) # Should not raise
-    
+    injector.apply(cfg, mock_user_config)  # Should not raise
+
     assert cfg.work_dir == "./runs/train"

@@ -3,12 +3,9 @@ from typing import List, Optional
 
 import tomli
 import tomli_w
-from pydantic import BaseModel, Field
-
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from ez_openmmlab.schemas.model import ModelName
-
-from pydantic import BaseModel, Field, ConfigDict, computed_field
 
 
 # --- Pydantic Models for Validation ---

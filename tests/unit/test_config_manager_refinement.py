@@ -1,8 +1,9 @@
-import pytest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+
+import pytest
+
 from ez_openmmlab.core.config_manager import ConfigManager
-from ez_openmmlab.schemas.model import ModelName
+
 
 class TestConfigManagerRefinement:
     def test_load_metadata_from_toml_success(self, tmp_path):
@@ -24,12 +25,14 @@ val_img = "d"
 epochs = 1
 batch_size = 1
 """)
-        
+
         metadata = manager.load_metadata_from_toml(config_path)
         assert metadata["model_name"] == "rtmdet_tiny"
         assert metadata["num_classes"] == 5
         assert metadata["num_keypoints"] == 17
-        assert "classes" not in metadata # Classes are in DataSection, not ModelSection in the schema
+        assert (
+            "classes" not in metadata
+        )  # Classes are in DataSection, not ModelSection in the schema
 
     def test_load_metadata_from_toml_with_classes(self, tmp_path):
         """Test extracting metadata including classes if present."""
@@ -50,7 +53,7 @@ val_img = "d"
 epochs = 1
 batch_size = 1
 """)
-        
+
         metadata = manager.load_metadata_from_toml(config_path)
         assert metadata["num_classes"] == 2
         assert metadata["metainfo"]["classes"] == ["cat", "dog"]

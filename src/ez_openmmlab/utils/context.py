@@ -3,9 +3,11 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Generator
 
+
 def get_project_root() -> Path:
     """Resolves the project root relative to this file."""
     return Path(__file__).resolve().parents[3]
+
 
 @contextmanager
 def switch_to_lib_root(model_name: str) -> Generator[Path, None, None]:
@@ -13,10 +15,10 @@ def switch_to_lib_root(model_name: str) -> Generator[Path, None, None]:
 
     This is necessary because OpenMMLab configs often use relative paths
     that expect to be resolved from the library root (libs/mmdet or libs/mmpose).
-    
+
     Args:
         model_name: The name of the model to determine the library root.
-        
+
     Yields:
         The absolute path to the library root.
     """

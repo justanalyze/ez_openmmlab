@@ -1,7 +1,9 @@
 from typing import List
+
+from loguru import logger
+
 from ez_openmmlab import RTMDet
 from ez_openmmlab.core.results import InferenceResult
-from loguru import logger
 
 # 1. Simple Initialization
 model = RTMDet("rtmdet_s")

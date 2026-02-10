@@ -1,7 +1,6 @@
-import os
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 from loguru import logger
 
@@ -33,7 +32,7 @@ class BaseConfigLoader:
             not self._mmdet_config_root.exists()
             and not self._mmpose_config_root.exists()
         ):
-            logger.error(f"Could not find local OpenMMLab configs.")
+            logger.error("Could not find local OpenMMLab configs.")
             raise FileNotFoundError(
                 "Could not find local mmdetection or mmpose configs.\n"
                 "Ensure submodules are initialized."
@@ -169,13 +168,13 @@ class ConfigManager:
             metadata["num_classes"] = user_cfg.model.num_classes
             metadata["num_keypoints"] = user_cfg.model.num_keypoints
             metadata["metainfo"] = user_cfg.data.metainfo
-            
+
             # Explicitly include classes in metainfo if defined in DataSection
             if user_cfg.data.classes:
                 if metadata["metainfo"] is None:
                     metadata["metainfo"] = {}
                 metadata["metainfo"]["classes"] = user_cfg.data.classes
-                
+
             metadata["model_name"] = user_cfg.model.name.value
             logger.debug(f"Loaded metadata from: {config_path}")
         except Exception as e:

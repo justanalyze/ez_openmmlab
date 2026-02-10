@@ -21,7 +21,7 @@ def get_unique_dir(base_dir: Union[str, Path]) -> Path:
 
     parent = path.parent
     stem = path.name
-    
+
     counter = 1
     while True:
         new_path = parent / f"{stem}_{counter}"

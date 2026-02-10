@@ -1,15 +1,16 @@
 from pathlib import Path
+
+import pytest
 import tomli
 from pydantic import ValidationError
-import pytest
 
 from ez_openmmlab.utils.toml_config import (
-    UserConfig,
-    ModelSection,
     DataSection,
+    ModelSection,
     TrainingSection,
-    save_user_config,
+    UserConfig,
     load_user_config,
+    save_user_config,
 )
 
 
@@ -37,9 +38,7 @@ def sample_config() -> UserConfig:
 
 
 def test_save_and_load_roundtrip(tmp_path: Path, sample_config: UserConfig):
-    """
-    Tests that saving a config and loading it back results in the same object.
-    """
+    """Tests that saving a config and loading it back results in the same object."""
     config_path = tmp_path / "config.toml"
 
     # Save and reload
@@ -51,9 +50,7 @@ def test_save_and_load_roundtrip(tmp_path: Path, sample_config: UserConfig):
 
 
 def test_generated_toml_content(tmp_path: Path, sample_config: UserConfig):
-    """
-    Verifies that the generated TOML has the correct structure and values.
-    """
+    """Verifies that the generated TOML has the correct structure and values."""
     config_path = tmp_path / "config.toml"
     save_user_config(sample_config, config_path)
 
@@ -79,9 +76,7 @@ def test_generated_toml_content(tmp_path: Path, sample_config: UserConfig):
 
 
 def test_missing_required_field_raises_error(tmp_path: Path):
-    """
-    Ensures that loading a TOML with missing required fields raises a Pydantic error.
-    """
+    """Ensures that loading a TOML with missing required fields raises a Pydantic error."""
     bad_toml_content = """
     [model]
     name = "rtmdet_tiny"
@@ -101,9 +96,7 @@ def test_missing_required_field_raises_error(tmp_path: Path):
 
 
 def test_incorrect_type_raises_error(tmp_path: Path):
-    """
-    Ensures that loading a TOML with incorrect data types raises a Pydantic error.
-    """
+    """Ensures that loading a TOML with incorrect data types raises a Pydantic error."""
     bad_toml_content = """
     [model]
     name = "rtmdet_tiny"

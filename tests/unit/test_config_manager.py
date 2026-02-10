@@ -1,13 +1,13 @@
-import pytest
-from pathlib import Path
 from unittest.mock import MagicMock, patch
+
+import pytest
+
 from ez_openmmlab.core.config_manager import (
+    BaseConfigLoader,
     ConfigManager,
     get_config_file,
-    BaseConfigLoader,
 )
-from ez_openmmlab.schemas.model import ModelName, MODEL_URLS
-from ez_openmmlab.utils import toml_config
+from ez_openmmlab.schemas.model import MODEL_URLS, ModelName
 from ez_openmmlab.utils.download import ensure_model_checkpoint
 
 
@@ -59,7 +59,7 @@ class TestConfigManager:
         """Test that metadata is correctly loaded from a specific user_config.toml."""
         manager = ConfigManager()
         config_path = tmp_path / "user_config.toml"
-        
+
         config_path.write_text("""
 [model]
 name = "rtmdet_tiny"
@@ -74,7 +74,7 @@ val_img = "d"
 epochs = 1
 batch_size = 1
 """)
-        
+
         meta = manager.load_metadata_from_toml(config_path)
         assert meta["num_classes"] == 5
         assert meta["model_name"] == "rtmdet_tiny"

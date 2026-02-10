@@ -1,8 +1,9 @@
-import pytest
 from pathlib import Path
-from typer.testing import CliRunner
-from ez_openmmlab.cli import app
 from unittest.mock import MagicMock, patch
+
+from typer.testing import CliRunner
+
+from ez_openmmlab.cli import app
 
 runner = CliRunner()
 
@@ -63,6 +64,8 @@ def test_predict_command_calls_detector_predict(tmp_path):
         mock_detector_instance.predict.assert_called_once()
         _, p_kwargs = mock_detector_instance.predict.call_args
         assert "checkpoint_path" not in p_kwargs
+
+
 def test_predict_command_calls_pose_estimator_predict(tmp_path):
     """Test that the predict command initializes RTMPose for pose models."""
     checkpoint = tmp_path / "best.pth"

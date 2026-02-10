@@ -1,3 +1,1 @@
-"""
-Format converters (YOLO -> COCO)
-"""
+"""Format converters (YOLO -> COCO)"""

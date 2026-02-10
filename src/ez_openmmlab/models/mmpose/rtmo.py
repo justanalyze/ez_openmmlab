@@ -1,17 +1,20 @@
 from pathlib import Path
-from typing import Optional, Union, List
+from typing import Optional, Union
 
 from loguru import logger
 from mmengine.config import Config
 from mmpose.apis import MMPoseInferencer
 
 from ez_openmmlab.core.engines.mmpose import EZMMPose
-from ez_openmmlab.core.config_manager import get_config_file
-from ez_openmmlab.core.results import InferenceResult
-from ez_openmmlab.schemas.model import ModelName
-from ez_openmmlab.utils.toml_config import UserConfig, ModelSection, TrainingSection, DataSection
 from ez_openmmlab.core.injectors.mmpose import MMPoseInjector
+from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.utils.context import switch_to_lib_root
+from ez_openmmlab.utils.toml_config import (
+    DataSection,
+    ModelSection,
+    TrainingSection,
+    UserConfig,
+)
 
 
 class RTMO(EZMMPose):
@@ -41,11 +44,13 @@ class RTMO(EZMMPose):
                 dummy_user_cfg = UserConfig(
                     model=ModelSection(
                         name=self.model,
-                        num_classes=self.num_classes if self.num_classes is not None else 80,
-                        num_keypoints=self.num_keypoints
+                        num_classes=self.num_classes
+                        if self.num_classes is not None
+                        else 80,
+                        num_keypoints=self.num_keypoints,
                     ),
                     training=TrainingSection(num_workers=0, learning_rate=0.001),
-                    data=DataSection(root="")
+                    data=DataSection(root=""),
                 )
                 if self.num_classes is not None or self.num_keypoints is not None:
                     MMPoseInjector().apply(cfg, dummy_user_cfg)

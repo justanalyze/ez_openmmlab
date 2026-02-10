@@ -1,4 +1,3 @@
-from pathlib import Path
 from ez_openmmlab.utils.path import get_unique_dir
 
 
@@ -13,7 +12,7 @@ def test_get_unique_dir_increments_if_exists(tmp_path):
     """Verifies that a numbered suffix is added if the path exists."""
     base = tmp_path / "preds"
     base.mkdir()
-    
+
     unique = get_unique_dir(base)
     assert unique == tmp_path / "preds_1"
 
@@ -24,6 +23,6 @@ def test_get_unique_dir_skips_existing_increments(tmp_path):
     base.mkdir()
     (tmp_path / "results_1").mkdir()
     (tmp_path / "results_2").mkdir()
-    
+
     unique = get_unique_dir(base)
     assert unique == tmp_path / "results_3"

@@ -1,9 +1,15 @@
-import pytest
 from pathlib import Path
+
+import pytest
 from pydantic import ValidationError
-from ez_openmmlab.utils.toml_config import UserConfig, TrainingSection, ModelSection, DataSection
-from ez_openmmlab.schemas.dataset import DatasetConfig, SplitConfig
+
+from ez_openmmlab.schemas.dataset import DatasetConfig
 from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.utils.toml_config import (
+    TrainingSection,
+    UserConfig,
+)
+
 
 def test_training_section_defaults():
     """Test TrainingSection default values."""
@@ -18,6 +24,7 @@ def test_training_section_defaults():
     assert ts.enable_tensorboard is True
     assert ts.amp is True
 
+
 def test_training_section_constraints():
     """Test TrainingSection validation constraints."""
     with pytest.raises(ValidationError):
@@ -29,12 +36,13 @@ def test_training_section_constraints():
     with pytest.raises(ValidationError):
         TrainingSection(learning_rate=-0.1)
 
+
 def test_user_config_validation():
     """Test UserConfig validation with valid and invalid data."""
     valid_data = {
         "model": {"name": "rtmdet_tiny", "num_classes": 80},
         "data": {"root": "data/coco"},
-        "training": {"epochs": 50}
+        "training": {"epochs": 50},
     }
     config = UserConfig(**valid_data)
     assert config.model.name == ModelName.RTM_DET_TINY
@@ -43,17 +51,18 @@ def test_user_config_validation():
     invalid_data = {
         "model": {"name": "invalid_model", "num_classes": 80},
         "data": {"root": "data/coco"},
-        "training": {"epochs": 50}
+        "training": {"epochs": 50},
     }
     with pytest.raises(ValidationError):
         UserConfig(**invalid_data)
+
 
 def test_dataset_config_validation():
     """Test DatasetConfig validation."""
     valid_data = {
         "data_root": "datasets/my_data",
         "train": {"ann_file": "train.json", "img_dir": "train/"},
-        "val": {"ann_file": "val.json", "img_dir": "val/"}
+        "val": {"ann_file": "val.json", "img_dir": "val/"},
     }
     ds = DatasetConfig(**valid_data)
     assert ds.data_root == Path("datasets/my_data")
@@ -61,10 +70,11 @@ def test_dataset_config_validation():
 
     invalid_data = {
         "data_root": "datasets/my_data",
-        "train": {"ann_file": "train.json"} # Missing img_dir
+        "train": {"ann_file": "train.json"},  # Missing img_dir
     }
     with pytest.raises(ValidationError):
         DatasetConfig(**invalid_data)
+
 
 def test_model_name_enum():
     """Test ModelName enum values."""

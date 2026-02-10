@@ -1,9 +1,9 @@
-from loguru import logger
 from pathlib import Path
 from typing import Optional, Union
 
 from ez_openmmlab.core.engines.mmdet import EZMMDetector
 from ez_openmmlab.schemas.model import ModelName
+
 
 class RTMDet(EZMMDetector):
     """RTMDet implementation for fast object detection and instance segmentation.

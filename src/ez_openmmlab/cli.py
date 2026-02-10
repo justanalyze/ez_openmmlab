@@ -4,15 +4,16 @@ from typing import Optional
 import typer
 
 from ez_openmmlab.models.mmdet import RTMDet
-from ez_openmmlab.models.mmpose import RTMPose, RTMO
-from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.models.mmpose import RTMO, RTMPose
 
 app = typer.Typer(help="ez_mmdet: A user-friendly CLI for MMDetection")
 
 
 @app.command()
 def train(
-    model_name: str = typer.Argument(..., help="Name of the model architecture or path to config.toml"),
+    model_name: str = typer.Argument(
+        ..., help="Name of the model architecture or path to config.toml"
+    ),
     dataset_config_path: Path = typer.Argument(
         ..., help="Path to the dataset.toml file"
     ),
@@ -48,7 +49,9 @@ def train(
 
 @app.command()
 def predict(
-    model_name: str = typer.Argument(..., help="Name of the model architecture or path to config.toml"),
+    model_name: str = typer.Argument(
+        ..., help="Name of the model architecture or path to config.toml"
+    ),
     image_path: Path = typer.Argument(..., help="Path to the image for inference"),
     checkpoint_path: Optional[Path] = typer.Option(
         None, help="Optional path to a custom model checkpoint (.pth)"

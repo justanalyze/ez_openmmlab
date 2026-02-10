@@ -58,5 +58,5 @@ def test_e2e_train_predict_loop(smoke_test_data, tmp_path):
     # 4. Verify structured result
     assert result.boxes is not None
     assert len(result.boxes) >= 0  # Successful if no crash and returns boxes
-    
+
     print(f"E2E Smoke Test passed. Found {len(result.boxes)} objects.")
