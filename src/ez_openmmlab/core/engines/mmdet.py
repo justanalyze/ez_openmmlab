@@ -1,21 +1,14 @@
 from pathlib import Path
-from typing import Optional, Union, List
-import numpy as np
-import cv2
+from typing import Optional, Union
 
 from loguru import logger
 from mmdet.apis import DetInferencer
 from mmdet.utils import register_all_modules
 
-from .engine_base import EZMMLab
-from ez_openmmlab.schemas.model import ModelName
-from ez_openmmlab.core.config_manager import get_config_file
-from ez_openmmlab.core.results import InferenceResult
-from ez_openmmlab.utils.download import ensure_model_checkpoint
 from ez_openmmlab.core.formatters import DetectionResultFormatter
-from ez_openmmlab.utils.input import normalize_inputs
-from ez_openmmlab.utils.path import get_unique_dir
+from ez_openmmlab.schemas.model import ModelName
 
+from .engine_base import EZMMLab
 
 # Force registration of MMDet modules
 register_all_modules(init_default_scope=True)

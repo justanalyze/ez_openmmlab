@@ -1,4 +1,5 @@
 from typing import List
+
 from .base import BaseConfigInjector
 from .common import DataloaderInjector, RuntimeInjector
 from .mmdet import MMDetInjector

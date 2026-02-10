@@ -1,8 +1,9 @@
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
-from ez_openmmlab import RTMPose, RTMO
+from unittest.mock import MagicMock, patch
+
+from ez_openmmlab import RTMO, RTMPose
 from ez_openmmlab.schemas.model import ModelName
+
 
 @patch("ez_openmmlab.core.config_manager.ConfigManager.load_metadata_from_toml")
 @patch("ez_openmmlab.models.mmpose.rtmpose.MMPoseInferencer")
@@ -15,7 +16,7 @@ def test_rtmpose_init_with_custom_config(mock_ensure, mock_get_config, mock_load
     config_file.touch()
     checkpoint_file = tmp_path / "custom.pth"
     checkpoint_file.touch()
-    
+
     # Setup mocks
     mock_load_meta.return_value = {
         "num_classes": 1,
@@ -29,22 +30,22 @@ def test_rtmpose_init_with_custom_config(mock_ensure, mock_get_config, mock_load
     mock_user_config.model.num_keypoints = 15
     mock_user_config.data.metainfo = {"classes": ["bird"]}
     mock_load_config.return_value = mock_user_config
-    
+
     mock_get_config.return_value = Path.cwd() / "libs/mmpose/configs/rtmpose/tiny.py"
     mock_ensure.return_value = checkpoint_file
-    
+
     # Initialize RTMPose
     # Note: EZMMLab._auto_load_metadata might trigger if checkpoint exists
     # but we are mocking the toml load anyway.
     pose = RTMPose(model=config_file, checkpoint_path=checkpoint_file)
-    
+
     # Trigger _init_inferencer
     with patch("ez_openmmlab.models.mmpose.rtmpose.Config.fromfile") as mock_cfg_fromfile:
         mock_cfg = MagicMock()
         mock_cfg_fromfile.return_value = mock_cfg
         pose._init_inferencer(device="cpu")
         mock_cfg_fromfile.assert_called_once_with(str(pose.config_path))
-    
+
     # Verify MMPoseInferencer was called with the Config object (patched)
     mock_inferencer_cls.assert_called_once()
     args, kwargs = mock_inferencer_cls.call_args
@@ -64,7 +65,7 @@ def test_rtmo_init_with_custom_config(mock_ensure, mock_get_config, mock_load_co
     config_file.touch()
     checkpoint_file = tmp_path / "custom.pth"
     checkpoint_file.touch()
-    
+
     # Setup mocks
     mock_load_meta.return_value = {
         "num_classes": 1,
@@ -78,20 +79,20 @@ def test_rtmo_init_with_custom_config(mock_ensure, mock_get_config, mock_load_co
     mock_user_config.model.num_keypoints = 15
     mock_user_config.data.metainfo = {"classes": ["bird"]}
     mock_load_config.return_value = mock_user_config
-    
+
     mock_get_config.return_value = Path.cwd() / "libs/mmpose/configs/rtmo/s.py"
     mock_ensure.return_value = checkpoint_file
-    
+
     # Initialize RTMO
     pose = RTMO(model=config_file, checkpoint_path=checkpoint_file)
-    
+
     # Trigger _init_inferencer
     with patch("ez_openmmlab.models.mmpose.rtmo.Config.fromfile") as mock_cfg_fromfile:
         mock_cfg = MagicMock()
         mock_cfg_fromfile.return_value = mock_cfg
         pose._init_inferencer(device="cpu")
         mock_cfg_fromfile.assert_called_once_with(str(pose.config_path))
-    
+
     # Verify MMPoseInferencer was called
     mock_inferencer_cls.assert_called_once()
     args, kwargs = mock_inferencer_cls.call_args

@@ -1,6 +1,9 @@
 from typing import Any, Dict
+
 from mmengine.config import Config
+
 from ez_openmmlab.utils.toml_config import UserConfig
+
 from .base import BaseConfigInjector
 
 

@@ -1,17 +1,17 @@
-import pytest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-from ez_openmmlab.utils.path import get_unique_dir
+
 from ez_openmmlab.utils.input import normalize_inputs
+from ez_openmmlab.utils.path import get_unique_dir
+
 
 def test_resolve_out_dir(tmp_path):
     """Test unique directory resolution utility."""
     # Logic: if provided, resolve to unique. If not, handled by engine (empty string)
-    
+
     # Case 1: New directory
     out_dir = tmp_path / "new_out"
     assert get_unique_dir(out_dir) == out_dir
-    
+
     # Case 2: Existing directory -> Incremented
     out_dir.mkdir()
     expected = tmp_path / "new_out_1"
@@ -36,7 +36,7 @@ def test_normalize_inputs_directory(tmp_path):
     (img_dir / "1.jpg").touch()
     (img_dir / "2.PNG").touch()
     (img_dir / "text.txt").touch() # Should be ignored
-    
+
     result = normalize_inputs(img_dir)
     assert isinstance(result, list)
     assert len(result) == 2

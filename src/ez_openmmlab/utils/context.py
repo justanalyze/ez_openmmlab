@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Generator
 
+
 def get_project_root() -> Path:
     """Resolves the project root relative to this file."""
     return Path(__file__).resolve().parents[3]

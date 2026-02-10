@@ -1,15 +1,15 @@
-import pytest
-import numpy as np
-from unittest.mock import MagicMock, patch
 from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import numpy as np
+
 from ez_openmmlab import RTMDet
 from ez_openmmlab.core.results import InferenceResult
 
 
 @patch("ez_openmmlab.core.engines.mmdet.ensure_model_checkpoint")
 def test_predict_initializes_inferencer_and_calls_it(mock_ensure):
-    """
-    Test that predict() initializes DetInferencer with correct params
+    """Test that predict() initializes DetInferencer with correct params
     and calls it with the provided image.
     """
     model = "rtmdet_tiny"
@@ -62,8 +62,7 @@ def test_predict_initializes_inferencer_and_calls_it(mock_ensure):
 
 @patch("ez_openmmlab.core.engines.mmdet.ensure_model_checkpoint")
 def test_predict_with_out_dir_creates_directory(mock_ensure, tmp_path):
-    """
-    Test that predict() passes out_dir to the inferencer.
+    """Test that predict() passes out_dir to the inferencer.
     """
     model = "rtmdet_tiny"
     checkpoint_path = "checkpoints/best.pth"

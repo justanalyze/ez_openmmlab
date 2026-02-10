@@ -135,7 +135,7 @@ indent-width = 4
 target-version = "py39"
 
 [tool.ruff.lint]
-select = ["e", "f", "i", "n", "w", "d"]
+select = ["E", "F", "I", "N", "W", "D"]
 ignore = ["D100", "D104"]
 
 [tool.ruff.lint.pydocstyle]

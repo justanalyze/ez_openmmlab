@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional, Union, List
-import tempfile
+from typing import List, Optional, Union
 
 from loguru import logger
 from mmengine.config import Config
@@ -9,16 +8,15 @@ from mmengine.runner import Runner
 
 from ez_openmmlab.core.config_manager import ConfigManager, get_config_file
 from ez_openmmlab.core.injectors import get_injectors
-from ez_openmmlab.schemas.dataset import DatasetConfig
 from ez_openmmlab.core.results import InferenceResult
 from ez_openmmlab.schemas.model import ModelName
-from ez_openmmlab.utils.download import ensure_model_checkpoint
-from ez_openmmlab.utils.path import get_unique_dir
-from ez_openmmlab.utils.input import normalize_inputs
 from ez_openmmlab.utils.context import switch_to_lib_root
+from ez_openmmlab.utils.download import ensure_model_checkpoint
+from ez_openmmlab.utils.input import normalize_inputs
+from ez_openmmlab.utils.path import get_unique_dir
 from ez_openmmlab.utils.toml_config import (
-    save_user_config,
     UserConfig,
+    save_user_config,
 )
 
 

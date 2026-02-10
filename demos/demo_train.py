@@ -1,5 +1,6 @@
-from ez_openmmlab import RTMDet
 from pathlib import Path
+
+from ez_openmmlab import RTMDet
 
 # 1. Select your base architecture
 model = RTMDet(model="rtmdet_tiny")

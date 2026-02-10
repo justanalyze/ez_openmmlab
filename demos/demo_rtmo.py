@@ -1,7 +1,9 @@
 from typing import List
+
+from loguru import logger
+
 from ez_openmmlab import RTMO
 from ez_openmmlab.core.results import InferenceResult
-from loguru import logger
 
 # RTMO is a BOTTOM-UP model.
 model = RTMO("rtmo_s")
@@ -26,7 +28,7 @@ for img_idx, res in enumerate(results):
     if res.keypoints is None:
         logger.info(f"Image {img_idx}: No people detected.")
         continue
-        
+
     logger.info(f"Image {img_idx} found {len(res.keypoints)} people")
     for i in range(len(res.keypoints)):
         logger.info(f"Person {i} keypoints: {res.keypoints.xy[i]}")

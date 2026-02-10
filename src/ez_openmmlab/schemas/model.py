@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Dict
 
 # --- Model Registry Data ---
 # Organized by architecture family for easy maintenance

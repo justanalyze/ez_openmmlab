@@ -4,8 +4,7 @@ from typing import Optional
 import typer
 
 from ez_openmmlab.models.mmdet import RTMDet
-from ez_openmmlab.models.mmpose import RTMPose, RTMO
-from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.models.mmpose import RTMO, RTMPose
 
 app = typer.Typer(help="ez_mmdet: A user-friendly CLI for MMDetection")
 

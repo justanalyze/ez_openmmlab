@@ -1,8 +1,9 @@
-import pytest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+
+import pytest
+
 from ez_openmmlab.core.config_manager import ConfigManager
-from ez_openmmlab.schemas.model import ModelName
+
 
 class TestConfigManagerRefinement:
     def test_load_metadata_from_toml_success(self, tmp_path):
@@ -24,7 +25,7 @@ val_img = "d"
 epochs = 1
 batch_size = 1
 """)
-        
+
         metadata = manager.load_metadata_from_toml(config_path)
         assert metadata["model_name"] == "rtmdet_tiny"
         assert metadata["num_classes"] == 5
@@ -50,7 +51,7 @@ val_img = "d"
 epochs = 1
 batch_size = 1
 """)
-        
+
         metadata = manager.load_metadata_from_toml(config_path)
         assert metadata["num_classes"] == 2
         assert metadata["metainfo"]["classes"] == ["cat", "dog"]

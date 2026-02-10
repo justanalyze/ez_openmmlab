@@ -1,18 +1,13 @@
 from abc import abstractmethod
 from pathlib import Path
-from typing import List, Optional, Union
-import numpy as np
-import cv2
+from typing import Optional, Union
 
-from loguru import logger
 from mmpose.apis import MMPoseInferencer
 
-from .engine_base import EZMMLab
-from ez_openmmlab.schemas.model import ModelName
-from ez_openmmlab.core.results import InferenceResult, Boxes, Keypoints
 from ez_openmmlab.core.formatters import PoseResultFormatter
-from ez_openmmlab.utils.input import normalize_inputs
-from ez_openmmlab.utils.path import get_unique_dir
+from ez_openmmlab.schemas.model import ModelName
+
+from .engine_base import EZMMLab
 
 
 class EZMMPose(EZMMLab):

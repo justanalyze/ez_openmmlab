@@ -1,9 +1,9 @@
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from ez_openmmlab import RTMDet
 from ez_openmmlab.schemas.model import ModelName
-import numpy as np
+
 
 @patch("ez_openmmlab.core.engines.mmdet.DetInferencer")
 @patch("ez_openmmlab.core.config_manager.toml_config.load_user_config")
@@ -15,23 +15,23 @@ def test_rtmdet_init_with_custom_config(mock_ensure, mock_get_config, mock_load_
     config_file.touch()
     checkpoint_file = tmp_path / "custom.pth"
     checkpoint_file.touch()
-    
+
     # Setup mocks
     mock_user_config = MagicMock()
     mock_user_config.model.name = ModelName.RTM_DET_TINY
     mock_user_config.model.num_classes = 10
     mock_user_config.data.metainfo = {"classes": ["cat", "dog"]}
     mock_load_config.return_value = mock_user_config
-    
+
     mock_get_config.return_value = Path.cwd() / "libs/mmdetection/configs/rtmdet/tiny.py"
     mock_ensure.return_value = checkpoint_file
-    
+
     # Initialize RTMDet
     detector = RTMDet(model=config_file, checkpoint_path=checkpoint_file)
-    
+
     # Trigger _init_inferencer
     detector._init_inferencer(device="cpu")
-    
+
     # Verify DetInferencer was called with the TEMPORARY config file path
     mock_inferencer_cls.assert_called_once()
     args, kwargs = mock_inferencer_cls.call_args

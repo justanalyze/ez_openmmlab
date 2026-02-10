@@ -1,11 +1,9 @@
-import pytest
 from pathlib import Path
-from typing import List, Union, Dict, Any
-import numpy as np
 from unittest.mock import MagicMock, patch
 
 from ez_openmmlab.core.engines.engine_base import EZMMLab
 from ez_openmmlab.core.results import InferenceResult
+
 
 class MockFormatter:
     def map_results(self, results, inputs, names):
@@ -34,10 +32,10 @@ class ConcreteMockEngine(EZMMLab):
 def test_predict_template_workflow():
     """Verify that EZMMLab.predict calls the hooks in the correct order."""
     engine = ConcreteMockEngine()
-    
+
     with patch("ez_openmmlab.core.engines.engine_base.normalize_inputs", return_value=["img.jpg"]):
         results = engine.predict("img.jpg", device="cpu", confidence=0.5)
-        
+
         assert engine.init_called
         assert engine.run_called
         assert engine.device == "cpu"
@@ -48,11 +46,11 @@ def test_predict_template_workflow():
 def test_get_class_names_logic():
     """Verify that _get_class_names respects metainfo priority."""
     engine = ConcreteMockEngine()
-    
+
     # 1. Test metainfo priority
     engine.metainfo = {"classes": ["cat", "dog"]}
     assert engine._get_class_names() == {0: "cat", 1: "dog"}
-    
+
     # 2. Test inferencer fallback
     engine.metainfo = None
     mock_model = MagicMock()

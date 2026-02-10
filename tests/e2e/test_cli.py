@@ -1,8 +1,9 @@
-import pytest
 from pathlib import Path
-from typer.testing import CliRunner
-from ez_openmmlab.cli import app
 from unittest.mock import MagicMock, patch
+
+from typer.testing import CliRunner
+
+from ez_openmmlab.cli import app
 
 runner = CliRunner()
 
