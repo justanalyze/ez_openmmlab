@@ -10,35 +10,32 @@ from ez_openmmlab.schemas.model import (
 
 
 class RTMDet(EZMMDetector):
-    """RTMDet implementation for high-speed object detection and instance segmentation.
-
-    RTMDet (Real-time Models for Object Detection) is a family of high-efficiency
-    models from MMDetection. This class provides a simplified interface for
-    training and inference using these models.
-
-    Args:
-        model: The model variant to use. Can be a member of :class:`ModelName`,
-            a string name (e.g., 'rtmdet_tiny'), or a path to a custom `config.toml`.
-        checkpoint_path: Path to a custom model checkpoint (.pth). If None,
-            the official pretrained weights will be automatically downloaded
-            based on the `model` name.
-        log_level: Global logging level for the engine. Defaults to "INFO".
-        **kwargs: Additional configuration parameters passed to the base engine.
-
-    Attributes:
-        model (str): The resolved model name or path.
-        checkpoint_path (Path): Absolute path to the resolved weights file.
-        num_classes (int, optional): Number of output classes for the model.
-    """
+    """RTMDet implementation for high-speed object detection and instance segmentation."""
 
     def __init__(
         self,
         model: Union[ModelName, str, Path],
         checkpoint_path: Optional[Union[str, Path]] = None,
         log_level: str = "INFO",
+        **kwargs,
     ):
+        """Initializes a new RTMDet engine.
+
+        RTMDet (Real-time Models for Object Detection) is a family of high-efficiency
+        models from MMDetection. This class provides a simplified interface for
+        training and inference using these models.
+
+        Args:
+            model: The model variant to use. Can be a member of :class:`ModelName`,
+                a string name (e.g., 'rtmdet_tiny'), or a path to a custom `config.toml`.
+            checkpoint_path: Path to a custom model checkpoint (.pth). If None,
+                the official pretrained weights will be automatically downloaded
+                based on the `model` name.
+            log_level: Global logging level for the engine. Defaults to "INFO".
+            **kwargs: Additional configuration parameters passed to the base engine.
+        """
         self._validate_model(model)
-        super().__init__(model, checkpoint_path, log_level)
+        super().__init__(model, checkpoint_path, log_level, **kwargs)
 
     def _validate_model(self, model: Union[ModelName, str, Path]) -> None:
         """Validates that the provided model is a supported RTMDet variant."""
