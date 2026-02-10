@@ -6,7 +6,7 @@
 
 ## 💡 Why ez_openmmlab?
 
-OpenMMLab produces world-class, State-of-the-Art (SOTA) models like **RTMDet**, **RTMPose**, and **RTMO** that consistently dominate benchmarks. However, for many developers, the barrier to entry is high:
+OpenMMLab produces State-of-the-Art (SOTA) models like **RTMDet**, **RTMPose**, and **RTMO** that consistently dominate benchmarks. However, for many developers, the barrier to entry is high:
 
 1.  **The Dependency Whack-a-Mole:** Installing MMDet or MMPose often feels like a frustrating game of whack-a-mole, trying to align specific versions of Torch, MMCV, and CUDA. `ez_openmmlab` resolves this "dependency hell" with optimized, reproducible environments.
 2.  **Config Fatigue:** Customizing a model for your own dataset usually requires editing 500-line Python files spread across multiple directories. We've replaced this with a simple, human-readable **TOML-First** workflow.
@@ -78,8 +78,6 @@ detector.train(
 ```
 
 ### 3. Inference Made Simple
-
-`ez_openmmlab` ensures you never load a mismatched model again by enforcing explicit metadata for custom weights.
 
 ```python
 from ez_openmmlab import RTMPose
