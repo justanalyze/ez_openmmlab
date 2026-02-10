@@ -3,7 +3,7 @@ from loguru import logger
 from ez_openmmlab import RTMPose
 
 # RTMPose is a TOP-DOWN model.
-model = RTMPose(model="rtmo_s", log_level="INFO")
+model = RTMPose(model="rtmpose_tiny", log_level="INFO")
 
 image_path = "./demos/demo.jpg"
 
