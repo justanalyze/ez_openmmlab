@@ -135,7 +135,7 @@ class PoseResultFormatter(ResultFormatter):
             labels_list = []
 
             for p in raw_data:
-                # Handle bbox nesting ([x1, y1, x2, y2],) common in some MMPose outputs
+                # ... handle bounding box logic ...
                 raw_bbox = p.get("bbox", [])
                 if isinstance(raw_bbox, (list, tuple)) and len(raw_bbox) > 0:
                     inner = raw_bbox[0]
@@ -147,8 +147,8 @@ class PoseResultFormatter(ResultFormatter):
                     bboxes_list.append([0, 0, 0, 0])
 
                 bbox_scores_list.append(p.get("bbox_score", 0.0))
-                # For person pose, label is usually 0
-                labels_list.append(0)
+                # Use category_id if provided (common in multi-class setups), fallback to 0
+                labels_list.append(p.get("category_id", 0))
 
             bboxes = np.array(bboxes_list, dtype=np.float32)
             bbox_scores = np.array(bbox_scores_list, dtype=np.float32)
