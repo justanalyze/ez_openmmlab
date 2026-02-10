@@ -45,11 +45,12 @@ class EZMMDetector(EZMMLab):
             )
             det_cfg = self._load_and_patch_config()
 
-            self._inferencer = DetInferencer(
-                model=det_cfg,
-                weights=str(self.checkpoint_path),
-                device=device,
-            )
+            with switch_to_lib_root(self.model):
+                self._inferencer = DetInferencer(
+                    model=det_cfg,
+                    weights=str(self.checkpoint_path),
+                    device=device,
+                )
 
     def _load_and_patch_config(self) -> Config:
         """Loads the detection config and applies runtime patches."""

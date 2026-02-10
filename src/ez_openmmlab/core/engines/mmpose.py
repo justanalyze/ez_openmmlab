@@ -45,7 +45,12 @@ class EZMMPose(EZMMLab):
 
             # Delegate specific instantiation logic to children if needed,
             # but for most variants the standard MMPoseInferencer suffices.
-            self._inferencer = self._instantiate_inferencer(pose_cfg, device, **kwargs)
+            # We wrap this in switch_to_lib_root to ensure relative paths in the
+            # config (like metainfo) are correctly resolved during model building.
+            with switch_to_lib_root(self.model):
+                self._inferencer = self._instantiate_inferencer(
+                    pose_cfg, device, **kwargs
+                )
 
     def _load_and_patch_config(self) -> Config:
         """Loads the pose config and applies runtime patches."""
