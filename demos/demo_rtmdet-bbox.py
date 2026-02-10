@@ -3,7 +3,7 @@ from typing import List
 from loguru import logger
 
 from ez_openmmlab import RTMDet
-from ez_openmmlab.core.inference.results import InferenceResult
+from ez_openmmlab.core.inference import InferenceResult
 
 # 1. Simple Initialization
 model = RTMDet("rtmdet_s")

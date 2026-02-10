@@ -1,18 +1,15 @@
-from typing import List
-
 from loguru import logger
 
 from ez_openmmlab import RTMPose
-from ez_openmmlab.core.inference.results import InferenceResult
 
 # RTMPose is a TOP-DOWN model.
-model = RTMPose(model="rtmpose_tiny", log_level="INFO")
+model = RTMPose(model="rtmo_s", log_level="INFO")
 
 image_path = "./demos/demo.jpg"
 
 # predict() handles single image or list of images
 # Now always returns a List[InferenceResult]
-results: List[InferenceResult] = model.predict(
+results = model.predict(
     image_path=image_path,
     det_model="rtmdet_tiny",
     device="cpu",

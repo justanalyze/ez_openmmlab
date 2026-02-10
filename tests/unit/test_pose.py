@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 
-from ez_openmmlab.core.inference.results import Boxes, InferenceResult, Keypoints
+from ez_openmmlab.core.inference import Boxes, InferenceResult, Keypoints
 from ez_openmmlab.models.mmpose import RTMPose
 from ez_openmmlab.schemas.model import ModelName
 

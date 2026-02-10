@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from ez_openmmlab.core.engines.engine_base import EZMMLab
-from ez_openmmlab.core.inference.results import InferenceResult
+from ez_openmmlab.core.inference import InferenceResult
 
 
 class MockFormatter:

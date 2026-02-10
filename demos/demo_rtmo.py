@@ -3,7 +3,7 @@ from typing import List
 from loguru import logger
 
 from ez_openmmlab import RTMO
-from ez_openmmlab.core.inference.results import InferenceResult
+from ez_openmmlab.core.inference import InferenceResult
 
 # RTMO is a BOTTOM-UP model.
 model = RTMO("rtmo_s")

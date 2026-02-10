@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from ez_openmmlab import RTMDet
-from ez_openmmlab.core.inference.results import Boxes, InferenceResult
+from ez_openmmlab.core.inference import Boxes, InferenceResult
 from ez_openmmlab.schemas.model import ModelName
 
 
@@ -27,7 +27,7 @@ def test_detector_returns_vectorized_result(model):
 @pytest.mark.parametrize("model", [ModelName.RTM_POSE_S])
 def test_pose_returns_vectorized_result(model):
     from ez_openmmlab import RTMPose
-    from ez_openmmlab.core.inference.results import Keypoints
+    from ez_openmmlab.core.inference import Keypoints
 
     pose = RTMPose(model=model)
     img_path = "demos/demo.jpg"

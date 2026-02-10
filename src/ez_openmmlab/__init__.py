@@ -2,7 +2,9 @@ import warnings
 
 # Suppress noisy library warnings immediately on import
 warnings.filterwarnings("ignore", message=".*pkg_resources is deprecated")
-warnings.filterwarnings("ignore", message="A new version of Albumentations is available")
+warnings.filterwarnings(
+    "ignore", message="A new version of Albumentations is available"
+)
 
 from mmdet.utils import register_all_modules as register_mmdet
 
