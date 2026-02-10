@@ -31,6 +31,7 @@ class EZMMLab(ABC):
         model: Union[ModelName, str, Path],
         checkpoint_path: Optional[Union[str, Path]] = None,
         log_level: str = "INFO",
+        **kwargs,
     ):
         """Initializes the library wrapper with a base model.
 
@@ -38,6 +39,7 @@ class EZMMLab(ABC):
             model: The name of the architecture (e.g., 'rtmdet_tiny') OR path to a config.toml.
             checkpoint_path: Path to a specific checkpoint (.pth or .pt).
             log_level: Global logging level. Default is 'INFO'.
+            **kwargs: Additional metadata (e.g., num_classes, num_keypoints).
         """
         # --- 1. Logging & Internal State ---
         self.log_level = log_level
@@ -57,16 +59,28 @@ class EZMMLab(ABC):
         self.checkpoint_path: Optional[Path] = None
         self.config_path: Optional[Path] = None
         self.model: Optional[str] = None
-        self.num_classes: Optional[int] = None
-        self.num_keypoints: Optional[int] = None
-        self.metainfo: Optional[dict] = None
+        self.num_classes: Optional[int] = kwargs.get("num_classes")
+        self.num_keypoints: Optional[int] = kwargs.get("num_keypoints")
+        self.metainfo: Optional[dict] = kwargs.get("metainfo")
 
         self._cfg: Optional[Config] = None
         self._temp_config_file: Optional[Path] = None
+        self._using_custom_weights: bool = checkpoint_path is not None
 
         # --- 4. Initialization Sequence ---
         self._validate_inputs(model, checkpoint_path)
         self._resolve_resources(model, checkpoint_path)
+
+        # --- 5. Post-Initialization Validation ---
+        self._validate_metadata()
+
+    def _validate_metadata(self) -> None:
+        """Ensures required metadata is present for the resolved resources."""
+        if self._using_custom_weights and self.num_classes is None:
+            raise ValueError(
+                f"num_classes must be specified when using a custom model with {self.__class__.__name__}. "
+                "This ensures the model head is correctly configured for your classes."
+            )
 
     def _configure_logging(self, log_level: str) -> None:
         """Configures the global logger level."""

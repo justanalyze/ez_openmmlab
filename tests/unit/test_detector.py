@@ -2,6 +2,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pytest
 
 from ez_openmmlab import RTMDet
 from ez_openmmlab.core.inference.results import InferenceResult
@@ -33,7 +34,9 @@ def test_predict_initializes_inferencer_and_calls_it(mock_ensure):
         # Mock cv2.imread
         with patch("cv2.imread", return_value=np.zeros((480, 640, 3), dtype=np.uint8)):
             # Initialize with checkpoint
-            detector = RTMDet(model=model, checkpoint_path=checkpoint_path)
+            detector = RTMDet(
+                model=model, checkpoint_path=checkpoint_path, num_classes=80
+            )
 
             # Predict WITHOUT checkpoint_path
             results = detector.predict(image_path=image_path, confidence=0.5)
@@ -78,10 +81,31 @@ def test_predict_with_out_dir_creates_directory(mock_ensure, tmp_path):
 
         # Mock cv2.imread
         with patch("cv2.imread", return_value=np.zeros((480, 640, 3), dtype=np.uint8)):
-            detector = RTMDet(model=model, checkpoint_path=checkpoint_path)
+            detector = RTMDet(
+                model=model, checkpoint_path=checkpoint_path, num_classes=80
+            )
             detector.predict(image_path=image_path, out_dir=str(out_dir))
 
         # Verify inferencer was called with the out_dir
         mock_inferencer_instance.assert_called_once_with(
             "demo.jpg", out_dir=str(out_dir), show=False, pred_score_thr=0.3
         )
+
+
+@patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
+
+
+def test_predict_custom_weights_requires_num_classes(mock_ensure):
+
+
+    """Verifies that RTMDet raises ValueError if custom weights are provided without num_classes."""
+
+
+    mock_ensure.return_value = Path("custom.pth")
+
+
+    with pytest.raises(ValueError, match="num_classes must be specified"):
+
+
+        RTMDet(model="rtmdet_tiny", checkpoint_path="custom.pth")
+

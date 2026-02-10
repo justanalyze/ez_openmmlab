@@ -20,9 +20,10 @@ class RTMO(EZMMPose):
         model: Union[ModelName, str, Path],
         checkpoint_path: Optional[Union[str, Path]] = None,
         log_level: str = "INFO",
+        **kwargs,
     ):
         self._validate_model(model)
-        super().__init__(model, checkpoint_path, log_level)
+        super().__init__(model, checkpoint_path, log_level, **kwargs)
 
     def _validate_model(self, model: Union[ModelName, str, Path]) -> None:
         """Validates that the provided model is a supported RTMO variant."""

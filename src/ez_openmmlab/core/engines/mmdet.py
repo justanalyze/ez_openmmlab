@@ -31,8 +31,9 @@ class EZMMDetector(EZMMLab):
         model: Union[ModelName, str, Path],
         checkpoint_path: Optional[Union[str, Path]] = None,
         log_level: str = "INFO",
+        **kwargs,
     ):
-        super().__init__(model, checkpoint_path, log_level)
+        super().__init__(model, checkpoint_path, log_level, **kwargs)
         self._inferencer: Optional[DetInferencer] = None
         self._formatter = DetectionResultFormatter()
 
@@ -55,7 +56,8 @@ class EZMMDetector(EZMMLab):
         with switch_to_lib_root(self.model):
             cfg = Config.fromfile(str(self.config_path))
 
-            if self.num_classes is not None:
+            # Trigger patching/validation if custom classes are provided OR if using custom weights
+            if self.num_classes is not None or self._using_custom_weights:
                 dummy_user_cfg = self._get_dummy_user_config()
                 MMDetInjector().apply(cfg, dummy_user_cfg)
             return cfg
@@ -65,7 +67,7 @@ class EZMMDetector(EZMMLab):
         return UserConfig(
             model=ModelSection(
                 name=self.model,
-                num_classes=self.num_classes if self.num_classes is not None else 80,
+                num_classes=self.num_classes,
             ),
             training=TrainingSection(num_workers=0, learning_rate=0.001),
             data=DataSection(root=""),

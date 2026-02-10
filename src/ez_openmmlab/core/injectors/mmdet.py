@@ -21,9 +21,12 @@ class MMDetInjector(BaseConfigInjector):
             f"[MMDetInjector] Patching model.bbox_head.num_classes to {num_classes}"
         )
 
+        # RTMDet style
         bbox_head = cfg.model.bbox_head
         if isinstance(bbox_head, list):
             for head in bbox_head:
                 head.num_classes = num_classes
         else:
             bbox_head.num_classes = num_classes
+
+        # TODO: Add style for different model architectures
