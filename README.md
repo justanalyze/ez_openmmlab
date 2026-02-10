@@ -87,13 +87,12 @@ from ez_openmmlab import RTMPose
 # Load a model with custom weights easily
 model = RTMPose(
     model="rtmpose_s",
-    checkpoint_path="runs/train/best.pth",
-    num_classes=1, # No more headaches
-    num_keypoints=17
 )
 
-results = model.predict("sample.jpg")
-results[0].show() # Instant visualization
+results = model.predict("sample.jpg", show=True)
+
+for bbox in results[0].boxes:
+    print(f"Bbox: {bbox.xyxy}, Class {bbox.cls}, Confidence: {bbox.conf}")
 ```
 
 ---
