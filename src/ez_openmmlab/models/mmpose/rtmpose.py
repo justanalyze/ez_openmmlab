@@ -93,19 +93,22 @@ class RTMPose(EZMMPose):
         with switch_to_lib_root(self.model):
             cfg = Config.fromfile(str(self.config_path))
 
-            # Wrap current state into a dummy UserConfig to reuse MMPoseInjector logic
-            dummy_user_cfg = UserConfig(
-                model=ModelSection(
-                    name=self.model,
-                    num_classes=self.num_classes
-                    if self.num_classes is not None
-                    else 80,  # Dummy valid value
-                    num_keypoints=self.num_keypoints,
-                ),
-                training=TrainingSection(num_workers=0, learning_rate=0.001),
-                data=DataSection(root=""),
-            )
             # If both are None, MMPoseInjector won't patch anything (which we want for standard models)
             if self.num_classes is not None or self.num_keypoints is not None:
+                dummy_user_cfg = self._get_dummy_user_config()
                 MMPoseInjector().apply(cfg, dummy_user_cfg)
             return cfg
+
+    def _get_dummy_user_config(self) -> UserConfig:
+        """Creates a dummy UserConfig to satisfy the injector interface during inference."""
+        return UserConfig(
+            model=ModelSection(
+                name=self.model,
+                num_classes=self.num_classes
+                if self.num_classes is not None
+                else 80,  # Dummy valid value
+                num_keypoints=self.num_keypoints,
+            ),
+            training=TrainingSection(num_workers=0, learning_rate=0.001),
+            data=DataSection(root=""),
+        )

@@ -24,7 +24,7 @@ def test_predict_initializes_inferencer_and_calls_it(mock_ensure):
         ]
     }
 
-    with patch("ez_openmmlab.core.engines.mmdet.DetInferencer") as mock_inferencer_cls:
+    with patch("ez_openmmlab.models.mmdet.rtmdet.DetInferencer") as mock_inferencer_cls:
         # Configure mock inferencer instance
         mock_inferencer_instance = MagicMock()
         mock_inferencer_instance.return_value = mock_result
@@ -42,12 +42,12 @@ def test_predict_initializes_inferencer_and_calls_it(mock_ensure):
         mock_inferencer_cls.assert_called_once()
         _, kwargs = mock_inferencer_cls.call_args
 
-        # We expect the full path here now
+        # We expect the full path here now (as part of the Config object)
         expected_config = str(
             Path.cwd()
             / "libs/mmdetection/configs/rtmdet/rtmdet_tiny_8xb32-300e_coco.py"
         )
-        assert kwargs["model"] == expected_config
+        assert str(kwargs["model"].filename) == expected_config
         assert kwargs["weights"] == checkpoint_path
 
         # Verify inferencer was called with the image and threshold
@@ -69,7 +69,7 @@ def test_predict_with_out_dir_creates_directory(mock_ensure, tmp_path):
     out_dir = tmp_path / "results"
     mock_ensure.return_value = Path(checkpoint_path)
 
-    with patch("ez_openmmlab.core.engines.mmdet.DetInferencer") as mock_inferencer_cls:
+    with patch("ez_openmmlab.models.mmdet.rtmdet.DetInferencer") as mock_inferencer_cls:
         mock_inferencer_instance = MagicMock()
         mock_inferencer_instance.return_value = {
             "predictions": [{"labels": [], "scores": [], "bboxes": []}]
