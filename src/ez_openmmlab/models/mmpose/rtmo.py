@@ -7,7 +7,7 @@ from mmpose.apis import MMPoseInferencer
 
 from ez_openmmlab.core.engines.mmpose import EZMMPose
 from ez_openmmlab.core.injectors.mmpose import MMPoseInjector
-from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.schemas.model import RTMO_CONFIGS, ModelName
 from ez_openmmlab.utils.context import switch_to_lib_root
 from ez_openmmlab.utils.toml_config import (
     DataSection,
@@ -30,8 +30,22 @@ class RTMO(EZMMPose):
         checkpoint_path: Optional[Union[str, Path]] = None,
         log_level: str = "INFO",
     ):
+        self._validate_model(model)
         super().__init__(model, checkpoint_path, log_level)
         self._inferencer: Optional[MMPoseInferencer] = None
+
+    def _validate_model(self, model: Union[ModelName, str, Path]) -> None:
+        """Validates that the provided model is a supported RTMO variant."""
+        if isinstance(model, (str, Path)) and str(model).endswith(".toml"):
+            return
+
+        name = model.value if isinstance(model, ModelName) else str(model)
+        if name not in RTMO_CONFIGS:
+            supported = ", ".join(RTMO_CONFIGS.keys())
+            raise ValueError(
+                f"Invalid model variant '{name}' for RTMO. "
+                f"Supported variants: {supported}, or a path to a custom config.toml"
+            )
 
     def _init_inferencer(self, device: str, **kwargs):
         """Lazy initialization of the RTMO inferencer."""
