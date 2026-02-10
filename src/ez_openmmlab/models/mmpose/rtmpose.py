@@ -11,10 +11,30 @@ from ez_openmmlab.utils.download import ensure_model_checkpoint
 
 
 class RTMPose(EZMMPose):
-    """RTMPose implementation for fast 2D keypoint estimation.
+    """RTMPose implementation for high-performance 2D keypoint estimation.
 
-    Supported variants: rtmpose_tiny, rtmpose_s, rtmpose_m, rtmpose_l.
-    Note: RTMPose is a top-down model and requires a detector.
+    RTMPose is a top-down pose estimation model family. Unlike bottom-up models,
+    it requires a bounding box detector (like RTMDet) to first identify persons
+    before estimating their keypoints.
+
+    Args:
+        model: The pose model variant to use. Supported: 'rtmpose_tiny', 'rtmpose_s',
+            'rtmpose_m', 'rtmpose_l'. Can be :class:`ModelName`, string, or TOML path.
+        checkpoint_path: Path to custom pose weights (.pth). If None, official
+            weights are downloaded automatically.
+        log_level: Global logging level for the engine. Defaults to "INFO".
+        det_model: The detector model to use for person detection.
+            Defaults to "rtmdet_tiny".
+        det_weights: Path to custom detector weights. If None, official
+            weights for `det_model` are downloaded.
+        det_cat_ids: Category IDs in the detector output to treat as "person".
+            Defaults to [0] (COCO Person).
+        **kwargs: Additional configuration parameters passed to the base engine.
+
+    Attributes:
+        det_model (Union[ModelName, str, Path]): The detector configuration source.
+        det_weights (Optional[Union[str, Path]]): Path to the detector weights.
+        det_cat_ids (List[int]): List of IDs considered valid for pose estimation.
     """
 
     def __init__(
@@ -25,10 +45,13 @@ class RTMPose(EZMMPose):
         det_model: Union[ModelName, str, Path] = "rtmdet_tiny",
         det_weights: Optional[Union[str, Path]] = None,
         det_cat_ids: List[int] = [0],
-        **kwargs,
     ):
         self._validate_model(model)
-        super().__init__(model, checkpoint_path, log_level, **kwargs)
+        super().__init__(
+            model,
+            checkpoint_path,
+            log_level,
+        )
         self.det_model = det_model
         self.det_weights = det_weights
         self.det_cat_ids = det_cat_ids

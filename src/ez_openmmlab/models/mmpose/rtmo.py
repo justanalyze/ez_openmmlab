@@ -9,10 +9,23 @@ from ez_openmmlab.schemas.model import RTMO_CONFIGS, ModelName
 
 
 class RTMO(EZMMPose):
-    """RTMO implementation for fast bottom-up 2D multi-person pose estimation.
+    """RTMO implementation for one-stage, multi-person 2D pose estimation.
 
-    Supported variants: rtmo_s, rtmo_m, rtmo_l.
-    Note: RTMO is a bottom-up model and does not require a separate detector.
+    RTMO (Towards High-Performance One-Stage Real-Time Multi-Person Pose Estimation)
+    is a bottom-up model, meaning it detects people and their poses in a single
+    pass without requiring a separate object detector.
+
+    Args:
+        model: The model variant to use. Supported: 'rtmo_s', 'rtmo_m', 'rtmo_l'.
+            Can be a :class:`ModelName`, string, or path to a `config.toml`.
+        checkpoint_path: Path to a custom model checkpoint (.pth). If None,
+            the official weights will be downloaded automatically.
+        log_level: Global logging level for the engine. Defaults to "INFO".
+        **kwargs: Additional configuration parameters passed to the base engine.
+
+    Attributes:
+        model (str): The resolved model name or path.
+        checkpoint_path (Path): Absolute path to the weights file.
     """
 
     def __init__(
@@ -20,10 +33,9 @@ class RTMO(EZMMPose):
         model: Union[ModelName, str, Path],
         checkpoint_path: Optional[Union[str, Path]] = None,
         log_level: str = "INFO",
-        **kwargs,
     ):
         self._validate_model(model)
-        super().__init__(model, checkpoint_path, log_level, **kwargs)
+        super().__init__(model, checkpoint_path, log_level)
 
     def _validate_model(self, model: Union[ModelName, str, Path]) -> None:
         """Validates that the provided model is a supported RTMO variant."""
