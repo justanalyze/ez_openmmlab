@@ -1,6 +1,6 @@
 import numpy as np
 
-from ez_openmmlab.core.results import BaseData, Boxes, InferenceResult, Keypoints, Masks
+from ez_openmmlab.core.inference.results import BaseData, Boxes, InferenceResult, Keypoints, Masks
 
 
 def test_base_data_basics():

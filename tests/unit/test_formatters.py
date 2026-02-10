@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from ez_openmmlab.core.formatters import DetectionResultFormatter
-from ez_openmmlab.core.results import Boxes, InferenceResult
+from ez_openmmlab.core.inference.formatters import DetectionResultFormatter
+from ez_openmmlab.core.inference.results import Boxes, InferenceResult
 
 
 class TestDetectionResultFormatter:
@@ -86,8 +86,8 @@ class TestDetectionResultFormatter:
 
 class TestPoseResultFormatter:
     def test_map_results_single_image(self):
-        from ez_openmmlab.core.formatters import PoseResultFormatter
-        from ez_openmmlab.core.results import Keypoints
+        from ez_openmmlab.core.inference.formatters import PoseResultFormatter
+        from ez_openmmlab.core.inference.results import Keypoints
 
         formatter = PoseResultFormatter()
         raw_results = [
@@ -123,7 +123,7 @@ class TestPoseResultFormatter:
             assert np.allclose(res.boxes.conf[0], 0.95)
 
     def test_map_results_nested_bbox(self):
-        from ez_openmmlab.core.formatters import PoseResultFormatter
+        from ez_openmmlab.core.inference.formatters import PoseResultFormatter
 
         formatter = PoseResultFormatter()
         # Some MMPose models return nested bboxes like [[x1, y1, x2, y2]]

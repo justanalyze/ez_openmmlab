@@ -4,7 +4,7 @@
 Focus on extracting the logic that transforms raw MMLab outputs into vectorized `InferenceResult` objects.
 
 - [x] Task: Create `ResultFormatter` abstract base and `DetectionResultFormatter`
-    - [x] Define `ResultFormatter` interface in `src/ez_openmmlab/core/formatters.py`
+    - [x] Define `ResultFormatter` interface in `src/ez_openmmlab.core.inference.formatters.py`
     - [x] Implement `DetectionResultFormatter` with `_map_results` and `_process_single` logic
     - [x] Write unit tests for `DetectionResultFormatter`
 - [x] Task: Create `PoseResultFormatter`

@@ -1,7 +1,7 @@
 from typing import List
 
 from ez_openmmlab import RTMDet
-from ez_openmmlab.core.results import InferenceResult
+from ez_openmmlab.core.inference.results import InferenceResult
 
 # Initialize the Instance Segmentation variant
 model = RTMDet("rtmdet-ins_s")

@@ -5,7 +5,7 @@ from loguru import logger
 from mmdet.apis import DetInferencer
 from mmdet.utils import register_all_modules
 
-from ez_openmmlab.core.formatters import DetectionResultFormatter
+from ez_openmmlab.core.inference.formatters import DetectionResultFormatter
 from ez_openmmlab.schemas.model import ModelName
 
 from .engine_base import EZMMLab

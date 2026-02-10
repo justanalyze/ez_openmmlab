@@ -3,7 +3,7 @@ from typing import List
 from loguru import logger
 
 from ez_openmmlab import RTMPose
-from ez_openmmlab.core.results import InferenceResult
+from ez_openmmlab.core.inference.results import InferenceResult
 
 # RTMPose is a TOP-DOWN model.
 model = RTMPose(model="rtmpose_tiny", log_level="INFO")

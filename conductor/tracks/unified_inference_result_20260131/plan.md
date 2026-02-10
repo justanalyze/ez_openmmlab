@@ -3,7 +3,7 @@
 ## Phase 1: Core Data Structures [checkpoint: 8a9b0c1]
 
 - [x] Task: Implement Vectorized Helper Classes
-  - [x] Create `src/ez_openmmlab/core/results.py`.
+  - [x] Create `src/ez_openmmlab.core.inference.results.py`.
   - [x] Write failing tests for `BaseData`, `Boxes`, `Keypoints`, and `Masks` in `tests/unit/test_results.py`.
   - [x] Implement `BaseData` class with indexing and length support.
   - [x] Implement `Boxes` class with `.xyxy`, `.conf`, and `.cls` properties.

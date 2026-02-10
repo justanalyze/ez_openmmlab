@@ -3,11 +3,11 @@
 This plan implements lazy initialization for `InferenceResult` attributes (`boxes`, `keypoints`, `masks`) to improve performance by deferring raw model output processing until first access.
 
 ## Phase 1: Core Refactoring
-- [x] Task: Update `InferenceResult` in `src/ez_openmmlab/core/results.py` to support lazy loading
+- [x] Task: Update `InferenceResult` in `src/ez_openmmlab.core.inference.results.py` to support lazy loading
     - [x] Modify `__init__` to accept raw data and an optional formatting callback
     - [x] Convert `boxes`, `keypoints`, and `masks` into properties
     - [x] Implement internal caching for processed results
-- [x] Task: Update `ResultFormatter` interface in `src/ez_openmmlab/core/formatters.py`
+- [x] Task: Update `ResultFormatter` interface in `src/ez_openmmlab.core.inference.formatters.py`
     - [x] Define the interface/protocol for the lazy formatting callback
     - [x] Update `DetectionResultFormatter` to pass raw data and callback to `InferenceResult`
     - [x] Update `PoseResultFormatter` to pass raw data and callback to `InferenceResult`

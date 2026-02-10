@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Union
 
 import numpy as np
 
-from ez_openmmlab.core.results import Boxes, InferenceResult, Keypoints, Masks
+from .results import Boxes, InferenceResult, Keypoints, Masks
 
 
 class ResultFormatter(ABC):

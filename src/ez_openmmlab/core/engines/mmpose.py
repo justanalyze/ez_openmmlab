@@ -4,7 +4,7 @@ from typing import Optional, Union
 
 from mmpose.apis import MMPoseInferencer
 
-from ez_openmmlab.core.formatters import PoseResultFormatter
+from ez_openmmlab.core.inference.formatters import PoseResultFormatter
 from ez_openmmlab.schemas.model import ModelName
 
 from .engine_base import EZMMLab

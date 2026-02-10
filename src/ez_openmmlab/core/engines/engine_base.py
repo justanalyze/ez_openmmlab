@@ -8,7 +8,7 @@ from mmengine.runner import Runner
 
 from ez_openmmlab.core.config_manager import ConfigManager, get_config_file
 from ez_openmmlab.core.injectors import get_injectors
-from ez_openmmlab.core.results import InferenceResult
+from ez_openmmlab.core.inference.results import InferenceResult
 from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.utils.context import switch_to_lib_root
 from ez_openmmlab.utils.download import ensure_model_checkpoint
