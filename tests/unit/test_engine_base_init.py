@@ -45,7 +45,9 @@ def test_init_standard_model(
     mock_get_config_file.return_value = config_path
 
     with patch("ez_openmmlab.mute_warnings") as mock_mute:
-        engine = MockEngine(model=model_name, checkpoint_path=checkpoint)
+        engine = MockEngine(
+            model=model_name, checkpoint_path=checkpoint, num_classes=80
+        )
 
         mock_mute.assert_called_once()
         assert engine.model == model_name.value

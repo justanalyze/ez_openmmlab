@@ -44,7 +44,9 @@ def test_e2e_train_predict_loop(smoke_test_data, tmp_path):
 
     # 3. Run Inference using the new checkpoint
     # Re-initialize detector with the new checkpoint
-    eval_detector = RTMDet(ModelName.RTM_DET_TINY, checkpoint_path=checkpoint)
+    eval_detector = RTMDet(
+        ModelName.RTM_DET_TINY, checkpoint_path=checkpoint, num_classes=80
+    )
 
     # We use an image from the mini dataset for inference
     image_path = list(Path("tests/data/coco_mini/images").rglob("*.jpg"))[0]
