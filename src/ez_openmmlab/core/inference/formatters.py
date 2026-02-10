@@ -68,7 +68,9 @@ class DetectionResultFormatter(ResultFormatter):
             labels = np.array(raw_data.get("labels", []), dtype=np.int32)
 
             if len(bboxes) > 0:
-                data = np.concatenate([bboxes, scores[:, None], labels[:, None]], axis=1)
+                data = np.concatenate(
+                    [bboxes, scores[:, None], labels[:, None]], axis=1
+                )
             else:
                 data = np.zeros((0, 6), dtype=np.float32)
 
@@ -97,7 +99,10 @@ class PoseResultFormatter(ResultFormatter):
     """Formatter for pose estimation results."""
 
     def map_results(
-        self, results: List[Any], inputs: Union[str, List[str]], names: Dict[int, str]
+        self,
+        results: List[Any],
+        inputs: Union[str, List[str]],
+        names: Dict[int, str],
     ) -> List[InferenceResult]:
         # MMPose batch format: results is a list of batch results
         # Each batch result is a dict with 'predictions' key (list of lists of dicts)
@@ -118,7 +123,10 @@ class PoseResultFormatter(ResultFormatter):
         ]
 
     def _process_single_prediction(
-        self, raw_preds: List[Dict[str, Any]], img_path: str, names: Dict[int, str]
+        self,
+        raw_preds: List[Dict[str, Any]],
+        img_path: str,
+        names: Dict[int, str],
     ) -> InferenceResult:
         return InferenceResult(
             path=str(Path(img_path).absolute()),

@@ -1,23 +1,11 @@
 from pathlib import Path
 from typing import Optional, Union
 
-from loguru import logger
-from mmengine.config import Config
-from mmdet.apis import DetInferencer
-
 from ez_openmmlab.core.engines.mmdet import EZMMDetector
-from ez_openmmlab.core.injectors.mmdet import MMDetInjector
 from ez_openmmlab.schemas.model import (
     RTM_DET_CONFIGS,
     RTM_DET_INS_CONFIGS,
     ModelName,
-)
-from ez_openmmlab.utils.context import switch_to_lib_root
-from ez_openmmlab.utils.toml_config import (
-    DataSection,
-    ModelSection,
-    TrainingSection,
-    UserConfig,
 )
 
 
@@ -54,38 +42,3 @@ class RTMDet(EZMMDetector):
                 f"Invalid model variant '{name}' for RTMDet. "
                 f"Supported variants: {supported}, or a path to a custom config.toml"
             )
-
-    def _init_inferencer(self, device: str, **kwargs):
-        """Lazy initialization of the DetInferencer with patching support."""
-        if self._inferencer is None:
-            logger.info(
-                f"Initializing DetInferencer for model: {self.model} (using config: {self.config_path})"
-            )
-            det_cfg = self._load_and_patch_config()
-
-            self._inferencer = DetInferencer(
-                model=det_cfg,
-                weights=str(self.checkpoint_path),
-                device=device,
-            )
-
-    def _load_and_patch_config(self) -> Config:
-        """Loads the detection config and applies runtime patches."""
-        with switch_to_lib_root(self.model):
-            cfg = Config.fromfile(str(self.config_path))
-
-            if self.num_classes is not None:
-                dummy_user_cfg = self._get_dummy_user_config()
-                MMDetInjector().apply(cfg, dummy_user_cfg)
-            return cfg
-
-    def _get_dummy_user_config(self) -> UserConfig:
-        """Creates a dummy UserConfig to satisfy the injector interface."""
-        return UserConfig(
-            model=ModelSection(
-                name=self.model,
-                num_classes=self.num_classes if self.num_classes is not None else 80,
-            ),
-            training=TrainingSection(num_workers=0, learning_rate=0.001),
-            data=DataSection(root=""),
-        )

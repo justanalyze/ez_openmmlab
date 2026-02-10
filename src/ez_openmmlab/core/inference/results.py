@@ -21,6 +21,7 @@ class BaseData:
     def __repr__(self):
         return f"{self.__class__.__name__}(len={len(self)}, shape={self.data.shape})"
 
+
 class Boxes(BaseData):
     """Vectorized bounding boxes.
 
@@ -78,6 +79,7 @@ class Masks(BaseData):
             else:
                 segments.append(np.zeros((0, 2)))
         return segments
+
 
 class InferenceResult:
     """Standardized container for all inference results."""
@@ -140,7 +142,9 @@ class InferenceResult:
             if isinstance(self._keypoints_raw, Keypoints):
                 self._keypoints = self._keypoints_raw
             elif self._format_fn and self._keypoints_raw is not None:
-                self._keypoints = self._format_fn(self, "keypoints", self._keypoints_raw)
+                self._keypoints = self._format_fn(
+                    self, "keypoints", self._keypoints_raw
+                )
             else:
                 self._keypoints = Keypoints(np.zeros((0, 0, 3)), self.orig_shape)
         return self._keypoints
@@ -174,7 +178,11 @@ class InferenceResult:
         for seg in self.masks.xy:
             if seg.size > 0:
                 cv2.polylines(
-                    img, [seg.astype(np.int32)], True, (0, 255, 0), thickness=line_width
+                    img,
+                    [seg.astype(np.int32)],
+                    True,
+                    (0, 255, 0),
+                    thickness=line_width,
                 )
 
         # 2. Draw Boxes
@@ -186,7 +194,11 @@ class InferenceResult:
 
             label = f"{name} {conf:.2f}"
             cv2.rectangle(
-                img, (box[0], box[1]), (box[2], box[3]), (255, 0, 0), line_width
+                img,
+                (box[0], box[1]),
+                (box[2], box[3]),
+                (255, 0, 0),
+                line_width,
             )
             cv2.putText(
                 img,

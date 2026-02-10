@@ -45,5 +45,6 @@ def test_predict_resolves_config_path(mock_ensure, mock_inferencer_cls):
     mock_inferencer_cls.assert_called_once()
     _, kwargs = mock_inferencer_cls.call_args
     model_arg = kwargs["model"]
-    assert model_arg.endswith(".py")
-    assert "libs/mmdetection/configs" in model_arg
+    # model_arg is now a Config object
+    assert str(model_arg.filename).endswith(".py")
+    assert "libs/mmdetection/configs" in str(model_arg.filename)

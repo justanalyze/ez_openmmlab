@@ -1,20 +1,11 @@
 from pathlib import Path
 from typing import Optional, Union
 
-from loguru import logger
 from mmengine.config import Config
 from mmpose.apis import MMPoseInferencer
 
 from ez_openmmlab.core.engines.mmpose import EZMMPose
-from ez_openmmlab.core.injectors.mmpose import MMPoseInjector
 from ez_openmmlab.schemas.model import RTMO_CONFIGS, ModelName
-from ez_openmmlab.utils.context import switch_to_lib_root
-from ez_openmmlab.utils.toml_config import (
-    DataSection,
-    ModelSection,
-    TrainingSection,
-    UserConfig,
-)
 
 
 class RTMO(EZMMPose):
@@ -32,7 +23,6 @@ class RTMO(EZMMPose):
     ):
         self._validate_model(model)
         super().__init__(model, checkpoint_path, log_level)
-        self._inferencer: Optional[MMPoseInferencer] = None
 
     def _validate_model(self, model: Union[ModelName, str, Path]) -> None:
         """Validates that the provided model is a supported RTMO variant."""
@@ -47,36 +37,12 @@ class RTMO(EZMMPose):
                 f"Supported variants: {supported}, or a path to a custom config.toml"
             )
 
-    def _init_inferencer(self, device: str, **kwargs):
-        """Lazy initialization of the RTMO inferencer."""
-        if self._inferencer is None:
-            logger.info(f"Initializing RTMO inferencer: {self.model}")
-            pose_cfg = self._load_and_patch_config()
-
-            self._inferencer = MMPoseInferencer(
-                pose2d=pose_cfg,
-                pose2d_weights=str(self.checkpoint_path),
-                device=device,
-            )
-
-    def _load_and_patch_config(self) -> Config:
-        """Loads the pose config and applies runtime patches using the plugin system."""
-        with switch_to_lib_root(self.model):
-            cfg = Config.fromfile(str(self.config_path))
-
-            if self.num_classes is not None or self.num_keypoints is not None:
-                dummy_user_cfg = self._get_dummy_user_config()
-                MMPoseInjector().apply(cfg, dummy_user_cfg)
-            return cfg
-
-    def _get_dummy_user_config(self) -> UserConfig:
-        """Creates a dummy UserConfig to satisfy the injector interface during inference."""
-        return UserConfig(
-            model=ModelSection(
-                name=self.model,
-                num_classes=self.num_classes if self.num_classes is not None else 80,
-                num_keypoints=self.num_keypoints,
-            ),
-            training=TrainingSection(num_workers=0, learning_rate=0.001),
-            data=DataSection(root=""),
+    def _instantiate_inferencer(
+        self, cfg: Config, device: str, **kwargs
+    ) -> MMPoseInferencer:
+        """Instantiates the RTMO inferencer."""
+        return MMPoseInferencer(
+            pose2d=cfg,
+            pose2d_weights=str(self.checkpoint_path),
+            device=device,
         )

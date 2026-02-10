@@ -37,5 +37,5 @@ def test_rtmdet_init_with_custom_config(
     # Verify DetInferencer was called with the TEMPORARY config file path
     mock_inferencer_cls.assert_called_once()
     args, kwargs = mock_inferencer_cls.call_args
-    assert str(kwargs["model"]) == str(detector.config_path)
+    assert str(kwargs["model"].filename) == str(detector.config_path)
     assert str(kwargs["weights"]) == str(checkpoint_file)

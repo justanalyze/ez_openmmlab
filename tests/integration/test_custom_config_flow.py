@@ -81,5 +81,5 @@ def test_full_custom_config_flow(mock_imread, mock_inferencer_cls, mock_ds_from_
         # Verify inferencer was called with the temp config
         mock_inferencer_cls.assert_called_once()
         _, kwargs = mock_inferencer_cls.call_args
-        assert kwargs["model"] == str(custom_detector.config_path)
+        assert str(kwargs["model"].filename) == str(custom_detector.config_path)
         assert kwargs["weights"] == str(custom_checkpoint)

@@ -2,10 +2,20 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Optional, Union
 
+from loguru import logger
+from mmengine.config import Config
 from mmpose.apis import MMPoseInferencer
 
 from ez_openmmlab.core.inference.formatters import PoseResultFormatter
+from ez_openmmlab.core.injectors.mmpose import MMPoseInjector
 from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.utils.context import switch_to_lib_root
+from ez_openmmlab.utils.toml_config import (
+    DataSection,
+    ModelSection,
+    TrainingSection,
+    UserConfig,
+)
 
 from .engine_base import EZMMLab
 
@@ -26,6 +36,45 @@ class EZMMPose(EZMMLab):
         self._inferencer: Optional[MMPoseInferencer] = None
         self._formatter = PoseResultFormatter()
 
+    def _init_inferencer(self, device: str, **kwargs):
+        """Lazy initialization of the MMPose inferencer with patching support."""
+        if self._inferencer is None:
+            logger.info(f"Initializing pose inferencer: {self.model}")
+            pose_cfg = self._load_and_patch_config()
+
+            # Delegate specific instantiation logic to children if needed,
+            # but for most variants the standard MMPoseInferencer suffices.
+            self._inferencer = self._instantiate_inferencer(pose_cfg, device, **kwargs)
+
+    def _load_and_patch_config(self) -> Config:
+        """Loads the pose config and applies runtime patches."""
+        with switch_to_lib_root(self.model):
+            cfg = Config.fromfile(str(self.config_path))
+
+            if self.num_classes is not None or self.num_keypoints is not None:
+                dummy_user_cfg = self._get_dummy_user_config()
+                MMPoseInjector().apply(cfg, dummy_user_cfg)
+            return cfg
+
+    def _get_dummy_user_config(self) -> UserConfig:
+        """Creates a dummy UserConfig to satisfy the injector interface."""
+        return UserConfig(
+            model=ModelSection(
+                name=self.model,
+                num_classes=self.num_classes if self.num_classes is not None else 80,
+                num_keypoints=self.num_keypoints,
+            ),
+            training=TrainingSection(num_workers=0, learning_rate=0.001),
+            data=DataSection(root=""),
+        )
+
+    @abstractmethod
+    def _instantiate_inferencer(
+        self, cfg: Config, device: str, **kwargs
+    ) -> MMPoseInferencer:
+        """Instantiates the library-specific inferencer."""
+        pass
+
     def _run_inference(
         self, inputs: list, out_dir: str, show: bool, **kwargs
     ) -> Union[dict, list]:
@@ -43,8 +92,3 @@ class EZMMPose(EZMMLab):
         # the internal logic (inference, visualization, and saving).
         results_gen = self._inferencer(**inferencer_kwargs)
         return list(results_gen)
-
-    @abstractmethod
-    def _init_inferencer(self, device: str, **kwargs):
-        """Lazy initialization of the MMPose inferencer."""
-        pass
