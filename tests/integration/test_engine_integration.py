@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from ez_openmmlab import RTMDet
-from ez_openmmlab.core.inference import Boxes, InferenceResult
+from ez_openmmlab.core.inference.results import Boxes, InferenceResult
 from ez_openmmlab.schemas.model import ModelName
 
 

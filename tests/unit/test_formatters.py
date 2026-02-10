@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from ez_openmmlab.core.inference.formatters import DetectionResultFormatter
-from ez_openmmlab.core.inference import Boxes, InferenceResult
+from ez_openmmlab.core.inference.results import Boxes, InferenceResult
 
 
 class TestDetectionResultFormatter:
@@ -87,7 +87,7 @@ class TestDetectionResultFormatter:
 class TestPoseResultFormatter:
     def test_map_results_single_image(self):
         from ez_openmmlab.core.inference.formatters import PoseResultFormatter
-        from ez_openmmlab.core.inference import Keypoints
+        from ez_openmmlab.core.inference.results import Keypoints
 
         formatter = PoseResultFormatter()
         raw_results = [

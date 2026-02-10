@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 
 from ez_openmmlab import RTMDet
-from ez_openmmlab.core.inference import InferenceResult
+from ez_openmmlab.core.inference.results import InferenceResult
 
 
 @patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
