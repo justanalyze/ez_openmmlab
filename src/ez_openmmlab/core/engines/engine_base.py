@@ -7,8 +7,8 @@ from mmengine.config import Config
 from mmengine.runner import Runner
 
 from ez_openmmlab.core.config_manager import ConfigManager, get_config_file
-from ez_openmmlab.core.injectors import get_injectors
 from ez_openmmlab.core.inference.results import InferenceResult
+from ez_openmmlab.core.injectors import get_injectors
 from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.utils.context import switch_to_lib_root
 from ez_openmmlab.utils.download import ensure_model_checkpoint
@@ -33,14 +33,6 @@ class EZMMLab(ABC):
         log_level: str = "INFO",
         **kwargs,
     ):
-        """Initializes the library wrapper with a base model.
-
-        Args:
-            model: The name of the architecture (e.g., 'rtmdet_tiny') OR path to a config.toml.
-            checkpoint_path: Path to a specific checkpoint (.pth or .pt).
-            log_level: Global logging level. Default is 'INFO'.
-            **kwargs: Additional metadata (e.g., num_classes, num_keypoints).
-        """
         # --- 1. Logging & Internal State ---
         self.log_level = log_level
         self._configure_logging(log_level)
