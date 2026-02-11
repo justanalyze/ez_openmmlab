@@ -34,6 +34,14 @@ class EZMMPose(EZMMLab):
         self._inferencer: Optional[MMPoseInferencer] = None
         self._formatter = PoseResultFormatter()
 
+        # Pose-specific validation for custom TOML configs
+        if isinstance(model, (Path, str)) and str(model).endswith(".toml"):
+            if self.num_keypoints is None:
+                raise ValueError(
+                    f"Metadata 'num_keypoints' is missing in '{model}'. "
+                    "Pose models require explicit 'num_keypoints' in the [model] section."
+                )
+
     def _init_inferencer(self, device: str, **kwargs):
         """Lazy initialization of the MMPose inferencer with patching support."""
         if self._inferencer is None:

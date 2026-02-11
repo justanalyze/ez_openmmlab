@@ -108,6 +108,13 @@ class EZMMLab(ABC):
             self.num_keypoints = meta.get("num_keypoints")
             self.metainfo = meta.get("metainfo")
 
+            # --- Validation: TOML must contain required metadata ---
+            if self.num_classes is None:
+                raise ValueError(
+                    f"Metadata 'num_classes' is missing in '{config_toml}'. "
+                    "When providing a custom config.toml, you must explicitly specify the number of classes."
+                )
+
             # 1.2 Generate temporary Python config
             self._temp_config_file = self._config_manager.prepare_config_file(
                 config_toml, self.checkpoint_path
