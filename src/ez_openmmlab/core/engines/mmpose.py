@@ -21,10 +21,7 @@ from .engine_base import EZMMLab
 
 
 class EZMMPose(EZMMLab):
-    """Base engine for MMPose models.
-
-    Provides shared utilities for interacting with MMPoseInferencer.
-    """
+    """Base engine for MMPose models."""
 
     def __init__(
         self,
@@ -57,12 +54,8 @@ class EZMMPose(EZMMLab):
         with switch_to_lib_root(self.model):
             cfg = Config.fromfile(str(self.config_path))
 
-            # Trigger patching/validation if custom metadata is provided OR if using custom weights
-            if (
-                self.num_classes is not None
-                or self.num_keypoints is not None
-                or self._using_custom_weights
-            ):
+            # Only trigger patching if custom metadata is provided.
+            if self.num_classes is not None or self.num_keypoints is not None:
                 dummy_user_cfg = self._get_dummy_user_config()
                 MMPoseInjector().apply(cfg, dummy_user_cfg)
             return cfg

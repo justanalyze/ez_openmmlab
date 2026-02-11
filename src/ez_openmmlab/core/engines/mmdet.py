@@ -57,8 +57,9 @@ class EZMMDetector(EZMMLab):
         with switch_to_lib_root(self.model):
             cfg = Config.fromfile(str(self.config_path))
 
-            # Trigger patching/validation if custom classes are provided OR if using custom weights
-            if self.num_classes is not None or self._using_custom_weights:
+            # Only trigger patching if custom metadata is provided.
+            # If num_classes is None, we assume the user wants to use the config's default.
+            if self.num_classes is not None:
                 dummy_user_cfg = self._get_dummy_user_config()
                 MMDetInjector().apply(cfg, dummy_user_cfg)
             return cfg

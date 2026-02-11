@@ -90,22 +90,3 @@ def test_predict_with_out_dir_creates_directory(mock_ensure, tmp_path):
         mock_inferencer_instance.assert_called_once_with(
             "demo.jpg", out_dir=str(out_dir), show=False, pred_score_thr=0.3
         )
-
-
-@patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
-
-
-def test_predict_custom_weights_requires_num_classes(mock_ensure):
-
-
-    """Verifies that RTMDet raises ValueError if custom weights are provided without num_classes."""
-
-
-    mock_ensure.return_value = Path("custom.pth")
-
-
-    with pytest.raises(ValueError, match="num_classes must be specified"):
-
-
-        RTMDet(model="rtmdet_tiny", checkpoint_path="custom.pth")
-

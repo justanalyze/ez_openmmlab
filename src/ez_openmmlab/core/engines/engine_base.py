@@ -63,17 +63,6 @@ class EZMMLab(ABC):
         self._validate_inputs(model, checkpoint_path)
         self._resolve_resources(model, checkpoint_path)
 
-        # --- 5. Post-Initialization Validation ---
-        self._validate_metadata()
-
-    def _validate_metadata(self) -> None:
-        """Ensures required metadata is present for the resolved resources."""
-        if self._using_custom_weights and self.num_classes is None:
-            raise ValueError(
-                f"num_classes must be specified when using a custom model with {self.__class__.__name__}. "
-                "This ensures the model head is correctly configured for your classes."
-            )
-
     def _configure_logging(self, log_level: str) -> None:
         """Configures the global logger level."""
         try:
