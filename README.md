@@ -29,15 +29,34 @@ OpenMMLab produces State-of-the-Art (SOTA) models like **RTMDet**, **RTMPose**, 
 We recommend using [uv](https://github.com/astral-sh/uv) for a lightning-fast and reproducible experience.
 
 ```bash
-# Clone the repository (including the submodules)
+# 1. Clone the repository (including submodules)
 git clone --recursive https://github.com/JustAnalyze/ez_openmmlab.git
 cd ez_openmmlab
 
-# Install for CPU
-uv sync --extra cpu
+# 2. Sync the project
+uv sync --extra cpu  # For CPU
+# OR
+uv sync --extra gpu  # For GPU (CUDA 11.7)
+```
 
-# OR: Install for GPU (CUDA 11.7)
-uv sync --extra gpu
+### 💡 Manual Bootstrap (If `uv sync` fails)
+
+If you encounter issues during installation (common with OpenMMLab's complex build requirements), you can manually bootstrap the environment:
+
+```bash
+# 1. Install build dependencies
+uv pip install setuptools==80
+uv pip install wheel
+
+# 2. Install PyTorch
+# For CPU:
+uv pip install torch==2.0.1 --index-url https://download.pytorch.org/whl/cpu
+
+# For GPU (CUDA 11.7):
+uv pip install torch==2.0.1 --index-url https://download.pytorch.org/whl/cu117
+
+# 3. Finalize sync
+uv sync --extra gpu  # or --extra cpu
 ```
 
 ---
@@ -61,7 +80,7 @@ ann_file = "annotations/val.json"
 img_dir = "images/val"
 ```
 
-### 2. Train SOTA Models
+### 2. Train Models using a familiar API ;)
 
 ```python
 from ez_openmmlab import RTMDet
