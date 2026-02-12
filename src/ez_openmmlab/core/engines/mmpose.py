@@ -45,7 +45,6 @@ class EZMMPose(EZMMLab):
     def _init_inferencer(self, device: str, **kwargs):
         """Lazy initialization of the MMPose inferencer with patching support."""
         if self._inferencer is None:
-            logger.info(f"Initializing pose inferencer: {self.model}")
             pose_cfg = self._load_and_patch_config()
 
             # Delegate specific instantiation logic to children if needed,

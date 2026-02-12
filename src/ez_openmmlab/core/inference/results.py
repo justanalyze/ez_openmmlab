@@ -16,7 +16,8 @@ class BaseData:
 
     def __getitem__(self, index):
         """Allows for slicing and boolean indexing."""
-        return self.__class__(self.data[index], self.orig_shape)
+        new_data = self.data[index]
+        return self.__class__(new_data, self.orig_shape)
 
     def __repr__(self):
         return f"{self.__class__.__name__}(len={len(self)}, shape={self.data.shape})"
@@ -167,7 +168,14 @@ class InferenceResult:
         if self._orig_img is None:
             self._orig_img = cv2.imread(self.path)
             if self._orig_img is None:
-                raise FileNotFoundError(f"Could not read image at: {self.path}")
+                # Provide a more descriptive error including file existence check
+                if not Path(self.path).exists():
+                    raise FileNotFoundError(
+                        f"Inference result image path does not exist: {self.path}"
+                    )
+                raise RuntimeError(
+                    f"OpenCV failed to decode image at: {self.path} (format error?)"
+                )
         return self._orig_img
 
     def plot(self, line_width: int = 2, font_size: float = 0.5) -> np.ndarray:
