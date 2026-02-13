@@ -79,6 +79,9 @@ class EZMMPose(EZMMLab):
             data=DataSection(root=""),
         )
 
+    def _get_library_family(self) -> str:
+        return "mmpose"
+
     @abstractmethod
     def _instantiate_inferencer(
         self, cfg: Config, device: str, **kwargs

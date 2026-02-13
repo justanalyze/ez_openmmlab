@@ -75,6 +75,9 @@ class EZMMDetector(EZMMLab):
             data=DataSection(root=""),
         )
 
+    def _get_library_family(self) -> str:
+        return "mmdet"
+
     def _run_inference(
         self, inputs: list, out_dir: str, show: bool, **kwargs
     ) -> Union[dict, list]:

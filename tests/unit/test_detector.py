@@ -90,3 +90,9 @@ def test_predict_with_out_dir_creates_directory(mock_ensure, tmp_path):
         mock_inferencer_instance.assert_called_once_with(
             "demo.jpg", out_dir=str(out_dir), show=False, pred_score_thr=0.3
         )
+
+
+def test_custom_weights_without_config_raises_error():
+    """Verify that using custom weights requires either a .toml or explicit num_classes."""
+    with pytest.raises(ValueError, match="no custom configuration"):
+        RTMDet(model="rtmdet_tiny", checkpoint_path="custom.pth")

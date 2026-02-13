@@ -1,5 +1,27 @@
+import os
+import platform
 from pathlib import Path
 from typing import Union
+
+
+def get_user_cache_dir() -> Path:
+    """Returns the platform-specific cache directory for ez_openmmlab.
+
+    - Windows: %LOCALAPPDATA%/ez_openmmlab/Cache
+    - macOS: ~/Library/Caches/ez_openmmlab
+    - Linux/Other: ~/.cache/ez_openmmlab
+    """
+    system = platform.system()
+    if system == "Windows":
+        # Use LOCALAPPDATA if available, fallback to ~/.cache
+        base = os.environ.get("LOCALAPPDATA")
+        if base and os.path.isdir(base):
+            return Path(base) / "ez_openmmlab" / "Cache"
+        return Path.home() / ".cache" / "ez_openmmlab"
+    elif system == "Darwin":  # macOS
+        return Path.home() / "Library" / "Caches" / "ez_openmmlab"
+    else:  # Linux and others (standard XDG convention)
+        return Path.home() / ".cache" / "ez_openmmlab"
 
 
 def get_unique_dir(base_dir: Union[str, Path]) -> Path:

@@ -38,6 +38,7 @@ class TestConfigManager:
             "ez_openmmlab.core.config_manager.DatasetConfig.from_toml"
         ) as mock_ds:
             mock_ds.return_value = MagicMock(
+                dataset_name="TestBuild",
                 classes=["cat"],
                 data_root="/data",
                 train=MagicMock(ann_file="t.json", img_dir="t/"),

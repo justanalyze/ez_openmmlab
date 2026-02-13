@@ -27,6 +27,7 @@ def test_full_custom_config_flow(mock_imread, mock_inferencer_cls, mock_ds_from_
 
     # 1. Mock dataset config
     mock_ds = MagicMock()
+    mock_ds.dataset_name = "CustomFlow"
     mock_ds.classes = ["cat", "dog"]
     mock_ds.data_root = "/data"
     mock_ds.train.ann_file = "t.json"

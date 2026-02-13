@@ -1,7 +1,8 @@
 from typing import List
 
 from .base import BaseConfigInjector
-from .common import DataloaderInjector, RuntimeInjector
+from .dataloader import DataloaderInjector
+from .runtime import RuntimeInjector
 from .mmdet import MMDetInjector
 from .mmpose import MMPoseInjector
 

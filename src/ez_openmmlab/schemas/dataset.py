@@ -16,6 +16,7 @@ class DatasetConfig(BaseModel):
     """Master configuration for the dataset."""
 
     data_root: Path
+    dataset_name: str = Field(..., description="Unique name for the dataset")
     train: SplitConfig
     val: SplitConfig
     test: Optional[SplitConfig] = None

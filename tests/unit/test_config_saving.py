@@ -24,6 +24,7 @@ def test_train_saves_base_config_path(
 
     # Mock dataset config
     mock_ds = MagicMock()
+    mock_ds.dataset_name = "ConfigSaving"
     mock_ds.classes = ["cat"]
     mock_ds.data_root = "/data"
     mock_ds.train.ann_file = "t.json"

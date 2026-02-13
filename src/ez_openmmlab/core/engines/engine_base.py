@@ -7,6 +7,7 @@ from mmengine.config import Config
 from mmengine.runner import Runner
 
 from ez_openmmlab.core.config_manager import ConfigManager, get_config_file
+from ez_openmmlab.core.datasets import DynamicDatasetRegistry
 from ez_openmmlab.core.inference.results import InferenceResult
 from ez_openmmlab.core.injectors import get_injectors
 from ez_openmmlab.schemas.model import ModelName
@@ -83,6 +84,15 @@ class EZMMLab(ABC):
             if not checkpoint_path:
                 raise ValueError(
                     "Checkpoint path is required when using a custom config.toml"
+                )
+
+        # Enforce explicit configuration for custom weights to prevent head size mismatches
+        if checkpoint_path and not str(model).endswith(".toml"):
+            if self.num_classes is None and self.num_keypoints is None:
+                raise ValueError(
+                    f"You provided custom weights ({checkpoint_path}) but no custom configuration. "
+                    "To load a custom trained model, please provide its 'config.toml' as the 'model' argument. "
+                    "Alternatively, specify 'num_classes' explicitly if using a standard model name."
                 )
 
     def _resolve_resources(
@@ -181,6 +191,11 @@ class EZMMLab(ABC):
         """Library-specific inference execution."""
         pass
 
+    @abstractmethod
+    def _get_library_family(self) -> str:
+        """Returns the library family ('mmdet' or 'mmpose') for this engine."""
+        pass
+
     def _get_class_names(self) -> dict:
         """Retrieves class names from local metainfo or inferencer.
 
@@ -253,10 +268,18 @@ class EZMMLab(ABC):
 
     def _run_training_workflow(self, config: UserConfig) -> None:
         """Orchestrates the internal OpenMMLab setup and execution."""
+        # 1. Resolve Family and Register Dataset
+        # This solves the 'Evaluation Mismatch' problem by creating a first-class
+        # registered class for the session.
+        family = self._get_library_family()
+        registered_name = DynamicDatasetRegistry.register_dataset(config, family)
+        config.data.registered_class_name = registered_name
+
+        # 2. Setup Work Directory
         work_dir = Path(config.training.work_dir)
         work_dir.mkdir(parents=True, exist_ok=True)
 
-        # Set the absolute path to the base python config for artifact tracking
+        # 3. Artifact Tracking
         config.model.base_config_path = str(
             get_config_file(config.model.name).absolute()
         )
@@ -264,6 +287,7 @@ class EZMMLab(ABC):
         save_user_config(config, work_dir / "user_config.toml")
         logger.info(f"User configuration saved to: {work_dir / 'user_config.toml'}")
 
+        # 4. Load and Patch Configuration
         self._cfg = self._load_base_config(config.model.name)
         self._inject_user_configs(config)
 

@@ -13,6 +13,9 @@ class ConcreteEZMMLab(EZMMLab):
     def _init_inferencer(self, device: str, **kwargs):
         pass
 
+    def _get_library_family(self) -> str:
+        return "mmdet"
+
     def _run_inference(self, inputs: list, out_dir: str, show: bool, **kwargs):
         return []
 

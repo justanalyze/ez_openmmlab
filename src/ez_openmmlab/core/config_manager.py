@@ -105,8 +105,14 @@ class ConfigManager:
         """Assembles a full UserConfig object from training parameters and dataset TOML."""
         dataset_cfg = DatasetConfig.from_toml(Path(dataset_config_path))
 
+        dataset_name = dataset_cfg.dataset_name
         classes = dataset_cfg.classes
-        num_classes = len(classes) if classes else 80
+        if not classes:
+            raise ValueError(
+                f"No 'classes' defined in dataset configuration: {dataset_config_path}. "
+                "Explicit class names are required for all datasets."
+            )
+        num_classes = len(classes)
 
         # Extract num_keypoints from metainfo if available (for pose models)
         num_keypoints = None
@@ -122,6 +128,7 @@ class ConfigManager:
             ),
             data=toml_config.DataSection(
                 root=str(dataset_cfg.data_root),
+                dataset_name=dataset_name,
                 train_ann=dataset_cfg.train.ann_file,
                 train_img=dataset_cfg.train.img_dir,
                 val_ann=dataset_cfg.val.ann_file,

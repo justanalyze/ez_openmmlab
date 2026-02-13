@@ -75,3 +75,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: implementing lazy loading/initialization for InferenceResult**
 *Link: [./tracks/lazy_result_formatting_20260210/](./tracks/lazy_result_formatting_20260210/)*
+
+---
+
+- [x] **Track: Dynamic Session Registration for Custom Datasets**
+*Link: [./tracks/dynamic_dataset_registration_20260211/](./tracks/dynamic_dataset_registration_20260211/)*

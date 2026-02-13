@@ -87,11 +87,14 @@ class RTMPose(EZMMPose):
             if not det_weights:
                 det_weights = str(ensure_model_checkpoint(self.det_model))
         else:
-            det_config = (
-                str(Path(self.det_model).absolute())
-                if isinstance(self.det_model, (str, Path))
-                else self.det_model
-            )
+            det_config = self.det_model
+            # Only resolve to absolute path if it looks like a file path and exists
+            # This preserves registry keys (e.g. 'yolox_tiny_8x8...') while handling local configs
+            if isinstance(det_config, (str, Path)) and (
+                Path(det_config).exists() or "/" in str(det_config)
+            ):
+                det_config = str(Path(det_config).absolute())
+
             det_weights = str(self.det_weights) if self.det_weights else None
 
         return det_config, det_weights, self.det_cat_ids

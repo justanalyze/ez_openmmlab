@@ -1,4 +1,28 @@
-from ez_openmmlab.utils.path import get_unique_dir
+import platform
+from unittest.mock import patch
+from pathlib import Path
+from ez_openmmlab.utils.path import get_unique_dir, get_user_cache_dir
+
+
+def test_get_user_cache_dir_linux():
+    """Verify linux cache path convention."""
+    with patch("platform.system", return_value="Linux"):
+        cache_dir = get_user_cache_dir()
+        assert ".cache" in str(cache_dir)
+        assert "ez_openmmlab" in str(cache_dir)
+
+
+def test_get_user_cache_dir_windows():
+    """Verify windows cache path convention."""
+    with patch("platform.system", return_value="Windows"):
+        with patch.dict("os.environ", {"LOCALAPPDATA": "C:\\Users\\Test\\AppData\\Local"}):
+            with patch("os.path.isdir", return_value=True):
+                cache_dir = get_user_cache_dir()
+                path_str = str(cache_dir).lower()
+                assert "appdata" in path_str
+                assert "local" in path_str
+                assert "ez_openmmlab" in path_str
+                assert "cache" in path_str
 
 
 def test_get_unique_dir_returns_base_if_not_exists(tmp_path):

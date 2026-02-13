@@ -15,6 +15,7 @@ def dummy_dataset_config(tmp_path):
     config_path = tmp_path / "dataset.toml"
     config_path.write_text("""
     data_root = "./dummy_data"
+    dataset_name = "DummyData"
     classes = ["crayfish", "lobster"]
     
     [train]

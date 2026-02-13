@@ -1,7 +1,8 @@
 import pytest
 from mmengine.config import Config
 
-from ez_openmmlab.core.injectors.common import DataloaderInjector, RuntimeInjector
+from ez_openmmlab.core.injectors.dataloader import DataloaderInjector
+from ez_openmmlab.core.injectors.runtime import RuntimeInjector
 from ez_openmmlab.utils.toml_config import (
     DataSection,
     ModelSection,
@@ -35,6 +36,7 @@ def mock_user_config():
 
 def test_dataloader_injector_applies_paths_and_params(mock_user_config):
     """Test that DataloaderInjector correctly sets paths and parameters."""
+    mock_user_config.data.registered_class_name = "MyDynamicDataset"
     cfg = Config(dict(
         train_dataloader=dict(dataset=dict()),
         val_dataloader=dict(dataset=dict())
@@ -45,8 +47,8 @@ def test_dataloader_injector_applies_paths_and_params(mock_user_config):
 
     assert cfg.data_root == "data/coco"
     assert cfg.train_dataloader.num_workers == 2
+    assert cfg.train_dataloader.dataset.type == "MyDynamicDataset"
     assert cfg.train_dataloader.dataset.ann_file == "data/coco/annotations/train.json"
-    assert cfg.train_dataloader.dataset.metainfo.classes == ["cat", "dog"]
 
 
 def test_dataloader_injector_no_classes(mock_user_config):

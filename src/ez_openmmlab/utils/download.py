@@ -13,6 +13,7 @@ from rich.progress import (
 )
 
 from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.utils.path import get_user_cache_dir
 
 
 def download_checkpoint(url: str, dest_path: Path) -> None:
@@ -52,7 +53,7 @@ def ensure_model_checkpoint(
     Simplified names like 'rtmdet_tiny.pth' are used for auto-downloads.
     """
     # Use centralized cache directory
-    checkpoint_dir = Path.home() / ".cache" / "ez_openmmlab" / "checkpoints"
+    checkpoint_dir = get_user_cache_dir() / "checkpoints"
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     if checkpoint_path:
