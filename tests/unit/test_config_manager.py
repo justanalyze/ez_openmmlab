@@ -125,7 +125,8 @@ def test_config_loader_init_validation(tmp_path):
     loader._mmpose_config_root = tmp_path / "non_existent"
 
     with pytest.raises(
-        FileNotFoundError, match="Could not find local mmdetection or mmpose configs"
+        FileNotFoundError,
+        match="Could not find local mmdetection or mmpose configs",
     ):
         loader._validate_root()
 

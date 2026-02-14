@@ -1,18 +1,17 @@
 # Implementation Plan: RTMPose Training Parameter Expansion
 
-## Phase 1: Schema and Validation
-- [x] Task: Update Pydantic schemas in `src/ez_openmmlab/utils/toml_config.py`
-    - [x] Add `input_size`, `simcc_sigma`, and `feature_map_size` to `ModelSection`.
-    - [x] Add `weight_decay` and `evaluator_metric` to `TrainingSection`.
-- [x] Task: Implement smart parameter derivation in `ConfigManager.build_user_config`
-    - [x] Add logic to scale `simcc_sigma` linearly if not provided.
-    - [x] Add logic to derive `feature_map_size` (input_size // 32) if not provided.
-    - [x] Add validation check for sigma/feature map compatibility.
-- [x] Task: TDD - Write unit tests for parameter derivation and schema validation
-    - [x] Verify default values.
-    - [x] Verify linear scaling of sigma for non-standard resolutions.
-    - [x] Verify auto-calculation of feature map size.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Schema and Validation' (Protocol in workflow.md)
+## Phase 1: SOLID Refactoring and Advanced Derivation
+- [x] Task: Create `src/ez_openmmlab/core/derivers/` architectural foundation
+    - [x] Implement `BaseParameterDeriver` abstract class.
+    - [x] Implement `RTMPoseParameterDeriver` with resolution adjustment and sigma scaling logic.
+    - [x] Implement `DefaultParameterDeriver` for standard models.
+    - [x] Implement `DeriverFactory` to resolve the correct deriver by model name.
+- [x] Task: Refactor `ConfigManager.build_user_config` to delegate derivation to the factory.
+- [x] Task: TDD - Write unit tests for `RTMPoseParameterDeriver`
+    - [x] Verify auto-adjustment to nearest multiple of 32.
+    - [x] Verify warning is issued for non-32-divisible inputs.
+    - [x] Verify linear scaling of sigma.
+- [x] Task: Conductor - User Manual Verification 'Phase 1: SOLID Refactoring and Advanced Derivation' (Protocol in workflow.md)
 
 ## Phase 2: Configuration Injection
 - [ ] Task: Update `MMPoseInjector` in `src/ez_openmmlab/core/injectors/mmpose.py`
