@@ -83,5 +83,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [~] **Track: RTMPose Training Parameter Expansion**
+- [x] **Track: RTMPose Training Parameter Expansion**
   *Link: [./tracks/rtmpose_param_expansion_20260213/](./tracks/rtmpose_param_expansion_20260213/)*
