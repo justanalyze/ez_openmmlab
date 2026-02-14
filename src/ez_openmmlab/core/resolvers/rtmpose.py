@@ -69,15 +69,18 @@ class RTMPoseParamsResolver(BaseModelParamsResolver):
         return sigma
 
     def _validate_compatibility(
-        self, 
-        input_size: Tuple[int, int], 
-        sigma: Tuple[float, float], 
-        feature_map: Tuple[int, int]
+        self,
+        input_size: Tuple[int, int],
+        sigma: Tuple[float, float],
+        feature_map: Tuple[int, int],
     ) -> None:
-        max_sigma = max(sigma)
-        min_dim = min(input_size)
-        if max_sigma > min_dim / 4:
-             logger.warning(
-                 f"RTMPose: Large simcc_sigma {sigma} detected for input_size {input_size}. "
-                 "This may lead to poor convergence."
-             )
+        """Ensures sigma is mathematically compatible with feature map boundaries."""
+        # In SimCC, sigma is in bin-space (split_ratio * feature_map_size).
+        # We check if sigma is reasonably smaller than the dimensions.
+        for s, f in zip(sigma, feature_map):
+            if s > f:
+                logger.warning(
+                    f"RTMPose: simcc_sigma {sigma} is larger than feature_map {feature_map} "
+                    "in at least one dimension. This will likely cause heatmap clipping."
+                )
+                break

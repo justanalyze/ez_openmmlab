@@ -110,3 +110,4 @@ class RTMDet(EZMMDetector):
             input_size=input_size,
             **kwargs,
         )
+

@@ -67,9 +67,9 @@ class RTMPose(EZMMPose):
         # 1. Resolve detector components (Stage 1)
         # Extract parameters from kwargs (provided by predict/train defaults)
         det_config, det_weights, det_cat_ids = self._resolve_detector_params(
-            det_model=kwargs.get("det_model", "rtmdet_tiny"),
+            det_model=kwargs.get("det_model") or "rtmdet_tiny",
             det_weights=kwargs.get("det_weights"),
-            det_cat_ids=kwargs.get("det_cat_ids", [0]),
+            det_cat_ids=kwargs.get("det_cat_ids") or [0],
         )
 
         # 2. Instantiate
@@ -115,9 +115,9 @@ class RTMPose(EZMMPose):
         out_dir: Optional[str] = None,
         show: bool = False,
         # Top-down specific overrides
-        det_model: Union[ModelName, str, Path] = "rtmdet_tiny",
+        det_model: Optional[Union[ModelName, str, Path]] = None,
         det_weights: Optional[Union[str, Path]] = None,
-        det_cat_ids: List[int] = [0],
+        det_cat_ids: Optional[List[int]] = None,
         **kwargs,
     ) -> List[InferenceResult]:
         """Universal prediction entry point for top-down pose estimation.
@@ -133,12 +133,11 @@ class RTMPose(EZMMPose):
             **kwargs: Additional inference arguments.
         """
         # Warn if user tries to override detector after inferencer is already initialized
-        if self._inferencer is not None:
-            if det_model or det_weights or det_cat_ids:
-                logger.warning(
-                    "Inferencer is already initialized. Overriding detector parameters "
-                    "in predict() will have no effect unless you re-instantiate the RTMPose object."
-                )
+        if self._inferencer is not None and (det_model or det_weights or det_cat_ids):
+            logger.warning(
+                "Inferencer is already initialized. Overriding detector parameters "
+                "in predict() will have no effect unless you re-instantiate the RTMPose object."
+            )
 
         return super().predict(
             image_path,

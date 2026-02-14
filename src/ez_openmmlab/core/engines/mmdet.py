@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Dict, Optional, Union
 
 from loguru import logger
 from mmengine.config import Config
@@ -43,7 +43,7 @@ class EZMMDetector(EZMMLab):
             logger.info(
                 f"Initializing DetInferencer for model: {self.model} (using config: {self.config_path})"
             )
-            det_cfg = self._load_and_patch_config()
+            det_cfg = self._load_and_patch_config(**kwargs)
 
             with switch_to_lib_root(self.model):
                 self._inferencer = DetInferencer(
@@ -52,25 +52,35 @@ class EZMMDetector(EZMMLab):
                     device=device,
                 )
 
-    def _load_and_patch_config(self) -> Config:
+    def _load_and_patch_config(self, **kwargs) -> Config:
         """Loads the detection config and applies runtime patches."""
         with switch_to_lib_root(self.model):
             cfg = Config.fromfile(str(self.config_path))
 
-            # Only trigger patching if custom metadata is provided.
-            # If num_classes is None, we assume the user wants to use the config's default.
-            if self.num_classes is not None:
-                dummy_user_cfg = self._get_dummy_user_config()
-                MMDetInjector().apply(cfg, dummy_user_cfg)
+            # Trigger patching if custom metadata or architecture params are provided
+            dummy_user_cfg = self._get_dummy_user_config(**kwargs)
+            MMDetInjector().apply(cfg, dummy_user_cfg)
+
             return cfg
 
-    def _get_dummy_user_config(self) -> UserConfig:
-        """Creates a dummy UserConfig to satisfy the injector interface."""
+    def _get_dummy_user_config(self, **kwargs) -> UserConfig:
+        """Creates a dummy UserConfig to satisfy the injector interface.
+
+        This ensures that architecture-specific parameters passed during predict()
+        or loaded from config.toml are correctly picked up by the MMDetInjector.
+        """
+        model_params = {
+            "name": self.model,
+            "num_classes": self.num_classes,
+        }
+        # 1. Use stored architecture_params (from config.toml)
+        model_params.update(self.architecture_params)
+
+        # 2. Inject architecture-specific parameters passed to predict()
+        model_params.update(kwargs)
+
         return UserConfig(
-            model=ModelSection(
-                name=self.model,
-                num_classes=self.num_classes,
-            ),
+            model=ModelSection(**model_params),
             training=TrainingSection(num_workers=0, learning_rate=0.001),
             data=DataSection(root=""),
         )
@@ -81,7 +91,7 @@ class EZMMDetector(EZMMLab):
     def _run_inference(
         self, inputs: list, out_dir: str, show: bool, **kwargs
     ) -> Union[dict, list]:
-        """Calls the DetInferencer with correct parameters."""
+        """Calls the DetInferencer and returns raw results."""
         # Map generic 'confidence' to mmdet 'pred_score_thr'
         confidence = kwargs.get("confidence") or kwargs.get("pred_score_thr", 0.3)
 

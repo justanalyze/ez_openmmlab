@@ -176,7 +176,8 @@ class ConfigManager:
             config_path: Path to the user_config.toml file.
 
         Returns:
-            A dictionary containing model_name, num_classes, num_keypoints, and metainfo.
+            A dictionary containing model_name, num_classes, num_keypoints,
+            metainfo, and architecture_params.
         """
         if not config_path.exists():
             raise FileNotFoundError(f"Configuration file not found: {config_path}")
@@ -186,6 +187,7 @@ class ConfigManager:
             "num_keypoints": None,
             "metainfo": None,
             "model_name": None,
+            "architecture_params": {},
         }
 
         try:
@@ -193,6 +195,11 @@ class ConfigManager:
             metadata["num_classes"] = user_cfg.model.num_classes
             metadata["num_keypoints"] = user_cfg.model.num_keypoints
             metadata["metainfo"] = user_cfg.data.metainfo
+
+            # Capture extra architecture parameters (input_size, etc.)
+            # Pydantic captures these in model_extra because of extra="allow"
+            if user_cfg.model.model_extra:
+                metadata["architecture_params"] = user_cfg.model.model_extra
 
             # Explicitly include classes in metainfo if defined in DataSection
             if user_cfg.data.classes:

@@ -1,118 +1,132 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import numpy as np
+import pytest
+
 from ez_openmmlab import RTMO, RTMPose
-from ez_openmmlab.schemas.model import ModelName
 
 
-@patch("ez_openmmlab.core.config_manager.ConfigManager.load_metadata_from_toml")
 @patch("ez_openmmlab.models.mmpose.rtmpose.MMPoseInferencer")
-@patch("ez_openmmlab.core.config_manager.toml_config.load_user_config")
-@patch("ez_openmmlab.core.engines.engine_base.get_config_file")
 @patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
-def test_rtmpose_init_with_custom_config(
-    mock_ensure,
-    mock_get_config,
-    mock_load_config,
-    mock_inferencer_cls,
-    mock_load_meta,
-    tmp_path,
+@patch("ez_openmmlab.core.engines.engine_base.get_config_file")
+def test_rtmpose_predict_patches_arch_params(
+    mock_get_config, mock_ensure, mock_inferencer_cls, tmp_path
 ):
-    """Test that RTMPose correctly initializes using a custom config.toml."""
-    config_file = tmp_path / "config.toml"
-    config_file.touch()
-    checkpoint_file = tmp_path / "custom.pth"
-    checkpoint_file.touch()
+    """Verify that RTMPose.predict patches architecture params into the config."""
+    mock_ensure.return_value = tmp_path / "dummy.pth"
+    mock_get_config.return_value = tmp_path / "dummy.py"
+    (tmp_path / "dummy.py").write_text("model = dict(head=dict(type='RTMCCHead'))\ncodec=dict(type='SimCCLabel')")
+    
+    mock_inferencer_instance = MagicMock()
+    mock_inferencer_instance.return_value = iter([])
+    mock_inferencer_cls.return_value = mock_inferencer_instance
 
-    # Setup mocks
-    mock_load_meta.return_value = {
-        "num_classes": 1,
-        "num_keypoints": 15,
-        "metainfo": {"classes": ["bird"]},
-        "model_name": "rtmpose_tiny",
-    }
-    mock_user_config = MagicMock()
-    mock_user_config.model.name = ModelName.RTM_POSE_TINY
-    mock_user_config.model.num_classes = 1
-    mock_user_config.model.num_keypoints = 15
-    mock_user_config.data.metainfo = {"classes": ["bird"]}
-    mock_load_config.return_value = mock_user_config
+    with patch("ez_openmmlab.core.engines.mmpose.Config.fromfile") as mock_fromfile:
+        # Create a mock config that looks like a real one
+        real_cfg = MagicMock()
+        real_cfg.model.head = MagicMock()
+        real_cfg.codec = MagicMock()
+        mock_fromfile.return_value = real_cfg
+        
+        with patch("cv2.imread", return_value=np.zeros((480, 640, 3), dtype=np.uint8)):
+            # We must patch _run_inference because RTMPose is abstract in this test context
+            # if we don't use the real implementation or mock it correctly.
+            # However, RTMPose actually implements it via EZMMPose.
+            model = RTMPose("rtmpose_s", num_keypoints=17)
+            
+            # Call predict with custom architecture params
+            model.predict("test.jpg", input_size=(288, 384), simcc_sigma=(5.0, 5.0))
 
-    mock_get_config.return_value = Path.cwd() / "libs/mmpose/configs/rtmpose/tiny.py"
-    mock_ensure.return_value = checkpoint_file
-
-    # Initialize RTMPose
-    # Note: EZMMLab._auto_load_metadata might trigger if checkpoint exists
-    # but we are mocking the toml load anyway.
-    pose = RTMPose(model=config_file, checkpoint_path=checkpoint_file)
-
-    # Trigger _init_inferencer
-    with patch(
-        "ez_openmmlab.models.mmpose.rtmpose.Config.fromfile"
-    ) as mock_cfg_fromfile:
-        mock_cfg = MagicMock()
-        mock_cfg_fromfile.return_value = mock_cfg
-        pose._init_inferencer(device="cpu")
-        mock_cfg_fromfile.assert_called_once_with(str(pose.config_path))
-
-    # Verify MMPoseInferencer was called with the Config object (patched)
-    mock_inferencer_cls.assert_called_once()
-    args, kwargs = mock_inferencer_cls.call_args
-    assert kwargs["pose2d"] == mock_cfg
-    assert str(kwargs["pose2d_weights"]) == str(checkpoint_file)
-    # Check if head was patched
-    assert mock_cfg.model.head.out_channels == 15
+    # Verify that the config passed to MMPoseInferencer was patched
+    # MMPoseInferencer(pose2d=cfg, ...) -> pose2d is a keyword arg or first positional
+    _, kwargs = mock_inferencer_cls.call_args
+    passed_cfg = kwargs.get("pose2d")
+    
+    assert passed_cfg.model.head.input_size == (288, 384)
+    assert passed_cfg.codec.sigma == (5.0, 5.0)
 
 
-@patch("ez_openmmlab.core.config_manager.ConfigManager.load_metadata_from_toml")
 @patch("ez_openmmlab.models.mmpose.rtmo.MMPoseInferencer")
-@patch("ez_openmmlab.core.config_manager.toml_config.load_user_config")
-@patch("ez_openmmlab.core.engines.engine_base.get_config_file")
 @patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
-def test_rtmo_init_with_custom_config(
-    mock_ensure,
-    mock_get_config,
-    mock_load_config,
-    mock_inferencer_cls,
-    mock_load_meta,
-    tmp_path,
+@patch("ez_openmmlab.core.engines.engine_base.get_config_file")
+def test_rtmo_predict_patches_input_size(
+    mock_get_config, mock_ensure, mock_inferencer_cls, tmp_path
 ):
-    """Test that RTMO correctly initializes using a custom config.toml."""
-    config_file = tmp_path / "config.toml"
-    config_file.touch()
-    checkpoint_file = tmp_path / "custom.pth"
-    checkpoint_file.touch()
+    """Verify that RTMO.predict patches input_size into the config."""
+    mock_ensure.return_value = tmp_path / "dummy.pth"
+    mock_get_config.return_value = tmp_path / "dummy.py"
+    (tmp_path / "dummy.py").write_text("model = dict(head=dict(type='RTMOHead'))")
+    
+    mock_inferencer_instance = MagicMock()
+    mock_inferencer_instance.return_value = iter([])
+    mock_inferencer_cls.return_value = mock_inferencer_instance
 
-    # Setup mocks
-    mock_load_meta.return_value = {
-        "num_classes": 1,
-        "num_keypoints": 15,
-        "metainfo": {"classes": ["bird"]},
-        "model_name": "rtmo_s",
-    }
-    mock_user_config = MagicMock()
-    mock_user_config.model.name = ModelName.RTMO_S
-    mock_user_config.model.num_classes = 1
-    mock_user_config.model.num_keypoints = 15
-    mock_user_config.data.metainfo = {"classes": ["bird"]}
-    mock_load_config.return_value = mock_user_config
+    with patch("ez_openmmlab.core.engines.mmpose.Config.fromfile") as mock_fromfile:
+        real_cfg = MagicMock()
+        real_cfg.model.head = MagicMock()
+        mock_fromfile.return_value = real_cfg
+        
+        with patch("cv2.imread", return_value=np.zeros((480, 640, 3), dtype=np.uint8)):
+            model = RTMO("rtmo_s", num_keypoints=17)
+            model.predict("test.jpg", input_size=(640, 640))
 
-    mock_get_config.return_value = Path.cwd() / "libs/mmpose/configs/rtmo/s.py"
-    mock_ensure.return_value = checkpoint_file
+    _, kwargs = mock_inferencer_cls.call_args
+    passed_cfg = kwargs.get("pose2d")
+    
+    assert passed_cfg.model.head.input_size == (640, 640)
 
-    # Initialize RTMO
-    pose = RTMO(model=config_file, checkpoint_path=checkpoint_file)
 
-    # Trigger _init_inferencer
-    with patch("ez_openmmlab.models.mmpose.rtmo.Config.fromfile") as mock_cfg_fromfile:
-        mock_cfg = MagicMock()
-        mock_cfg_fromfile.return_value = mock_cfg
-        pose._init_inferencer(device="cpu")
-        mock_cfg_fromfile.assert_called_once_with(str(pose.config_path))
+@patch("ez_openmmlab.models.mmpose.rtmpose.MMPoseInferencer")
+@patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
+@patch("ez_openmmlab.core.engines.engine_base.get_config_file")
+def test_rtmpose_predict_auto_loads_toml_params(
+    mock_get_config, mock_ensure, mock_inferencer_cls, tmp_path
+):
+    """Verify that RTMPose automatically uses arch params from config.toml without explicit predict() args."""
+    # 1. Setup a fake config.toml with custom resolution
+    config_toml = tmp_path / "custom_config.toml"
+    config_toml.write_text("""
+[model]
+name = "rtmpose_s"
+num_classes = 1
+num_keypoints = 17
+input_size = [160, 160]
+simcc_sigma = [3.0, 3.0]
 
-    # Verify MMPoseInferencer was called
-    mock_inferencer_cls.assert_called_once()
-    args, kwargs = mock_inferencer_cls.call_args
-    assert kwargs["pose2d"] == mock_cfg
-    # Check if head was patched
-    assert mock_cfg.model.head.num_keypoints == 15
+[data]
+root = "."
+
+[training]
+epochs = 1
+batch_size = 1
+""")
+    
+    mock_ensure.return_value = tmp_path / "dummy.pth"
+    mock_get_config.return_value = tmp_path / "dummy.py"
+    (tmp_path / "dummy.py").write_text("model = dict(head=dict(type='RTMCCHead'))\ncodec=dict(type='SimCCLabel')")
+
+    mock_inferencer_instance = MagicMock()
+    mock_inferencer_instance.return_value = iter([])
+    mock_inferencer_cls.return_value = mock_inferencer_instance
+
+    with patch("ez_openmmlab.core.engines.mmpose.Config.fromfile") as mock_fromfile:
+        real_cfg = MagicMock()
+        real_cfg.model.head = MagicMock()
+        real_cfg.codec = MagicMock()
+        mock_fromfile.return_value = real_cfg
+        
+        with patch("cv2.imread", return_value=np.zeros((480, 640, 3), dtype=np.uint8)):
+            # Load model from the config.toml
+            model = RTMPose(model=config_toml, checkpoint_path=tmp_path / "m.pth")
+            
+            # Call predict WITHOUT architecture params
+            model.predict("test.jpg")
+
+    # 2. Verify that the inferencer received the patched config with TOML values
+    _, kwargs = mock_inferencer_cls.call_args
+    passed_cfg = kwargs.get("pose2d")
+    
+    # Values should match the TOML, not the defaults
+    assert passed_cfg.model.head.input_size == [160, 160]
+    assert passed_cfg.codec.sigma == [3.0, 3.0]

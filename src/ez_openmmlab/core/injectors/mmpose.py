@@ -100,16 +100,22 @@ class MMPoseInjector(BaseConfigInjector):
         for eval_name in ["val_evaluator", "test_evaluator"]:
             if not hasattr(cfg, eval_name):
                 continue
-            
-            # Simple case: Replace existing single metric or update list
-            evaluator = getattr(cfg, eval_name)
-            if isinstance(evaluator, dict):
-                # If it's a standard OpenMMLab evaluator dict
-                if len(metric_list) == 1:
-                    evaluator["type"] = metric_list[0]
-                else:
-                    # Multi-metric support usually requires a list of dicts in MMEngine
-                    # but for now we'll support the primary type override.
-                    evaluator["type"] = metric_list[0] 
-            
-            logger.info(f"[MMPoseInjector] Configured {eval_name} with {metric_list[0]}")
+
+            current_eval = getattr(cfg, eval_name)
+            # Maintain the original ann_file path if possible, fallback to config paths
+            ann_file = (
+                current_eval.get("ann_file")
+                if isinstance(current_eval, dict)
+                else user_config.data.val_ann_path
+            )
+
+            # Rebuild the evaluator config as a list of dicts (MMEngine multi-metric style)
+            evaluator_cfg = [dict(type=m, ann_file=ann_file) for m in metric_list]
+
+            # If only one metric, keep it as a dict for simplicity/compatibility
+            if len(evaluator_cfg) == 1:
+                setattr(cfg, eval_name, evaluator_cfg[0])
+            else:
+                setattr(cfg, eval_name, evaluator_cfg)
+
+            logger.info(f"[MMPoseInjector] Configured {eval_name} with {metric_list}")

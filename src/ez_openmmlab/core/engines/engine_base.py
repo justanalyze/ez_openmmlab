@@ -57,6 +57,7 @@ class EZMMLab(ABC):
         self.num_classes: Optional[int] = kwargs.get("num_classes")
         self.num_keypoints: Optional[int] = kwargs.get("num_keypoints")
         self.metainfo: Optional[dict] = kwargs.get("metainfo")
+        self.architecture_params: Dict[str, Any] = {}
 
         self._cfg: Optional[Config] = None
         self._temp_config_file: Optional[Path] = None
@@ -121,6 +122,7 @@ class EZMMLab(ABC):
             self.num_classes = meta.get("num_classes")
             self.num_keypoints = meta.get("num_keypoints")
             self.metainfo = meta.get("metainfo")
+            self.architecture_params = meta.get("architecture_params", {})
 
             # --- Validation: TOML must contain required metadata ---
             if self.num_classes is None:
@@ -168,22 +170,25 @@ class EZMMLab(ABC):
             show: Whether to pop up a window with the result.
             **kwargs: Library-specific inference arguments.
         """
-        # 1. Lazy Initialization
-        self._init_inferencer(device, **kwargs)
+        # 1. Extract and normalize architecture parameters
+        # Use stored architecture_params as defaults for kwargs
+        merged_kwargs = {**self.architecture_params, **kwargs}
+        architecture_params = self._get_architecture_params(**merged_kwargs)
 
-        # 2. Setup Resources
+        # 2. Lazy Initialization with merged params
+        self._init_inferencer(device, **{**architecture_params, **kwargs})
+
+        # 3. Setup Resources
         actual_out_dir = str(get_unique_dir(out_dir)) if out_dir else ""
         inputs = normalize_inputs(image_path)
 
         if not hasattr(self, "_inferencer") or self._inferencer is None:
             raise RuntimeError("Inferencer failed to initialize.")
 
-        # 3. Delegate execution to child
-        raw_results = self._run_inference(
-            inputs, actual_out_dir, show, **kwargs
-        )
+        # 4. Delegate execution to child
+        raw_results = self._run_inference(inputs, actual_out_dir, show, **kwargs)
 
-        # 4. Format results
+        # 5. Format results
         if not hasattr(self, "_formatter") or self._formatter is None:
             raise RuntimeError("Result formatter not initialized.")
 

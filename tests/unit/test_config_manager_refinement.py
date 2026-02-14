@@ -35,9 +35,10 @@ def test_rtmpose_resolver_sigma_scaling():
     """Verify linear scaling of simcc_sigma."""
     resolver = RTMPoseParamsResolver()
     
-    # Double the resolution
+    # Double the resolution (relative to 192x256)
     resolved = resolver.resolve(input_size=(384, 512))
-    assert resolved["simcc_sigma"] == (9.8, 11.32) # (4.9*2, 5.66*2)
+    # 4.9 * 2 = 9.8, 5.66 * 2 = 11.32
+    assert resolved["simcc_sigma"] == (9.8, 11.32)
 
 def test_rtmpose_resolver_feature_map_derivation():
     """Verify 1/32 stride derivation."""

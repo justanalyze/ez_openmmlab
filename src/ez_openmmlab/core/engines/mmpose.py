@@ -6,6 +6,7 @@ from loguru import logger
 from mmengine.config import Config
 from mmpose.apis import MMPoseInferencer
 
+from ez_openmmlab.core.engines.engine_base import EZMMLab
 from ez_openmmlab.core.inference.formatters import PoseResultFormatter
 from ez_openmmlab.core.injectors.mmpose import MMPoseInjector
 from ez_openmmlab.schemas.model import ModelName
@@ -17,11 +18,9 @@ from ez_openmmlab.utils.toml_config import (
     UserConfig,
 )
 
-from .engine_base import EZMMLab
-
 
 class EZMMPose(EZMMLab):
-    """Base engine for MMPose models."""
+    """Base class for all MMPose-based engines (RTMPose, RTMO, etc.)."""
 
     def __init__(
         self,
@@ -34,18 +33,27 @@ class EZMMPose(EZMMLab):
         self._inferencer: Optional[MMPoseInferencer] = None
         self._formatter = PoseResultFormatter()
 
-        # Pose-specific validation for custom TOML configs
-        if isinstance(model, (Path, str)) and str(model).endswith(".toml"):
-            if self.num_keypoints is None:
+    def _validate_inputs(
+        self,
+        model: Union[ModelName, str, Path],
+        checkpoint_path: Optional[Union[str, Path]],
+    ) -> None:
+        """Pose-specific input validation."""
+        super()._validate_inputs(model, checkpoint_path)
+
+        # For pose models, we often need to know the number of keypoints
+        # if using custom weights without a full config.toml
+        if self._using_custom_weights and not str(model).endswith(".toml"):
+            if self.num_keypoints is None and self.num_classes is None:
                 raise ValueError(
-                    f"Metadata 'num_keypoints' is missing in '{model}'. "
-                    "Pose models require explicit 'num_keypoints' in the [model] section."
+                    "MMPose models require 'num_keypoints' or 'num_classes' to be specified "
+                    "when loading custom weights without a config.toml."
                 )
 
     def _init_inferencer(self, device: str, **kwargs):
         """Lazy initialization of the MMPose inferencer with patching support."""
         if self._inferencer is None:
-            pose_cfg = self._load_and_patch_config()
+            pose_cfg = self._load_and_patch_config(**kwargs)
 
             # Delegate specific instantiation logic to children if needed,
             # but for most variants the standard MMPoseInferencer suffices.
@@ -56,25 +64,36 @@ class EZMMPose(EZMMLab):
                     pose_cfg, device, **kwargs
                 )
 
-    def _load_and_patch_config(self) -> Config:
+    def _load_and_patch_config(self, **kwargs) -> Config:
         """Loads the pose config and applies runtime patches."""
         with switch_to_lib_root(self.model):
             cfg = Config.fromfile(str(self.config_path))
 
-            # Only trigger patching if custom metadata is provided.
-            if self.num_classes is not None or self.num_keypoints is not None:
-                dummy_user_cfg = self._get_dummy_user_config()
-                MMPoseInjector().apply(cfg, dummy_user_cfg)
+            # Trigger patching if custom metadata or architecture params are provided
+            dummy_user_cfg = self._get_dummy_user_config(**kwargs)
+            MMPoseInjector().apply(cfg, dummy_user_cfg)
+
             return cfg
 
-    def _get_dummy_user_config(self) -> UserConfig:
-        """Creates a dummy UserConfig to satisfy the injector interface."""
+    def _get_dummy_user_config(self, **kwargs) -> UserConfig:
+        """Creates a dummy UserConfig to satisfy the injector interface.
+
+        This ensures that architecture-specific parameters passed during predict()
+        or loaded from config.toml are correctly picked up by the MMPoseInjector.
+        """
+        model_params = {
+            "name": self.model,
+            "num_classes": self.num_classes or 1,  # Default to 1 class for pose
+            "num_keypoints": self.num_keypoints,
+        }
+        # 1. Use stored architecture_params (from config.toml)
+        model_params.update(self.architecture_params)
+
+        # 2. Inject architecture-specific parameters passed to predict()
+        model_params.update(kwargs)
+
         return UserConfig(
-            model=ModelSection(
-                name=self.model,
-                num_classes=self.num_classes,
-                num_keypoints=self.num_keypoints,
-            ),
+            model=ModelSection(**model_params),
             training=TrainingSection(num_workers=0, learning_rate=0.001),
             data=DataSection(root=""),
         )
