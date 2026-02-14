@@ -13,10 +13,17 @@ def test_rtmpose_deriver_resolution_adjustment(mock_logger):
     derived = deriver.derive(input_size=(170, 240), simcc_sigma=None, feature_map_size=None)
     assert derived["input_size"] == (160, 256) # 170 -> 160, 240 -> 256
     
-    # Verify warning was called
-    mock_logger.warning.assert_called()
-    args = mock_logger.warning.call_args[0][0]
-    assert "Adjusting (170, 240) -> (160, 256)" in args
+    # 2. Test rounding up
+    derived = deriver.derive(input_size=(180, 250), simcc_sigma=None, feature_map_size=None)
+    assert derived["input_size"] == (192, 256) # 180 -> 192, 250 -> 256
+    
+    # Verify warning was called for first adjustment
+    first_warning = mock_logger.warning.call_args_list[0][0][0]
+    assert "(170, 240) -> (160, 256)" in first_warning
+
+    # Verify second warning
+    second_warning = mock_logger.warning.call_args_list[1][0][0]
+    assert "(180, 250) -> (192, 256)" in second_warning
 
     # 2. Test already divisible
     mock_logger.reset_mock()

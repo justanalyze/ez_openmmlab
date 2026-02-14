@@ -6,15 +6,13 @@ class BaseParameterDeriver(ABC):
     """Abstract base class for model-specific parameter derivation logic."""
 
     @abstractmethod
-    def derive(
-        self,
-        input_size: Tuple[int, int],
-        simcc_sigma: Optional[Tuple[float, float]],
-        feature_map_size: Optional[Tuple[int, int]],
-    ) -> Dict[str, Any]:
-        """Derives and validates parameters.
+    def derive(self, **kwargs) -> Dict[str, Any]:
+        """Extracts, validates, and derives parameters from user input.
+
+        Args:
+            **kwargs: Flexible keyword arguments (input_size, simcc_sigma, etc.)
 
         Returns:
-            A dictionary containing adjusted 'input_size', 'simcc_sigma', and 'feature_map_size'.
+            A dictionary of processed hyperparameters.
         """
         pass

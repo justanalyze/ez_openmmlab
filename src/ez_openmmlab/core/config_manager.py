@@ -102,12 +102,8 @@ class ConfigManager:
         num_workers: int = 4,
         enable_tensorboard: bool = False,
         log_level: str = "INFO",
-        # New parameters for RTMPose and advanced tuning
-        input_size: Tuple[int, int] = (192, 256),
-        simcc_sigma: Optional[Tuple[float, float]] = None,
-        feature_map_size: Optional[Tuple[int, int]] = None,
-        weight_decay: float = 0.05,
-        evaluator_metric: Union[str, List[str]] = "CocoMetric",
+        # Capture all other model-specific hyperparameters
+        **kwargs,
     ) -> toml_config.UserConfig:
         """Assembles a full UserConfig object from training parameters and dataset TOML."""
         dataset_cfg = DatasetConfig.from_toml(Path(dataset_config_path))
@@ -128,7 +124,7 @@ class ConfigManager:
 
         # --- Delegate Parameter Derivation (SOLID) ---
         deriver = DeriverFactory.get_deriver(model)
-        derived = deriver.derive(input_size, simcc_sigma, feature_map_size)
+        derived = deriver.derive(**kwargs)
 
         return toml_config.UserConfig(
             model=toml_config.ModelSection(
@@ -156,14 +152,14 @@ class ConfigManager:
                 epochs=epochs,
                 batch_size=batch_size,
                 learning_rate=learning_rate,
-                weight_decay=weight_decay,
+                weight_decay=kwargs.get("weight_decay", 0.05),
                 device=device,
                 work_dir=work_dir,
                 log_level=log_level,
                 amp=amp,
                 num_workers=num_workers,
                 enable_tensorboard=enable_tensorboard,
-                evaluator_metric=evaluator_metric,
+                evaluator_metric=kwargs.get("evaluator_metric", "CocoMetric"),
             ),
         )
 

@@ -14,14 +14,14 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 1: SOLID Refactoring and Advanced Derivation' (Protocol in workflow.md)
 
 ## Phase 2: Configuration Injection
-- [ ] Task: Update `MMPoseInjector` in `src/ez_openmmlab/core/injectors/mmpose.py`
-    - [ ] Patch `codec.input_size` and `codec.sigma`.
-    - [ ] Patch `model.head.input_size` and `model.head.in_featuremap_size`.
-    - [ ] Patch `optim_wrapper.optimizer.weight_decay`.
-    - [ ] Patch `val_evaluator` and `test_evaluator` with the provided metric list.
-- [ ] Task: TDD - Write unit tests for `MMPoseInjector`
-    - [ ] Verify that OpenMMLab Config objects are correctly modified with the new parameters.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Configuration Injection' (Protocol in workflow.md)
+- [x] Task: Update `MMPoseInjector` in `src/ez_openmmlab/core/injectors/mmpose.py`
+    - [x] Patch `codec.input_size` and `codec.sigma`.
+    - [x] Patch `model.head.input_size` and `model.head.in_featuremap_size`.
+    - [x] Patch `optim_wrapper.optimizer.weight_decay`.
+    - [x] Patch `val_evaluator` and `test_evaluator` with the provided metric list.
+- [x] Task: TDD - Write unit tests for `MMPoseInjector`
+    - [x] Verify that OpenMMLab Config objects are correctly modified with the new parameters.
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Configuration Injection' (Protocol in workflow.md)
 
 ## Phase 3: RTMPose API
 - [ ] Task: Update `RTMPose.train` in `src/ez_openmmlab/models/mmpose/rtmpose.py`
