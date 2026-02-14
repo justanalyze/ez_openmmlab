@@ -230,6 +230,7 @@ class EZMMLab(ABC):
         num_workers: int = 4,
         enable_tensorboard: bool = False,
         log_level: Optional[str] = None,
+        **kwargs,
     ) -> None:
         """Runs the end-to-end training pipeline.
 
@@ -244,6 +245,7 @@ class EZMMLab(ABC):
             num_workers: Number of data loading workers.
             enable_tensorboard: Enable TensorBoard visualization.
             log_level: Override for internal framework logging.
+            **kwargs: Architecture-specific hyperparameters (e.g., input_size).
         """
         target_log_level = log_level or self.log_level
 
@@ -262,6 +264,7 @@ class EZMMLab(ABC):
             num_workers=num_workers,
             enable_tensorboard=enable_tensorboard,
             log_level=target_log_level,
+            **kwargs,
         )
 
         self._run_training_workflow(user_config)

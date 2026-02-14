@@ -24,10 +24,17 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Configuration Injection' (Protocol in workflow.md)
 
 ## Phase 3: RTMPose API
-- [ ] Task: Update `RTMPose.train` in `src/ez_openmmlab/models/mmpose/rtmpose.py`
-    - [ ] Update signature to accept new parameters.
-    - [ ] Ensure they are passed down to `build_user_config`.
-- [ ] Task: Update `EZMMLab.train` and `ConfigManager` to support the extended parameter set
-- [ ] Task: TDD - Create an integration test for RTMPose custom training
-    - [ ] verify that a training run can start with custom `input_size` and `evaluator_metric`.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: RTMPose API' (Protocol in workflow.md)
+
+- [x] Task: Update `RTMPose.train` in `src/ez_openmmlab/models/mmpose/rtmpose.py`
+
+    - [x] Update signature to accept new parameters.
+
+    - [x] Ensure they are passed down to `build_user_config`.
+
+- [x] Task: Update `EZMMLab.train` and `ConfigManager` to support the extended parameter set
+
+- [x] Task: TDD - Create an integration test for RTMPose custom training
+
+    - [x] verify that a training run can start with custom `input_size` and `evaluator_metric`.
+
+- [x] Task: Conductor - User Manual Verification 'Phase 3: RTMPose API' (Protocol in workflow.md)
