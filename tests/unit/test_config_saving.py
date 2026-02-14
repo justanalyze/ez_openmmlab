@@ -10,6 +10,9 @@ class ConcreteEZDetector(RTMDet):
     def _init_inferencer(self, device):
         pass
 
+    def _get_architecture_params(self, **kwargs) -> dict:
+        return {}
+
 
 @patch("ez_openmmlab.core.engines.engine_base.Runner")
 @patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")

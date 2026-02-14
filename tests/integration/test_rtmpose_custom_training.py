@@ -9,7 +9,7 @@ def test_rtmpose_train_parameter_integration(tmp_path):
     dataset_toml = tmp_path / "dataset.toml"
     dataset_toml.write_text("""
 data_root = "."
-dataset_name = "TestPose"
+dataset_name = "IntegrationTestPose"
 classes = ["person"]
 [train]
 ann_file = "t.json"
@@ -20,7 +20,7 @@ img_dir = "v/"
 """)
 
     mock_ds = MagicMock()
-    mock_ds.dataset_name = "TestPose"
+    mock_ds.dataset_name = "IntegrationTestPose"
     mock_ds.classes = ["person"]
     mock_ds.data_root = str(tmp_path)
     mock_ds.train.ann_file = "t.json"

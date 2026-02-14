@@ -34,6 +34,9 @@ class ConcreteMockEngine(EZMMLab):
     def _get_library_family(self) -> str:
         return "mmdet"
 
+    def _get_architecture_params(self, **kwargs) -> dict:
+        return {}
+
     def _run_inference(self, inputs: list, out_dir: str, show: bool, **kwargs):
         self.run_called = True
         self.kwargs = kwargs

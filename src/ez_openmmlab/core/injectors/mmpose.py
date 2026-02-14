@@ -38,26 +38,37 @@ class MMPoseInjector(BaseConfigInjector):
                 head.head_module_cfg.num_classes = 1
 
         # Patch RTMPose head input/feature map size
-        if user_config.model.input_size:
-            head.input_size = user_config.model.input_size
-        if user_config.model.feature_map_size:
-            head.in_featuremap_size = user_config.model.feature_map_size
+        input_size = getattr(user_config.model, "input_size", None)
+        feature_map_size = getattr(user_config.model, "feature_map_size", None)
+
+        if input_size:
+            head.input_size = input_size
+        if feature_map_size:
+            head.in_featuremap_size = feature_map_size
 
     def _patch_codec(self, cfg: Config, user_config: UserConfig) -> None:
         """Syncs the SimCC codec with the new resolution and sigma."""
         if not hasattr(cfg, "codec"):
             return
 
+        input_size = getattr(user_config.model, "input_size", None)
+        simcc_sigma = getattr(user_config.model, "simcc_sigma", None)
+
+        if not input_size or not simcc_sigma:
+            return
+
         logger.info(
-            f"[MMPoseInjector] Patching codec with size {user_config.model.input_size} "
-            f"and sigma {user_config.model.simcc_sigma}"
+            f"[MMPoseInjector] Patching codec with size {input_size} "
+            f"and sigma {simcc_sigma}"
         )
-        cfg.codec.input_size = user_config.model.input_size
-        cfg.codec.sigma = user_config.model.simcc_sigma
+        cfg.codec.input_size = input_size
+        cfg.codec.sigma = simcc_sigma
 
     def _patch_pipelines(self, cfg: Config, user_config: UserConfig) -> None:
         """Updates input_size in all pipeline steps (TopdownAffine)."""
-        input_size = user_config.model.input_size
+        input_size = getattr(user_config.model, "input_size", None)
+        if not input_size:
+            return
         
         for pipe_name in ["train_pipeline", "val_pipeline", "test_pipeline"]:
             if not hasattr(cfg, pipe_name):

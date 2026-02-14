@@ -1,10 +1,10 @@
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 
-from ez_openmmlab.core.derivers import DeriverFactory
+from ez_openmmlab.core.resolvers import ModelParamsResolverFactory
 from ez_openmmlab.schemas.dataset import DatasetConfig
 from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.utils import toml_config
@@ -102,8 +102,10 @@ class ConfigManager:
         num_workers: int = 4,
         enable_tensorboard: bool = False,
         log_level: str = "INFO",
-        # Capture all other model-specific hyperparameters
-        **kwargs,
+        # Core training hyperparameters
+        weight_decay: float = 0.05,
+        evaluator_metric: Union[str, List[str]] = "CocoMetric",
+        architecture_params: Optional[Dict[str, Any]] = None,
     ) -> toml_config.UserConfig:
         """Assembles a full UserConfig object from training parameters and dataset TOML."""
         dataset_cfg = DatasetConfig.from_toml(Path(dataset_config_path))
@@ -122,20 +124,24 @@ class ConfigManager:
         if dataset_cfg.metainfo and "keypoint_info" in dataset_cfg.metainfo:
             num_keypoints = len(dataset_cfg.metainfo["keypoint_info"])
 
-        # --- Delegate Parameter Derivation (SOLID) ---
-        deriver = DeriverFactory.get_deriver(model)
-        derived = deriver.derive(**kwargs)
+        # --- Delegate Parameter Resolution ---
+        model_params_resolver = ModelParamsResolverFactory.get_resolver(model)
+        if model_params_resolver:
+            resolved_model_params = model_params_resolver.resolve(**(architecture_params or {}))
+        else:
+            resolved_model_params = architecture_params or {}
+
+        # Build ModelSection parameters dynamically
+        model_params = {
+            "name": model,
+            "num_classes": num_classes,
+            "num_keypoints": num_keypoints,
+            "load_from": str(checkpoint_path) if checkpoint_path else None,
+        }
+        model_params.update(resolved_model_params)
 
         return toml_config.UserConfig(
-            model=toml_config.ModelSection(
-                name=model,
-                num_classes=num_classes,
-                num_keypoints=num_keypoints,
-                load_from=str(checkpoint_path) if checkpoint_path else None,
-                input_size=derived["input_size"],
-                simcc_sigma=derived["simcc_sigma"],
-                feature_map_size=derived["feature_map_size"],
-            ),
+            model=toml_config.ModelSection(**model_params),
             data=toml_config.DataSection(
                 root=str(dataset_cfg.data_root),
                 dataset_name=dataset_name,
@@ -152,14 +158,14 @@ class ConfigManager:
                 epochs=epochs,
                 batch_size=batch_size,
                 learning_rate=learning_rate,
-                weight_decay=kwargs.get("weight_decay", 0.05),
+                weight_decay=weight_decay,
                 device=device,
                 work_dir=work_dir,
                 log_level=log_level,
                 amp=amp,
                 num_workers=num_workers,
                 enable_tensorboard=enable_tensorboard,
-                evaluator_metric=kwargs.get("evaluator_metric", "CocoMetric"),
+                evaluator_metric=evaluator_metric,
             ),
         )
 

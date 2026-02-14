@@ -10,18 +10,13 @@ from ez_openmmlab.schemas.model import ModelName
 
 # --- Pydantic Models for Validation ---
 class ModelSection(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
 
     name: ModelName = ModelName.RTM_DET_TINY
     num_classes: int = Field(..., gt=0)
     num_keypoints: Optional[int] = Field(None, gt=0)
     load_from: Optional[str] = None
     base_config_path: Optional[str] = None
-
-    # RTMPose specific
-    input_size: Tuple[int, int] = (192, 256)
-    simcc_sigma: Tuple[float, float] = (4.9, 5.66)
-    feature_map_size: Optional[Tuple[int, int]] = None
 
 
 class DataSection(BaseModel):

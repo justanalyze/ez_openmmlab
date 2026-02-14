@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 from mmengine.config import Config
@@ -38,7 +38,9 @@ class EZMMLab(ABC):
         self.log_level = log_level
         self._configure_logging(log_level)
 
-        logger.info(f"Initializing {self.__class__.__name__} with model: '{model}'")
+        logger.info(
+            f"Initializing {self.__class__.__name__} with model: '{model}'"
+        )
 
         # Ensure noisy warnings are suppressed when engine starts
         from ez_openmmlab import mute_warnings
@@ -109,7 +111,9 @@ class EZMMLab(ABC):
         # Case 1: Custom Configuration via TOML
         if isinstance(model, (Path, str)) and str(model).endswith(".toml"):
             config_toml = Path(model)
-            self.checkpoint_path = Path(checkpoint_path) if checkpoint_path else None
+            self.checkpoint_path = (
+                Path(checkpoint_path) if checkpoint_path else None
+            )
 
             # 1.1 Load explicit metadata from TOML
             meta = self._config_manager.load_metadata_from_toml(config_toml)
@@ -133,8 +137,12 @@ class EZMMLab(ABC):
 
         # Case 2: Standard Model Name
         else:
-            self.model = model.value if isinstance(model, ModelName) else str(model)
-            self.checkpoint_path = ensure_model_checkpoint(model, checkpoint_path)
+            self.model = (
+                model.value if isinstance(model, ModelName) else str(model)
+            )
+            self.checkpoint_path = ensure_model_checkpoint(
+                model, checkpoint_path
+            )
             self.config_path = get_config_file(model)
 
     def __del__(self):
@@ -171,13 +179,17 @@ class EZMMLab(ABC):
             raise RuntimeError("Inferencer failed to initialize.")
 
         # 3. Delegate execution to child
-        raw_results = self._run_inference(inputs, actual_out_dir, show, **kwargs)
+        raw_results = self._run_inference(
+            inputs, actual_out_dir, show, **kwargs
+        )
 
         # 4. Format results
         if not hasattr(self, "_formatter") or self._formatter is None:
             raise RuntimeError("Result formatter not initialized.")
 
-        return self._formatter.map_results(raw_results, inputs, self._get_class_names())
+        return self._formatter.map_results(
+            raw_results, inputs, self._get_class_names()
+        )
 
     @abstractmethod
     def _init_inferencer(self, device: str, **kwargs) -> None:
@@ -194,6 +206,11 @@ class EZMMLab(ABC):
     @abstractmethod
     def _get_library_family(self) -> str:
         """Returns the library family ('mmdet' or 'mmpose') for this engine."""
+        pass
+
+    @abstractmethod
+    def _get_architecture_params(self, **kwargs) -> Dict[str, Any]:
+        """Extracts architecture-specific hyperparameters from kwargs."""
         pass
 
     def _get_class_names(self) -> dict:
@@ -230,6 +247,8 @@ class EZMMLab(ABC):
         num_workers: int = 4,
         enable_tensorboard: bool = False,
         log_level: Optional[str] = None,
+        weight_decay: float = 0.05,
+        evaluator_metric: Union[str, List[str]] = "CocoMetric",
         **kwargs,
     ) -> None:
         """Runs the end-to-end training pipeline.
@@ -245,11 +264,15 @@ class EZMMLab(ABC):
             num_workers: Number of data loading workers.
             enable_tensorboard: Enable TensorBoard visualization.
             log_level: Override for internal framework logging.
-            **kwargs: Architecture-specific hyperparameters (e.g., input_size).
         """
         target_log_level = log_level or self.log_level
 
-        logger.info(f"Loading dataset configuration from: {dataset_config_path}")
+        logger.info(
+            f"Loading dataset configuration from: {dataset_config_path}"
+        )
+
+        # Extract arch-specific parameters using the model's implementation
+        architecture_params = self._get_architecture_params(**kwargs)
 
         user_config = self._config_manager.build_user_config(
             model=self.model,
@@ -264,7 +287,9 @@ class EZMMLab(ABC):
             num_workers=num_workers,
             enable_tensorboard=enable_tensorboard,
             log_level=target_log_level,
-            **kwargs,
+            weight_decay=weight_decay,
+            evaluator_metric=evaluator_metric,
+            architecture_params=architecture_params,
         )
 
         self._run_training_workflow(user_config)
@@ -275,7 +300,9 @@ class EZMMLab(ABC):
         # This solves the 'Evaluation Mismatch' problem by creating a first-class
         # registered class for the session.
         family = self._get_library_family()
-        registered_name = DynamicDatasetRegistry.register_dataset(config, family)
+        registered_name = DynamicDatasetRegistry.register_dataset(
+            config, family
+        )
         config.data.registered_class_name = registered_name
 
         # 2. Setup Work Directory
@@ -288,7 +315,9 @@ class EZMMLab(ABC):
         )
 
         save_user_config(config, work_dir / "user_config.toml")
-        logger.info(f"User configuration saved to: {work_dir / 'user_config.toml'}")
+        logger.info(
+            f"User configuration saved to: {work_dir / 'user_config.toml'}"
+        )
 
         # 4. Load and Patch Configuration
         self._cfg = self._load_base_config(config.model.name)

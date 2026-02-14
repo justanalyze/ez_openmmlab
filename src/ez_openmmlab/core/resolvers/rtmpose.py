@@ -2,13 +2,13 @@ from typing import Any, Dict, Optional, Tuple
 
 from loguru import logger
 
-from .base import BaseParameterDeriver
+from .base import BaseModelParamsResolver
 
 
-class RTMPoseParameterDeriver(BaseParameterDeriver):
-    """Parameter derivation logic specific to the RTMPose family."""
+class RTMPoseParamsResolver(BaseModelParamsResolver):
+    """Parameter resolution logic specific to the RTMPose family."""
 
-    def derive(self, **kwargs) -> Dict[str, Any]:
+    def resolve(self, **kwargs) -> Dict[str, Any]:
         """Processes RTMPose specific parameters with auto-adjustment logic."""
         # 1. Extraction with defaults
         input_size = kwargs.get("input_size") or (192, 256)

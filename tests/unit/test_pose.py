@@ -58,3 +58,29 @@ def test_rtmpose_predict_converts_results(
     assert result.boxes is not None
     assert isinstance(result.boxes, Boxes)
     assert np.allclose(result.boxes.conf[0], 0.95)
+
+
+@patch("ez_openmmlab.models.mmpose.rtmpose.MMPoseInferencer")
+@patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
+@patch("ez_openmmlab.core.engines.engine_base.get_config_file")
+def test_rtmpose_predict_detector_overrides(
+    mock_get_config, mock_ensure, mock_inferencer_cls
+):
+    """Verify that RTMPose.predict respects detector overrides on first call."""
+    mock_ensure.return_value = Path("dummy.pth")
+    mock_get_config.return_value = Path("dummy.py")
+    mock_inferencer_instance = MagicMock()
+    mock_inferencer_instance.return_value = iter([])
+    mock_inferencer_cls.return_value = mock_inferencer_instance
+
+    with patch("ez_openmmlab.core.engines.mmpose.Config.fromfile") as mock_fromfile:
+        mock_fromfile.return_value = MagicMock()
+        with patch("cv2.imread", return_value=np.zeros((480, 640, 3), dtype=np.uint8)):
+            model = RTMPose("rtmpose_s")
+
+            # Call predict with a different detector
+            model.predict("test.jpg", det_model="rtmdet_m")
+
+    # Verify inferencer was initialized with the override
+    _, kwargs = mock_inferencer_cls.call_args
+    assert "rtmdet_m" in str(kwargs["det_model"])
