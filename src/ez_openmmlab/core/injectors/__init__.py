@@ -2,9 +2,12 @@ from typing import List
 
 from .base import BaseConfigInjector
 from .dataloader import DataloaderInjector
-from .runtime import RuntimeInjector
+from .evaluator import EvaluatorInjector
 from .mmdet import MMDetInjector
 from .mmpose import MMPoseInjector
+from .optimizer import OptimizerInjector
+from .pipeline_patchers import PipelineTransformPatcherRegistry # Import the registry
+from .runtime import RuntimeInjector
 
 
 def get_injectors(model_name: str) -> List[BaseConfigInjector]:
@@ -13,6 +16,8 @@ def get_injectors(model_name: str) -> List[BaseConfigInjector]:
     injectors: List[BaseConfigInjector] = [
         DataloaderInjector(),
         RuntimeInjector(),
+        OptimizerInjector(),
+        EvaluatorInjector(),
     ]
 
     # 2. Dynamic Library Selection
@@ -22,3 +27,6 @@ def get_injectors(model_name: str) -> List[BaseConfigInjector]:
         injectors.append(MMDetInjector())
 
     return injectors
+
+# Ensure pipeline patchers are registered when this module is loaded
+# This is handled within pipeline_patchers.py itself

@@ -13,7 +13,7 @@ class ModelSection(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
 
     name: ModelName = ModelName.RTM_DET_TINY
-    num_classes: int = Field(..., gt=0)
+    num_classes: Optional[int] = Field(None, gt=0)
     num_keypoints: Optional[int] = Field(None, gt=0)
     load_from: Optional[str] = None
     base_config_path: Optional[str] = None

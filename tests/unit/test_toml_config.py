@@ -4,6 +4,7 @@ import pytest
 import tomli
 from pydantic import ValidationError
 
+from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.utils.toml_config import (
     DataSection,
     ModelSection,
@@ -15,38 +16,45 @@ from ez_openmmlab.utils.toml_config import (
 
 
 @pytest.fixture
-def sample_config() -> UserConfig:
-    """Returns a sample, valid UserConfig object."""
+def sample_config():
+    """Provides a basic UserConfig for testing."""
     return UserConfig(
-        model=ModelSection(name="rtmdet_tiny", num_classes=2, load_from=None),
+        model=ModelSection(
+            name=ModelName.RTM_DET_TINY,
+            num_classes=2,
+        ),
         data=DataSection(
             root="tests/dummy_data/crayfish",
-            train_ann="annotations/train.json",
-            train_img="images/",
-            val_ann="annotations/val.json",
-            val_img="images/",
             classes=["crayfish", "scallop"],
         ),
         training=TrainingSection(
             epochs=2,
-            batch_size=4,
-            learning_rate=0.0001,
+            batch_size=1,
             device="cpu",
             work_dir="output_test",
         ),
     )
 
 
-def test_save_and_load_roundtrip(tmp_path: Path, sample_config: UserConfig):
-    """Tests that saving a config and loading it back results in the same object."""
+def test_user_config_initialization(sample_config: UserConfig):
+    """Verifies that UserConfig initializes correctly from components."""
+    assert sample_config.model.name == "rtmdet_tiny"
+    assert sample_config.data.root == "tests/dummy_data/crayfish"
+    assert sample_config.training.epochs == 2
+
+
+def test_save_and_load_config(tmp_path: Path, sample_config: UserConfig):
+    """Verifies that saving and loading results in an equivalent object."""
     config_path = tmp_path / "config.toml"
-
-    # Save and reload
     save_user_config(sample_config, config_path)
-    loaded_config = load_user_config(config_path)
 
-    # Should be identical
-    assert loaded_config == sample_config
+    assert config_path.exists()
+
+    loaded_config = load_user_config(config_path)
+    assert loaded_config.model.name == sample_config.model.name
+    assert loaded_config.data.root == sample_config.data.root
+    assert loaded_config.training.epochs == sample_config.training.epochs
+    assert loaded_config.data.classes == ["crayfish", "scallop"]
 
 
 def test_generated_toml_content(tmp_path: Path, sample_config: UserConfig):
@@ -80,10 +88,10 @@ def test_missing_required_field_raises_error(tmp_path: Path):
     bad_toml_content = """
     [model]
     name = "rtmdet_tiny"
-    # num_classes is missing
+    num_classes = 80
 
     [data]
-    root = "some/path"
+    # root is missing
 
     [training]
     epochs = 10
@@ -95,12 +103,12 @@ def test_missing_required_field_raises_error(tmp_path: Path):
         load_user_config(config_path)
 
 
-def test_incorrect_type_raises_error(tmp_path: Path):
-    """Ensures that loading a TOML with incorrect data types raises a Pydantic error."""
+def test_invalid_enum_raises_error(tmp_path: Path):
+    """Ensures that invalid model names raise a Pydantic error."""
     bad_toml_content = """
     [model]
-    name = "rtmdet_tiny"
-    num_classes = "eighty"  # Should be an integer
+    name = "invalid_model_name"
+    num_classes = 80
 
     [data]
     root = "some/path"

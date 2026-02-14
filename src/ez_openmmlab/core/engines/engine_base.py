@@ -16,6 +16,9 @@ from ez_openmmlab.utils.download import ensure_model_checkpoint
 from ez_openmmlab.utils.input import normalize_inputs
 from ez_openmmlab.utils.path import get_unique_dir
 from ez_openmmlab.utils.toml_config import (
+    DataSection,
+    ModelSection,
+    TrainingSection,
     UserConfig,
     save_user_config,
 )
@@ -38,9 +41,7 @@ class EZMMLab(ABC):
         self.log_level = log_level
         self._configure_logging(log_level)
 
-        logger.info(
-            f"Initializing {self.__class__.__name__} with model: '{model}'"
-        )
+        logger.info(f"Initializing {self.__class__.__name__} with model: '{model}'")
 
         # Ensure noisy warnings are suppressed when engine starts
         from ez_openmmlab import mute_warnings
@@ -112,9 +113,7 @@ class EZMMLab(ABC):
         # Case 1: Custom Configuration via TOML
         if isinstance(model, (Path, str)) and str(model).endswith(".toml"):
             config_toml = Path(model)
-            self.checkpoint_path = (
-                Path(checkpoint_path) if checkpoint_path else None
-            )
+            self.checkpoint_path = Path(checkpoint_path) if checkpoint_path else None
 
             # 1.1 Load explicit metadata from TOML
             meta = self._config_manager.load_metadata_from_toml(config_toml)
@@ -139,18 +138,49 @@ class EZMMLab(ABC):
 
         # Case 2: Standard Model Name
         else:
-            self.model = (
-                model.value if isinstance(model, ModelName) else str(model)
-            )
-            self.checkpoint_path = ensure_model_checkpoint(
-                model, checkpoint_path
-            )
+            self.model = model.value if isinstance(model, ModelName) else str(model)
+            self.checkpoint_path = ensure_model_checkpoint(model, checkpoint_path)
             self.config_path = get_config_file(model)
 
     def __del__(self):
         """Cleanup temporary files."""
         if hasattr(self, "_temp_config_file"):
             self._config_manager.cleanup_temp_config(self._temp_config_file)
+
+    def _load_and_patch_config(self, **kwargs) -> Config:
+        """Loads the model config and applies all registered plugin injectors."""
+        with switch_to_lib_root(self.model):
+            cfg = Config.fromfile(str(self.config_path))
+
+            # Trigger patching if custom metadata or architecture params are provided
+            dummy_user_cfg = self._get_dummy_user_config(**kwargs)
+            for injector in get_injectors(self.model):
+                injector.apply(cfg, dummy_user_cfg)
+
+            return cfg
+
+    def _get_dummy_user_config(self, **kwargs) -> UserConfig:
+        """Creates a dummy UserConfig to satisfy the injector interface.
+
+        This ensures that architecture-specific parameters passed during predict()
+        or loaded from config.toml are correctly picked up by injectors.
+        """
+        model_params = {
+            "name": self.model,
+            "num_classes": self.num_classes,
+            "num_keypoints": self.num_keypoints,
+        }
+        # 1. Use stored architecture_params (from config.toml)
+        model_params.update(self.architecture_params)
+
+        # 2. Inject architecture-specific parameters passed to predict()
+        model_params.update(kwargs)
+
+        return UserConfig(
+            model=ModelSection(**model_params),
+            training=TrainingSection(num_workers=0, learning_rate=0.001),
+            data=DataSection(root=""),
+        )
 
     def predict(
         self,
@@ -272,9 +302,7 @@ class EZMMLab(ABC):
         """
         target_log_level = log_level or self.log_level
 
-        logger.info(
-            f"Loading dataset configuration from: {dataset_config_path}"
-        )
+        logger.info(f"Loading dataset configuration from: {dataset_config_path}")
 
         # Extract arch-specific parameters using the model's implementation
         architecture_params = self._get_architecture_params(**kwargs)
@@ -305,9 +333,7 @@ class EZMMLab(ABC):
         # This solves the 'Evaluation Mismatch' problem by creating a first-class
         # registered class for the session.
         family = self._get_library_family()
-        registered_name = DynamicDatasetRegistry.register_dataset(
-            config, family
-        )
+        registered_name = DynamicDatasetRegistry.register_dataset(config, family)
         config.data.registered_class_name = registered_name
 
         # 2. Setup Work Directory
@@ -315,14 +341,10 @@ class EZMMLab(ABC):
         work_dir.mkdir(parents=True, exist_ok=True)
 
         # 3. Artifact Tracking
-        config.model.base_config_path = str(
-            get_config_file(config.model.name).absolute()
-        )
+        config.model.base_config_path = str(get_config_file(config.model.name).absolute())
 
         save_user_config(config, work_dir / "user_config.toml")
-        logger.info(
-            f"User configuration saved to: {work_dir / 'user_config.toml'}"
-        )
+        logger.info(f"User configuration saved to: {work_dir / 'user_config.toml'}")
 
         # 4. Load and Patch Configuration
         self._cfg = self._load_base_config(config.model.name)

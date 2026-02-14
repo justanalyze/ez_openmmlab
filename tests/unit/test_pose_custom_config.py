@@ -22,7 +22,7 @@ def test_rtmpose_predict_patches_arch_params(
     mock_inferencer_instance.return_value = iter([])
     mock_inferencer_cls.return_value = mock_inferencer_instance
 
-    with patch("ez_openmmlab.core.engines.mmpose.Config.fromfile") as mock_fromfile:
+    with patch("ez_openmmlab.core.engines.engine_base.Config.fromfile") as mock_fromfile:
         # Create a mock config that looks like a real one
         real_cfg = MagicMock()
         real_cfg.model.head = MagicMock()
@@ -43,7 +43,8 @@ def test_rtmpose_predict_patches_arch_params(
     _, kwargs = mock_inferencer_cls.call_args
     passed_cfg = kwargs.get("pose2d")
     
-    assert passed_cfg.model.head.input_size == (288, 384)
+    # Assert on codec as MMPoseInjector now patches codec directly
+    assert passed_cfg.codec.input_size == (288, 384)
     assert passed_cfg.codec.sigma == (5.0, 5.0)
 
 
@@ -62,9 +63,10 @@ def test_rtmo_predict_patches_input_size(
     mock_inferencer_instance.return_value = iter([])
     mock_inferencer_cls.return_value = mock_inferencer_instance
 
-    with patch("ez_openmmlab.core.engines.mmpose.Config.fromfile") as mock_fromfile:
+    with patch("ez_openmmlab.core.engines.engine_base.Config.fromfile") as mock_fromfile:
         real_cfg = MagicMock()
         real_cfg.model.head = MagicMock()
+        real_cfg.codec = MagicMock() # RTMO also has a codec
         mock_fromfile.return_value = real_cfg
         
         with patch("cv2.imread", return_value=np.zeros((480, 640, 3), dtype=np.uint8)):
@@ -74,7 +76,8 @@ def test_rtmo_predict_patches_input_size(
     _, kwargs = mock_inferencer_cls.call_args
     passed_cfg = kwargs.get("pose2d")
     
-    assert passed_cfg.model.head.input_size == (640, 640)
+    # Assert on codec input_size, as that's what's directly patched
+    assert passed_cfg.codec.input_size == (640, 640)
 
 
 @patch("ez_openmmlab.models.mmpose.rtmpose.MMPoseInferencer")
@@ -110,7 +113,7 @@ batch_size = 1
     mock_inferencer_instance.return_value = iter([])
     mock_inferencer_cls.return_value = mock_inferencer_instance
 
-    with patch("ez_openmmlab.core.engines.mmpose.Config.fromfile") as mock_fromfile:
+    with patch("ez_openmmlab.core.engines.engine_base.Config.fromfile") as mock_fromfile:
         real_cfg = MagicMock()
         real_cfg.model.head = MagicMock()
         real_cfg.codec = MagicMock()
@@ -128,5 +131,5 @@ batch_size = 1
     passed_cfg = kwargs.get("pose2d")
     
     # Values should match the TOML, not the defaults
-    assert passed_cfg.model.head.input_size == [160, 160]
-    assert passed_cfg.codec.sigma == [3.0, 3.0]
+    assert passed_cfg.codec.input_size == (160, 160)
+    assert passed_cfg.codec.sigma == (3.0, 3.0)

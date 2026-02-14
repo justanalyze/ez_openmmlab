@@ -7,15 +7,8 @@ from mmdet.apis import DetInferencer
 from mmdet.utils import register_all_modules
 
 from ez_openmmlab.core.inference.formatters import DetectionResultFormatter
-from ez_openmmlab.core.injectors.mmdet import MMDetInjector
 from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.utils.context import switch_to_lib_root
-from ez_openmmlab.utils.toml_config import (
-    DataSection,
-    ModelSection,
-    TrainingSection,
-    UserConfig,
-)
 
 from .engine_base import EZMMLab
 
@@ -51,39 +44,6 @@ class EZMMDetector(EZMMLab):
                     weights=str(self.checkpoint_path),
                     device=device,
                 )
-
-    def _load_and_patch_config(self, **kwargs) -> Config:
-        """Loads the detection config and applies runtime patches."""
-        with switch_to_lib_root(self.model):
-            cfg = Config.fromfile(str(self.config_path))
-
-            # Trigger patching if custom metadata or architecture params are provided
-            dummy_user_cfg = self._get_dummy_user_config(**kwargs)
-            MMDetInjector().apply(cfg, dummy_user_cfg)
-
-            return cfg
-
-    def _get_dummy_user_config(self, **kwargs) -> UserConfig:
-        """Creates a dummy UserConfig to satisfy the injector interface.
-
-        This ensures that architecture-specific parameters passed during predict()
-        or loaded from config.toml are correctly picked up by the MMDetInjector.
-        """
-        model_params = {
-            "name": self.model,
-            "num_classes": self.num_classes,
-        }
-        # 1. Use stored architecture_params (from config.toml)
-        model_params.update(self.architecture_params)
-
-        # 2. Inject architecture-specific parameters passed to predict()
-        model_params.update(kwargs)
-
-        return UserConfig(
-            model=ModelSection(**model_params),
-            training=TrainingSection(num_workers=0, learning_rate=0.001),
-            data=DataSection(root=""),
-        )
 
     def _get_library_family(self) -> str:
         return "mmdet"
