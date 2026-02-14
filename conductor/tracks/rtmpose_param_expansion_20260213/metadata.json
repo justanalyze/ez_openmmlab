@@ -1,0 +1,8 @@
+{
+  "track_id": "rtmpose_param_expansion_20260213",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-02-13T10:00:00Z",
+  "updated_at": "2026-02-13T10:00:00Z",
+  "description": "Extend RTMPose training API with input_size, simcc_sigma, and other key hyperparameters with intelligent derivation logic."
+}

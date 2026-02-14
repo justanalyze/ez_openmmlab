@@ -1,6 +1,6 @@
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from loguru import logger
 
@@ -101,6 +101,12 @@ class ConfigManager:
         num_workers: int = 4,
         enable_tensorboard: bool = False,
         log_level: str = "INFO",
+        # New parameters for RTMPose and advanced tuning
+        input_size: Tuple[int, int] = (192, 256),
+        simcc_sigma: Optional[Tuple[float, float]] = None,
+        feature_map_size: Optional[Tuple[int, int]] = None,
+        weight_decay: float = 0.05,
+        evaluator_metric: Union[str, List[str]] = "CocoMetric",
     ) -> toml_config.UserConfig:
         """Assembles a full UserConfig object from training parameters and dataset TOML."""
         dataset_cfg = DatasetConfig.from_toml(Path(dataset_config_path))
@@ -119,12 +125,44 @@ class ConfigManager:
         if dataset_cfg.metainfo and "keypoint_info" in dataset_cfg.metainfo:
             num_keypoints = len(dataset_cfg.metainfo["keypoint_info"])
 
+        # --- Smart Parameter Derivation ---
+        # 1. Derive Sigma if not provided (Linear scaling based on 192x256 reference)
+        if simcc_sigma is None:
+            if input_size == (192, 256):
+                simcc_sigma = (4.9, 5.66)
+            else:
+                scale_w = input_size[0] / 192
+                scale_h = input_size[1] / 256
+                simcc_sigma = (round(4.9 * scale_w, 2), round(5.66 * scale_h, 2))
+                logger.info(
+                    f"Auto-scaling simcc_sigma to {simcc_sigma} for input_size {input_size}"
+                )
+
+        # 2. Derive Feature Map Size (stride 32 default)
+        if feature_map_size is None:
+            feature_map_size = (input_size[0] // 32, input_size[1] // 32)
+            logger.debug(f"Auto-derived feature_map_size: {feature_map_size}")
+
+        # 3. Validation: Sigma vs Feature Map (Prevent mathematically impossible heatmaps)
+        # In SimCC, sigma is in bin-space (split_ratio * feature_map_size).
+        # We check if sigma is reasonably smaller than the dimensions.
+        max_sigma = max(simcc_sigma)
+        min_dim = min(input_size)
+        if max_sigma > min_dim / 4: # Heuristic threshold
+             logger.warning(
+                 f"Large simcc_sigma ({simcc_sigma}) detected for input_size {input_size}. "
+                 "This may lead to blurred heatmaps and poor convergence."
+             )
+
         return toml_config.UserConfig(
             model=toml_config.ModelSection(
                 name=model,
                 num_classes=num_classes,
                 num_keypoints=num_keypoints,
                 load_from=str(checkpoint_path) if checkpoint_path else None,
+                input_size=input_size,
+                simcc_sigma=simcc_sigma,
+                feature_map_size=feature_map_size,
             ),
             data=toml_config.DataSection(
                 root=str(dataset_cfg.data_root),
@@ -142,12 +180,14 @@ class ConfigManager:
                 epochs=epochs,
                 batch_size=batch_size,
                 learning_rate=learning_rate,
+                weight_decay=weight_decay,
                 device=device,
                 work_dir=work_dir,
                 log_level=log_level,
                 amp=amp,
                 num_workers=num_workers,
                 enable_tensorboard=enable_tensorboard,
+                evaluator_metric=evaluator_metric,
             ),
         )
 

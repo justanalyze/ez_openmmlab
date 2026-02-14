@@ -80,3 +80,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: Dynamic Session Registration for Custom Datasets**
 *Link: [./tracks/dynamic_dataset_registration_20260211/](./tracks/dynamic_dataset_registration_20260211/)*
+
+---
+
+- [~] **Track: RTMPose Training Parameter Expansion**
+  *Link: [./tracks/rtmpose_param_expansion_20260213/](./tracks/rtmpose_param_expansion_20260213/)*

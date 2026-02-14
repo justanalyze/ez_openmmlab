@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple, Union
 
 import tomli
 import tomli_w
@@ -17,6 +17,11 @@ class ModelSection(BaseModel):
     num_keypoints: Optional[int] = Field(None, gt=0)
     load_from: Optional[str] = None
     base_config_path: Optional[str] = None
+
+    # RTMPose specific
+    input_size: Tuple[int, int] = (192, 256)
+    simcc_sigma: Tuple[float, float] = (4.9, 5.66)
+    feature_map_size: Optional[Tuple[int, int]] = None
 
 
 class DataSection(BaseModel):
@@ -72,11 +77,13 @@ class TrainingSection(BaseModel):
     batch_size: int = Field(8, gt=0)
     num_workers: int = Field(2, ge=0, description="Number of dataloader workers")
     learning_rate: float = Field(0.001, gt=0.0)
+    weight_decay: float = Field(0.05, ge=0.0)
     device: str = "cuda"
     work_dir: str = "./runs/train"
     log_level: str = "INFO"
     enable_tensorboard: bool = Field(True, description="Enable TensorBoard logging")
     amp: bool = True
+    evaluator_metric: Union[str, List[str]] = "CocoMetric"
 
 
 class UserConfig(BaseModel):
