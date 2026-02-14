@@ -24,11 +24,11 @@ class EvaluatorInjector(BaseConfigInjector):
             current_eval = getattr(cfg, eval_name)
             # Maintain the original ann_file path if possible, fallback to config paths
             # Note: 'val_ann' is the common field in DataSection
-            ann_file = (
-                current_eval.get("ann_file")
-                if isinstance(current_eval, dict)
-                else user_config.data.val_ann
-            )
+            # MMEngine Config objects/dicts both support item access or .get()
+            if hasattr(current_eval, "get") or isinstance(current_eval, dict):
+                ann_file = current_eval.get("ann_file", user_config.data.val_ann)
+            else:
+                ann_file = user_config.data.val_ann
 
             # Rebuild the evaluator config as a list of dicts (MMEngine multi-metric style)
             evaluator_cfg = [dict(type=m, ann_file=ann_file) for m in metric_list]

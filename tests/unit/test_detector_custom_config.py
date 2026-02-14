@@ -57,5 +57,5 @@ batch_size = 1
     
     # num_classes should be 5
     assert passed_cfg.model.bbox_head.num_classes == 5
-    # input_size should be [320, 320] in the pipeline
-    assert passed_cfg.test_pipeline[0]["scale"] == [320, 320]
+    # input_size should be (320, 320) in the pipeline
+    assert passed_cfg.test_pipeline[0]["scale"] == (320, 320)

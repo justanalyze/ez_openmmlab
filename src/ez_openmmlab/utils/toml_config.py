@@ -72,13 +72,13 @@ class TrainingSection(BaseModel):
     batch_size: int = Field(8, gt=0)
     num_workers: int = Field(2, ge=0, description="Number of dataloader workers")
     learning_rate: float = Field(0.001, gt=0.0)
-    weight_decay: float = Field(0.05, ge=0.0)
+    weight_decay: Optional[float] = Field(None, ge=0.0)
     device: str = "cuda"
     work_dir: str = "./runs/train"
     log_level: str = "INFO"
     enable_tensorboard: bool = Field(True, description="Enable TensorBoard logging")
     amp: bool = True
-    evaluator_metric: Union[str, List[str]] = "CocoMetric"
+    evaluator_metric: Optional[Union[str, List[str]]] = None
 
 
 class UserConfig(BaseModel):

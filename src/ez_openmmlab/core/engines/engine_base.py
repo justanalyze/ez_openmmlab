@@ -178,7 +178,12 @@ class EZMMLab(ABC):
 
         return UserConfig(
             model=ModelSection(**model_params),
-            training=TrainingSection(num_workers=0, learning_rate=0.001),
+            training=TrainingSection(
+                num_workers=0,
+                learning_rate=0.001,
+                weight_decay=None,
+                evaluator_metric=None,
+            ),
             data=DataSection(root=""),
         )
 

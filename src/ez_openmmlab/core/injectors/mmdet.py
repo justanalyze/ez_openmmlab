@@ -4,6 +4,7 @@ from mmengine.config import Config
 from ez_openmmlab.utils.toml_config import UserConfig
 
 from .base import BaseConfigInjector
+from .pipeline_patchers import PipelineTransformPatcherRegistry
 
 
 class MMDetInjector(BaseConfigInjector):
@@ -31,7 +32,7 @@ class MMDetInjector(BaseConfigInjector):
 
         # RTMDet style
         bbox_head = cfg.model.bbox_head
-        if isinstance(bbox_head, list):
+        if isinstance(bbox_head, (list, tuple)):
             for head in bbox_head:
                 head.num_classes = num_classes
         else:
@@ -43,16 +44,19 @@ class MMDetInjector(BaseConfigInjector):
         if not input_size:
             return
 
-        # MMDet uses 'scale' in Resize transforms
-        # Usually (width, height)
         for pipe_name in ["train_pipeline", "val_pipeline", "test_pipeline"]:
             if not hasattr(cfg, pipe_name):
                 continue
 
             pipeline = getattr(cfg, pipe_name)
-            for transform in pipeline:
-                if transform.get("type") == "Resize":
-                    transform["scale"] = input_size
-                    logger.debug(
-                        f"[MMDetInjector] Updated {pipe_name} Resize scale to {input_size}"
+            # Iterate through indices to ensure modifications persist in the Config object
+            for idx in range(len(pipeline)):
+                transform_cfg = pipeline[idx]
+                transform_type = transform_cfg.get("type")
+
+                if transform_type:
+                    patcher = PipelineTransformPatcherRegistry.get_patcher(
+                        transform_type
                     )
+                    if patcher:
+                        patcher.apply(pipeline[idx], user_config, pipe_name)

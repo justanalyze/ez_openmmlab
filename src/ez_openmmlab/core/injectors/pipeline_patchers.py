@@ -136,26 +136,95 @@ class BottomupResizePatcher(BasePipelineTransformPatcher):
             )
 
 class MosaicPatcher(BasePipelineTransformPatcher):
+
     def __init__(self, transform_type: str = "Mosaic"):
+
         super().__init__(transform_type)
 
+
+
     def apply(
+
         self,
+
         transform_cfg: Union[Config, Dict[str, Any]],
+
         user_config: UserConfig,
+
         pipeline_name: str,
+
     ) -> None:
+
         input_size = getattr(user_config.model, "input_size", None)
+
         if input_size:
+
             input_size_tuple = tuple(input_size) if isinstance(input_size, list) else input_size
+
             _assign_cfg_value(transform_cfg, "img_scale", input_size_tuple)
+
             logger.debug(
+
                 f"[MMPoseInjector] Updated {pipeline_name} {self.transform_type} img_scale to {input_size}"
+
             )
 
 
+
+
+
+class ResizePatcher(BasePipelineTransformPatcher):
+
+    def __init__(self, transform_type: str = "Resize"):
+
+        super().__init__(transform_type)
+
+
+
+    def apply(
+
+        self,
+
+        transform_cfg: Union[Config, Dict[str, Any]],
+
+        user_config: UserConfig,
+
+        pipeline_name: str,
+
+    ) -> None:
+
+        input_size = getattr(user_config.model, "input_size", None)
+
+        if input_size:
+
+            input_size_tuple = (
+
+                tuple(input_size) if isinstance(input_size, list) else input_size
+
+            )
+
+            # MMDet Resize uses 'scale'
+
+            _assign_cfg_value(transform_cfg, "scale", input_size_tuple)
+
+            logger.debug(
+
+                f"[MMPoseInjector] Updated {pipeline_name} {self.transform_type} scale to {input_size}"
+
+            )
+
+
+
+
+
 # Register the patchers
+
 PipelineTransformPatcherRegistry.register(TopdownAffinePatcher)
+
 PipelineTransformPatcherRegistry.register(BottomupAffinePatcher)
+
 PipelineTransformPatcherRegistry.register(BottomupResizePatcher)
+
 PipelineTransformPatcherRegistry.register(MosaicPatcher)
+
+PipelineTransformPatcherRegistry.register(ResizePatcher)

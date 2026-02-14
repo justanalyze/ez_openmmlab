@@ -84,7 +84,13 @@ class MMPoseInjector(BaseConfigInjector):
 
     def _patch_pipelines(self, cfg: Config, user_config: UserConfig) -> None:
         """Updates input_size in various pipeline steps (e.g., TopdownAffine, Resize) that reference it."""
-        for pipe_name in ["train_pipeline", "val_pipeline", "test_pipeline", "train_pipeline_stage2"]:
+        for pipe_name in [
+            "train_pipeline",
+            "val_pipeline",
+            "test_pipeline",
+            "train_pipeline_stage1",
+            "train_pipeline_stage2",
+        ]:
             if not hasattr(cfg, pipe_name):
                 continue
             
