@@ -9,6 +9,7 @@ dataset_toml = "tests/data/coco_mini/dataset.toml"
 # 3. Start training
 model.train(
     dataset_config_path=dataset_toml,
+    input_size=(320, 320),
     work_dir="./runs/rtmdet_sample_training",
     device="cpu",
     amp=False,

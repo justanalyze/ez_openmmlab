@@ -39,12 +39,24 @@ class MMDetInjector(BaseConfigInjector):
             bbox_head.num_classes = num_classes
 
     def _patch_pipelines(self, cfg: Config, user_config: UserConfig) -> None:
-        """Updates input_size in all pipeline steps (Resize)."""
+        """Updates input_size in all pipeline steps (Resize, RandomResize, etc.)."""
         input_size = getattr(user_config.model, "input_size", None)
         if not input_size:
             return
 
-        for pipe_name in ["train_pipeline", "val_pipeline", "test_pipeline"]:
+        # Define pipelines to scan
+        pipe_names = [
+            "train_pipeline",
+            "val_pipeline",
+            "test_pipeline",
+            "train_pipeline_stage2",
+        ]
+
+        # Only patch TTA pipeline for RTMDet models to future-proof the config
+        if "rtmdet" in user_config.model.name.value:
+            pipe_names.append("tta_pipeline")
+
+        for pipe_name in pipe_names:
             if not hasattr(cfg, pipe_name):
                 continue
 

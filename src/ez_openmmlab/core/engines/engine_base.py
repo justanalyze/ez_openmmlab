@@ -352,11 +352,23 @@ class EZMMLab(ABC):
         logger.info(f"User configuration saved to: {work_dir / 'user_config.toml'}")
 
         # 4. Load and Patch Configuration
+        # We load the official base config (Flattening inheritances automatically)
         self._cfg = self._load_base_config(config.model.name)
+
+        # Apply all injectors to the memory Config object
         self._inject_user_configs(config)
 
-        logger.info("Starting MMEngine Runner...")
-        runner = Runner.from_cfg(self._cfg)
+        # Freeze the configuration into a single self-contained file in the work_dir
+        final_config_path = work_dir / f"{config.model.name.value}_final.py"
+        self._config_manager.dump_config(self._cfg, final_config_path)
+
+        # 5. Run Training using the finalized self-contained config
+        self._run_training(final_config_path, config.training.log_level)
+
+    def _run_training(self, config_path: Path, log_level: str) -> None:
+        """Initializes the MMEngine Runner and starts training."""
+        logger.info(f"Starting MMEngine Runner with config: {config_path}")
+        runner = Runner.from_cfg(Config.fromfile(str(config_path)))
         runner.train()
 
     def _load_base_config(self, model: str) -> Config:

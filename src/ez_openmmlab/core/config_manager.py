@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
+from mmengine.config import Config
 
 from ez_openmmlab.core.resolvers import ModelParamsResolverFactory
 from ez_openmmlab.schemas.dataset import DatasetConfig
@@ -246,3 +247,13 @@ class ConfigManager:
                 logger.debug(f"Removed temporary config file: {config_path}")
             except Exception as e:
                 logger.warning(f"Failed to remove temp config file {config_path}: {e}")
+
+    def dump_config(self, cfg: Config, output_path: Path) -> Path:
+        """Saves a memory Config object to a self-contained .py file.
+
+        This 'freezes' the configuration, resolving all _base_ inheritances
+        into a single flattened file.
+        """
+        cfg.dump(str(output_path))
+        logger.debug(f"Flattened configuration saved to: {output_path}")
+        return output_path
