@@ -13,7 +13,7 @@ model.train(
     work_dir="./runs/rtmdet_sample_training",
     device="cpu",
     amp=False,
-    epochs=5,
+    epochs=100,
     batch_size=2,
     num_workers=2,
 )

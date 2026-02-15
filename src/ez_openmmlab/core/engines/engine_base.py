@@ -41,7 +41,9 @@ class EZMMLab(ABC):
         self.log_level = log_level
         self._configure_logging(log_level)
 
-        logger.info(f"Initializing {self.__class__.__name__} with model: '{model}'")
+        logger.info(
+            f"Initializing {self.__class__.__name__} with model: '{model}'"
+        )
 
         # Ensure noisy warnings are suppressed when engine starts
         from ez_openmmlab import mute_warnings
@@ -113,7 +115,9 @@ class EZMMLab(ABC):
         # Case 1: Custom Configuration via TOML
         if isinstance(model, (Path, str)) and str(model).endswith(".toml"):
             config_toml = Path(model)
-            self.checkpoint_path = Path(checkpoint_path) if checkpoint_path else None
+            self.checkpoint_path = (
+                Path(checkpoint_path) if checkpoint_path else None
+            )
 
             # 1.1 Load explicit metadata from TOML
             meta = self._config_manager.load_metadata_from_toml(config_toml)
@@ -138,8 +142,12 @@ class EZMMLab(ABC):
 
         # Case 2: Standard Model Name
         else:
-            self.model = model.value if isinstance(model, ModelName) else str(model)
-            self.checkpoint_path = ensure_model_checkpoint(model, checkpoint_path)
+            self.model = (
+                model.value if isinstance(model, ModelName) else str(model)
+            )
+            self.checkpoint_path = ensure_model_checkpoint(
+                model, checkpoint_path
+            )
             self.config_path = get_config_file(model)
 
     def __del__(self):
@@ -221,7 +229,9 @@ class EZMMLab(ABC):
             raise RuntimeError("Inferencer failed to initialize.")
 
         # 4. Delegate execution to child
-        raw_results = self._run_inference(inputs, actual_out_dir, show, **kwargs)
+        raw_results = self._run_inference(
+            inputs, actual_out_dir, show, **kwargs
+        )
 
         # 5. Format results
         if not hasattr(self, "_formatter") or self._formatter is None:
@@ -307,7 +317,9 @@ class EZMMLab(ABC):
         """
         target_log_level = log_level or self.log_level
 
-        logger.info(f"Loading dataset configuration from: {dataset_config_path}")
+        logger.info(
+            f"Loading dataset configuration from: {dataset_config_path}"
+        )
 
         # Extract arch-specific parameters using the model's implementation
         architecture_params = self._get_architecture_params(**kwargs)
@@ -338,7 +350,9 @@ class EZMMLab(ABC):
         # This solves the 'Evaluation Mismatch' problem by creating a first-class
         # registered class for the session.
         family = self._get_library_family()
-        registered_name = DynamicDatasetRegistry.register_dataset(config, family)
+        registered_name = DynamicDatasetRegistry.register_dataset(
+            config, family
+        )
         config.data.registered_class_name = registered_name
 
         # 2. Setup Work Directory
@@ -346,10 +360,14 @@ class EZMMLab(ABC):
         work_dir.mkdir(parents=True, exist_ok=True)
 
         # 3. Artifact Tracking
-        config.model.base_config_path = str(get_config_file(config.model.name).absolute())
+        config.model.base_config_path = str(
+            get_config_file(config.model.name).absolute()
+        )
 
         save_user_config(config, work_dir / "user_config.toml")
-        logger.info(f"User configuration saved to: {work_dir / 'user_config.toml'}")
+        logger.info(
+            f"User configuration saved to: {work_dir / 'user_config.toml'}"
+        )
 
         # 4. Load and Patch Configuration
         # We load the official base config (Flattening inheritances automatically)
@@ -359,7 +377,10 @@ class EZMMLab(ABC):
         self._inject_user_configs(config)
 
         # Freeze the configuration into a single self-contained file in the work_dir
-        final_config_path = work_dir / f"{config.model.name.value}_final.py"
+        final_config_path = (
+            work_dir
+            / f"{config.model.name.value}_{config.data.dataset_name}.py"
+        )
         self._config_manager.dump_config(self._cfg, final_config_path)
 
         # 5. Run Training using the finalized self-contained config
