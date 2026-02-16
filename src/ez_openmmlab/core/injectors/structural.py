@@ -103,3 +103,36 @@ class HookRebinder(StructuralRebinder):
                     f"[Structural] {hook_type} synchronized: "
                     f"Stage 2 will start at epoch {new_switch_epoch} (Duration: {stage2_duration})"
                 )
+
+
+class CodecRebinder(StructuralRebinder):
+    """Ensures head decoder and pipeline encoder point to the patched global codec."""
+
+    def apply(self, cfg: Config, user_config: UserConfig) -> None:
+        if not hasattr(cfg, "codec"):
+            return
+
+        codec = cfg.codec
+
+        # 1. Sync Model Head Decoder
+        if self._set_path(cfg, "model.head.decoder", codec):
+            logger.debug("[Structural] Re-bound model.head.decoder to codec")
+
+        # 2. Sync Pipeline Encoders (Search through all standard pipelines)
+        for pipe_name in [
+            "train_pipeline",
+            "val_pipeline",
+            "test_pipeline",
+            "train_pipeline_stage1",
+            "train_pipeline_stage2",
+        ]:
+            if not hasattr(cfg, pipe_name):
+                continue
+
+            pipeline = getattr(cfg, pipe_name)
+            for transform in pipeline:
+                if transform.get("type") == "GenerateTarget":
+                    transform.encoder = codec
+                    logger.debug(
+                        f"[Structural] Re-bound {pipe_name} GenerateTarget.encoder to codec"
+                    )

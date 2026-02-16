@@ -8,7 +8,7 @@ from .mmpose import MMPoseInjector
 from .optimizer import OptimizerInjector
 from .pipeline_patchers import PipelineTransformPatcherRegistry # Import the registry
 from .runtime import RuntimeInjector
-from .structural import DataloaderRebinder, HookRebinder # Import the new rebinders
+from .structural import CodecRebinder, DataloaderRebinder, HookRebinder # Import the new rebinders
 
 
 def get_injectors(model_name: str) -> List[BaseConfigInjector]:
@@ -32,6 +32,7 @@ def get_injectors(model_name: str) -> List[BaseConfigInjector]:
     injectors.extend([
         DataloaderRebinder(),
         HookRebinder(),
+        CodecRebinder(),
     ])
 
     return injectors

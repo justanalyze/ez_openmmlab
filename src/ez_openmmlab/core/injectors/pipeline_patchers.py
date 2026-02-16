@@ -169,184 +169,63 @@ class PadPatcher(InputSizePatcher):
 
 
 class ResizePatcher(InputSizePatcher):
-
-
     def __init__(self):
-
-
         # MMDetection/RTMDet standard Resize uses 'scale'
-
-
         super().__init__("Resize", ["scale"])
 
 
-
-
-
-
-
-
 class TestTimeAugPatcher(BasePipelineTransformPatcher):
-
-
     """Handles multi-scale TTA patching for RTMDet.
-
-
     
-
-
     Adjusts nested Resize scales to [1.0x, 0.5x, 1.5x] and updates the Pad size
-
-
     to match the maximum scale (1.5x).
-
-
     """
 
-
-
-
-
     def __init__(self):
-
-
         super().__init__("TestTimeAug")
 
-
-
-
-
     def apply(self, transform_cfg, user_config, pipeline_name):
-
-
         input_size = self._get_input_size(user_config)
-
-
         if not input_size or "transforms" not in transform_cfg:
-
-
             return
 
-
-
-
-
         # RTMDet TTA Ratios: [1.0, 0.5, 1.5]
-
-
         s_10 = input_size
-
-
         s_05 = tuple(int(x * 0.5) for x in input_size)
-
-
         s_15 = tuple(int(x * 1.5) for x in input_size)
-
-
         scales = [s_10, s_05, s_15]
 
-
-
-
-
         # The 'transforms' key is a list of lists
-
-
         for sub_list in transform_cfg["transforms"]:
-
-
             if not isinstance(sub_list, (list, Config)):
-
-
                 continue
 
-
-
-
-
             for t in sub_list:
-
-
                 t_type = t.get("type")
-
-
                 # 1. Update Resize scales
-
-
                 if t_type == "Resize" and scales:
-
-
                     # RTMDet TTA typically has 3 Resizes in the first sub-list
-
-
                     # We assign the next scale in our sequence
-
-
                     new_scale = scales.pop(0)
-
-
                     _assign_cfg_value(t, "scale", new_scale)
-
-
                     self._log_patch(pipeline_name, "Resize.scale", new_scale)
 
-
-
-
-
                 # 2. Update Pad size to match the largest scale (1.5x)
-
-
                 elif t_type == "Pad":
-
-
                     _assign_cfg_value(t, "size", s_15)
-
-
                     self._log_patch(pipeline_name, "Pad.size", s_15)
-
-
-
-
-
-
 
 
 # --- Registration ---
 
-
-
-
-
 PipelineTransformPatcherRegistry.register(TopdownAffinePatcher)
-
-
 PipelineTransformPatcherRegistry.register(BottomupAffinePatcher)
-
-
 PipelineTransformPatcherRegistry.register(BottomupResizePatcher)
-
-
 PipelineTransformPatcherRegistry.register(MosaicPatcher)
-
-
 PipelineTransformPatcherRegistry.register(CachedMosaicPatcher)
-
-
 PipelineTransformPatcherRegistry.register(CachedMixUpPatcher)
-
-
 PipelineTransformPatcherRegistry.register(RandomCropPatcher)
-
-
 PipelineTransformPatcherRegistry.register(PadPatcher)
-
-
 PipelineTransformPatcherRegistry.register(ResizePatcher)
-
-
 PipelineTransformPatcherRegistry.register(RTMDetRandomResizePatcher)
-
-
 PipelineTransformPatcherRegistry.register(TestTimeAugPatcher)
-
