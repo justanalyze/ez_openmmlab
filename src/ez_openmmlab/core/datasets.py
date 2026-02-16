@@ -40,6 +40,11 @@ class DynamicDatasetRegistry:
         if config.data.classes:
             metainfo["classes"] = config.data.classes
 
+        # 1.2 Deep convert numeric string keys to integers
+        # This is critical when loading from TOML, as TOML keys are always strings.
+        # MMPose utilities expect integer keys for keypoint_info and skeleton_info.
+        metainfo = cls._deep_convert_numeric_keys(metainfo)
+
         # 2. Collision Check
         if cls._is_already_registered(class_name, family):
             raise ValueError(
@@ -57,6 +62,23 @@ class DynamicDatasetRegistry:
 
         logger.info(f"Dynamically registered '{class_name}' for {family} session.")
         return class_name
+
+    @classmethod
+    def _deep_convert_numeric_keys(cls, data: Any) -> Any:
+        """Recursively converts string keys that look like integers into actual integers.
+
+        Required for compatibility with OpenMMLab's internal metainfo parsing.
+        """
+        if isinstance(data, dict):
+            new_dict = {}
+            for k, v in data.items():
+                # Convert numeric string keys to int
+                new_key = int(k) if isinstance(k, str) and k.isdigit() else k
+                new_dict[new_key] = cls._deep_convert_numeric_keys(v)
+            return new_dict
+        elif isinstance(data, list):
+            return [cls._deep_convert_numeric_keys(item) for item in data]
+        return data
 
     @classmethod
     def _is_already_registered(cls, name: str, family: str) -> bool:
