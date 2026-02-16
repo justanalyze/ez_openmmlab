@@ -9,10 +9,18 @@ class RuntimeInjector(BaseConfigInjector):
     """Configures optimizer, AMP, epochs, and basic logging."""
 
     def apply(self, cfg: Config, user_config: UserConfig) -> None:
-        cfg.work_dir = user_config.training.work_dir
-        cfg.train_cfg.max_epochs = user_config.training.epochs
+        training = user_config.training
+        
+        # Patch top-level variables for clarity in frozen config
+        if hasattr(cfg, "base_lr"):
+            cfg.base_lr = training.learning_rate
+        if hasattr(cfg, "max_epochs"):
+            cfg.max_epochs = training.epochs
+
+        cfg.work_dir = training.work_dir
+        cfg.train_cfg.max_epochs = training.epochs
         cfg.load_from = user_config.model.load_from
-        cfg.log_level = user_config.training.log_level
+        cfg.log_level = training.log_level
 
         if hasattr(cfg, "optim_wrapper"):
             training = user_config.training

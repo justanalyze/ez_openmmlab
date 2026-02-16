@@ -109,3 +109,40 @@ def test_runtime_injector_missing_optim_wrapper(mock_user_config):
     injector.apply(cfg, mock_user_config) # Should not raise
 
     assert cfg.work_dir == "./runs/train"
+
+
+def test_evaluator_injector_handles_dicts(mock_user_config):
+    """Test that EvaluatorInjector correctly processes string and dict metrics."""
+    from ez_openmmlab.core.injectors.evaluator import EvaluatorInjector
+
+    # 1. Mixed metrics: string and dict
+    mock_user_config.training.evaluator_metric = [
+        "CocoMetric",
+        {"type": "PCKAccuracy", "thr": 0.05}
+    ]
+    
+    cfg = Config(dict(
+        val_evaluator=dict(type="StandardMetric", ann_file="old.json"),
+        test_evaluator=dict(type="StandardMetric")
+    ))
+
+    injector = EvaluatorInjector()
+    injector.apply(cfg, mock_user_config)
+
+    # Both evaluators should now be lists of 2 metrics
+    assert len(cfg.val_evaluator) == 2
+    assert cfg.val_evaluator[0]["type"] == "CocoMetric"
+    assert cfg.val_evaluator[0]["ann_file"] == "data/coco/annotations/val.json"
+    
+    assert cfg.val_evaluator[1]["type"] == "PCKAccuracy"
+    assert cfg.val_evaluator[1]["thr"] == 0.05
+    assert cfg.val_evaluator[1]["ann_file"] == "data/coco/annotations/val.json"
+
+    # 2. Single dict metric
+    mock_user_config.training.evaluator_metric = {"type": "PCKAccuracy", "thr": 0.1}
+    injector.apply(cfg, mock_user_config)
+    
+    # Should be a single dict (not a list) for compatibility
+    assert isinstance(cfg.val_evaluator, dict)
+    assert cfg.val_evaluator["type"] == "PCKAccuracy"
+    assert cfg.val_evaluator["thr"] == 0.1

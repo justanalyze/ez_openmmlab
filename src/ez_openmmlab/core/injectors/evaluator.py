@@ -14,24 +14,32 @@ class EvaluatorInjector(BaseConfigInjector):
         if not metrics:
             return
 
-        # Convert single string to list for uniform handling
-        metric_list = [metrics] if isinstance(metrics, str) else metrics
+        # Convert input to a uniform list of (string or dict) for processing
+        if isinstance(metrics, (str, dict)):
+            metric_list = [metrics]
+        else:
+            metric_list = metrics
 
         for eval_name in ["val_evaluator", "test_evaluator"]:
             if not hasattr(cfg, eval_name):
                 continue
 
-            current_eval = getattr(cfg, eval_name)
-            # Maintain the original ann_file path if possible, fallback to config paths
-            # Note: 'val_ann' is the common field in DataSection
-            # MMEngine Config objects/dicts both support item access or .get()
-            if hasattr(current_eval, "get") or isinstance(current_eval, dict):
-                ann_file = current_eval.get("ann_file", user_config.data.val_ann)
-            else:
-                ann_file = user_config.data.val_ann
+            # We prioritize the absolute path from user_config.data
+            ann_file = user_config.data.val_ann_path
 
             # Rebuild the evaluator config as a list of dicts (MMEngine multi-metric style)
-            evaluator_cfg = [dict(type=m, ann_file=ann_file) for m in metric_list]
+            evaluator_cfg = []
+            for m in metric_list:
+                if isinstance(m, str):
+                    # Standard string metric
+                    evaluator_cfg.append(dict(type=m, ann_file=ann_file))
+                elif isinstance(m, dict):
+                    # Advanced dictionary metric (e.g. PCKAccuracy with threshold)
+                    # We create a copy and ensure ann_file is present if not already specified
+                    m_copy = m.copy()
+                    if "ann_file" not in m_copy:
+                        m_copy["ann_file"] = ann_file
+                    evaluator_cfg.append(m_copy)
 
             # If only one metric, keep it as a dict for simplicity/compatibility
             if len(evaluator_cfg) == 1:
