@@ -79,6 +79,7 @@ class TrainingSection(BaseModel):
     enable_tensorboard: bool = Field(True, description="Enable TensorBoard logging")
     amp: bool = True
     evaluator_metric: Optional[Union[str, dict, List[Union[str, dict]]]] = None
+    resume: Union[bool, str] = False
 
 
 class UserConfig(BaseModel):

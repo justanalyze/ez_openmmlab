@@ -1,3 +1,4 @@
+from loguru import logger
 from mmengine.config import Config
 
 from ez_openmmlab.utils.toml_config import UserConfig
@@ -10,20 +11,36 @@ class RuntimeInjector(BaseConfigInjector):
 
     def apply(self, cfg: Config, user_config: UserConfig) -> None:
         training = user_config.training
-        
-        # Patch top-level variables for clarity in frozen config
+
+        # 1. Patch top-level variables for clarity in frozen config
         if hasattr(cfg, "base_lr"):
             cfg.base_lr = training.learning_rate
         if hasattr(cfg, "max_epochs"):
             cfg.max_epochs = training.epochs
 
+        # 2. Configure Runner (MMEngine standard locations)
         cfg.work_dir = training.work_dir
-        cfg.train_cfg.max_epochs = training.epochs
-        cfg.load_from = user_config.model.load_from
+        if hasattr(cfg, "train_cfg"):
+            cfg.train_cfg.max_epochs = training.epochs
         cfg.log_level = training.log_level
 
+        # --- 3. Resume Logic ---
+        # 1. Boolean True: Auto-resume from 'last_checkpoint' in work_dir
+        if training.resume is True:
+            cfg.resume = True
+            cfg.load_from = None
+            logger.info("[RuntimeInjector] Enabled auto-resume from last_checkpoint")
+        # 2. String Path: Resume from a specific checkpoint file
+        elif isinstance(training.resume, str):
+            cfg.resume = True
+            cfg.load_from = training.resume
+            logger.info(f"[RuntimeInjector] Enabled resume from: {training.resume}")
+        # 3. False: fresh start
+        else:
+            cfg.resume = False
+            cfg.load_from = user_config.model.load_from
+
         if hasattr(cfg, "optim_wrapper"):
-            training = user_config.training
             if training.amp:
                 cfg.optim_wrapper.type = "AmpOptimWrapper"
                 cfg.optim_wrapper.loss_scale = "dynamic"

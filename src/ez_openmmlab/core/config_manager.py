@@ -106,6 +106,7 @@ class ConfigManager:
         # Core training hyperparameters
         weight_decay: float = 0.05,
         evaluator_metric: Union[str, List[str]] = "CocoMetric",
+        resume: Union[bool, str] = False,
         architecture_params: Optional[Dict[str, Any]] = None,
     ) -> toml_config.UserConfig:
         """Assembles a full UserConfig object from training parameters and dataset TOML."""
@@ -167,6 +168,7 @@ class ConfigManager:
                 num_workers=num_workers,
                 enable_tensorboard=enable_tensorboard,
                 evaluator_metric=evaluator_metric,
+                resume=resume,
             ),
         )
 

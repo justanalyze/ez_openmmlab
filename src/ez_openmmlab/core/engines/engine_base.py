@@ -299,6 +299,7 @@ class EZMMLab(ABC):
         log_level: Optional[str] = None,
         weight_decay: float = 0.05,
         evaluator_metric: Union[str, List[str]] = "CocoMetric",
+        resume: Union[bool, str] = False,
         **kwargs,
     ) -> None:
         """Runs the end-to-end training pipeline.
@@ -314,6 +315,8 @@ class EZMMLab(ABC):
             num_workers: Number of data loading workers.
             enable_tensorboard: Enable TensorBoard visualization.
             log_level: Override for internal framework logging.
+            resume: Whether to resume training. If True, automatically find
+                the latest checkpoint in work_dir. If string, use as path to checkpoint.
         """
         target_log_level = log_level or self.log_level
 
@@ -339,6 +342,7 @@ class EZMMLab(ABC):
             log_level=target_log_level,
             weight_decay=weight_decay,
             evaluator_metric=evaluator_metric,
+            resume=resume,
             architecture_params=architecture_params,
         )
 

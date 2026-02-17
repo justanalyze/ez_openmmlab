@@ -164,6 +164,7 @@ class RTMPose(EZMMPose):
         log_level: Optional[str] = None,
         weight_decay: float = 0.05,
         evaluator_metric: Union[str, List[str]] = "CocoMetric",
+        resume: Union[bool, str] = False,
         # RTMPose Specific
         input_size: Tuple[int, int] = (192, 256),
         simcc_sigma: Optional[Tuple[float, float]] = None,
@@ -188,6 +189,7 @@ class RTMPose(EZMMPose):
             feature_map_size: Custom feature map size. If None, derived as input_size // 32.
             weight_decay: Optimizer weight decay. Defaults to 0.05.
             evaluator_metric: Metric(s) for validation. Defaults to "CocoMetric".
+            resume: Whether to resume training.
             det_model: Optional detector model name for evaluation.
             det_weights: Optional path to detector weights.
             det_cat_ids: Optional detector category IDs.
@@ -206,6 +208,7 @@ class RTMPose(EZMMPose):
             log_level=log_level,
             weight_decay=weight_decay,
             evaluator_metric=evaluator_metric,
+            resume=resume,
             input_size=input_size,
             simcc_sigma=simcc_sigma,
             feature_map_size=feature_map_size,
