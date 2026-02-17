@@ -64,6 +64,7 @@ class EZMMLab(ABC):
 
         self._cfg: Optional[Config] = None
         self._temp_config_file: Optional[Path] = None
+        self._source_dir: Optional[Path] = None  # Directory of the source config
         self._using_custom_weights: bool = checkpoint_path is not None
 
         # --- 4. Initialization Sequence ---
@@ -115,6 +116,7 @@ class EZMMLab(ABC):
         # Case 1: Custom Configuration via TOML
         if isinstance(model, (Path, str)) and str(model).endswith(".toml"):
             config_toml = Path(model)
+            self._source_dir = config_toml.parent.absolute()
             self.checkpoint_path = (
                 Path(checkpoint_path) if checkpoint_path else None
             )
@@ -319,6 +321,20 @@ class EZMMLab(ABC):
                 the latest checkpoint in work_dir. If string, use as path to checkpoint.
         """
         target_log_level = log_level or self.log_level
+        
+        # Enforce TOML-only resume policy
+        if resume and not self._source_dir:
+            raise ValueError(
+                "Resuming training is only supported when the model is initialized "
+                "with a 'user_config.toml' from a previous run to ensure configuration consistency."
+            )
+
+        # Smart WorkDir Resolution: 
+        # If resuming and using default work_dir, prefer the source directory of the model config
+        actual_work_dir = work_dir
+        if resume and work_dir == "./runs/train" and self._source_dir:
+            actual_work_dir = str(self._source_dir)
+            logger.info(f"Auto-resolved resume work_dir to: {actual_work_dir}")
 
         logger.info(
             f"Loading dataset configuration from: {dataset_config_path}"
@@ -334,7 +350,7 @@ class EZMMLab(ABC):
             epochs=epochs,
             batch_size=batch_size,
             device=device,
-            work_dir=work_dir,
+            work_dir=actual_work_dir,
             learning_rate=learning_rate,
             amp=amp,
             num_workers=num_workers,
