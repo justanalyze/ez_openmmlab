@@ -164,14 +164,13 @@ class RTMPose(EZMMPose):
         log_level: Optional[str] = None,
         weight_decay: float = 0.05,
         evaluator_metric: Union[str, List[str]] = "CocoMetric",
-        resume: Union[bool, str] = False,
         # RTMPose Specific
         input_size: Tuple[int, int] = (192, 256),
         simcc_sigma: Optional[Tuple[float, float]] = None,
         feature_map_size: Optional[Tuple[int, int]] = None,
         **kwargs,
     ) -> None:
-        """Runs the RTMPose training pipeline with architecture-specific parameters.
+        """Runs a fresh RTMPose training pipeline with architecture-specific parameters.
 
         Args:
             dataset_config_path: Path to the dataset.toml definition.
@@ -189,7 +188,6 @@ class RTMPose(EZMMPose):
             feature_map_size: Custom feature map size. If None, derived as input_size // 32.
             weight_decay: Optimizer weight decay. Defaults to 0.05.
             evaluator_metric: Metric(s) for validation. Defaults to "CocoMetric".
-            resume: Whether to resume training.
             det_model: Optional detector model name for evaluation.
             det_weights: Optional path to detector weights.
             det_cat_ids: Optional detector category IDs.
@@ -208,9 +206,37 @@ class RTMPose(EZMMPose):
             log_level=log_level,
             weight_decay=weight_decay,
             evaluator_metric=evaluator_metric,
-            resume=resume,
             input_size=input_size,
             simcc_sigma=simcc_sigma,
             feature_map_size=feature_map_size,
+            **kwargs,
+        )
+
+    def resume(
+        self,
+        checkpoint: Union[bool, str] = True,
+        epochs: Optional[int] = None,
+        batch_size: Optional[int] = None,
+        learning_rate: Optional[float] = None,
+        work_dir: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        """Resumes an RTMPose training session.
+
+        Args:
+            checkpoint: Whether to resume. If True, automatically find the latest 
+                checkpoint in the source directory. If string, use as specific path.
+            epochs: Optional override for total epochs.
+            batch_size: Optional override for batch size.
+            learning_rate: Optional override for learning rate.
+            work_dir: Optional override for working directory.
+            **kwargs: Additional overrides (e.g. det_model, etc.).
+        """
+        super().resume(
+            checkpoint=checkpoint,
+            epochs=epochs,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            work_dir=work_dir,
             **kwargs,
         )

@@ -1,6 +1,6 @@
 # Model Integration Guide
 
-This guide outlines the standard procedure for integrating a new OpenMMLab model into the `ez_openmmlab` framework, ensuring it adheres to the project's **SOLID** architecture and **Config-First** philosophy.
+This guide outlines the standard procedure for integrating a new OpenMMLab model into the `ez_openmmlab` framework, ensuring it adheres to the project's **SOLID** architecture and **Context-Aware** philosophy.
 
 ---
 
@@ -17,7 +17,7 @@ Before writing the model logic, you must register its identity and configuration
 
 ## Phase 2: Parameter Intelligence (Resolvers)
 
-If your model requires derived parameters (e.g., calculating feature map size from input resolution), implement a Resolver.
+If your model requires derived parameters (e.g., calculating heatmap sigma from input resolution), implement a Resolver.
 
 1.  **Create a Resolver in `src/ez_openmmlab/core/resolvers/`**:
     *   Inherit from `BaseModelParamsResolver`.
@@ -27,53 +27,53 @@ If your model requires derived parameters (e.g., calculating feature map size fr
 
 ---
 
-## Phase 3: The Model Engine
+## Phase 3: The Model Engine (User Interface)
 
 This is the primary user-facing class. Place it in `src/ez_openmmlab/models/<library_family>/`.
 
-1.  **Inherit from the Family Base**:
-    *   For Detection: `EZMMDetector`
-    *   For Pose: `EZMMPose`
-    *   For new families: `EZMMLab`
-2.  **Implement Required Methods**:
-    *   `__init__`: Call `_validate_model(model)` before `super().__init__`.
-    *   `_validate_model`: Ensure the model variant is recognized or is a valid `.toml` path.
-    *   `_get_architecture_params`: **Critical for Persistence.** Return a dict of parameters (like `input_size`) that should be saved to `config.toml` and reused during inference.
-    *   `_get_library_family`: Return the string identifier for the library (e.g., `"mmdet"`, `"mmpose"`). This is used for dynamic dataset registration.
-    *   `train`: Explicitly define hyperparameters in the signature (e.g., `input_size`, `weight_decay`) to provide a clean IDE experience, then call `super().train`.
-3.  **Specialized Inference (Optional)**:
-    *   If the model is Top-Down (like `RTMPose`), override `predict` to handle detector overrides.
-    *   Implement `_instantiate_inferencer` to return the correct OpenMMLab Inferencer.
+### 1. Inherit from the Family Base
+*   Detection: `EZMMDetector`
+*   Pose: `EZMMPose`
+*   New families: `EZMMLab`
+
+### 2. Implement the "DNA" Methods
+*   `_get_architecture_params`: **Critical.** Return a dict of parameters (like `input_size`) that must be saved to `user_config.toml`. These are "experiment-locked" during resumption.
+*   `_get_library_family`: Return the string identifier (e.g., `"mmdet"`, `"mmpose"`).
+
+### 3. Implement the Training Interface (Option 3 Strategy)
+To adhere to **Interface Segregation**, you must implement two distinct methods:
+
+*   **`train(...)`**: Strictly for fresh starts.
+    *   **Signature**: All parameters should have visible default values.
+    *   **Requirement**: Must require `dataset_config_path`.
+*   **`resume(...)`**: Strictly for continuing unfinished runs.
+    *   **Signature**: All parameters must be `Optional` with `None` as defaults.
+    *   **Logic**: Call `super().resume()`. This ensures that if a user doesn't provide an override, the engine strictly uses the values recovered from the source TOML.
 
 ---
 
-## Phase 4: Configuration Patching (Injectors)
+## Phase 4: Inner Wiring (Injectors & Rebinders)
 
-If the model requires unique changes to the OpenMMLab `Config` object that aren't covered by global injectors.
+### 1. Value Patching (Injectors)
+Modify `MMDetInjector` or `MMPoseInjector` in `src/ez_openmmlab/core/injectors/` if you need to update specific values in the `Config` object (like `out_channels` or global `codec` settings).
 
-1.  **Check Global Injectors**: Ensure `OptimizerInjector` and `EvaluatorInjector` aren't already handling your needs.
-2.  **Specialized Patcher (Optional)**:
-    *   If you need to patch unique pipeline transforms, add a new Patcher to `src/ez_openmmlab/core/injectors/pipeline_patchers.py` and register it in the `PipelineTransformPatcherRegistry`.
-3.  **Update Family Injector**:
-    *   Modify `MMDetInjector` or `MMPoseInjector` in `src/ez_openmmlab/core/injectors/` if you need to patch specific model head attributes (like `out_channels`).
-
----
-
-## Phase 5: Public API Exposure
-
-1.  **Library Level**: Export your class in `src/ez_openmmlab/models/<family>/__init__.py`.
-2.  **Top Level**: Export your class in `src/ez_openmmlab/__init__.py` to allow users to import it via `from ez_openmmlab import MyNewModel`.
+### 2. Structural Synchronization (Rebinders)
+If your model config "bakes in" copies of objects (e.g., putting the codec inside the head decoder AND inside the pipeline encoder), **do not patch them manually.** 
+*   Add a `StructuralRebinder` in `src/ez_openmmlab/core/injectors/structural.py`.
+*   This ensures that all internal references point to your patched global variable, preventing "bin-size mismatches" or resolution errors.
 
 ---
 
-## Phase 6: Verification (Testing)
+## Phase 5: Smart Resumption Logic
 
-Every new model must be verified with both unit and integration tests.
+The base engine handles most of this, but ensure your model directory contains:
+1.  **`user_config.toml`**: The source of truth for all parameters.
+2.  **`last_checkpoint`** or **`best_*.pth`**: The weights.
 
-1.  **Unit Tests**: Create a new test file in `tests/unit/` (e.g., `test_my_model.py`).
-    *   Verify that `_get_architecture_params` returns expected values.
-    *   Mock the Inferencer to ensure `predict` calls it with patched configurations.
-2.  **Integration Tests**: Add a smoke test in `tests/integration/test_smoke.py` or a dedicated integration test to verify the full inference loop with a sample image.
+When a user calls `Model(model="runs/exp1/user_config.toml").resume()`, the system automatically:
+*   Resolves the `work_dir` to `runs/exp1/`.
+*   Locates the best/latest checkpoint.
+*   Re-generates the finalized `.py` config with `resume=True`.
 
 ---
 
@@ -83,12 +83,11 @@ Every new model must be verified with both unit and integration tests.
 | :--- | :--- | :--- |
 | **Enum** | Identity & Config Path | `schemas/model.py` |
 | **Resolver** | Logic for derived params | `core/resolvers/` |
-| **Injector** | Patching the `.py` Config | `core/injectors/` |
-| **Patcher** | Specific Pipeline Transforms | `core/injectors/pipeline_patchers.py` |
-| **Model Class** | User Interface (Train/Predict) | `models/<family>/<name>.py` |
+| **Injector** | Patching value in `.py` Config | `core/injectors/` |
+| **Rebinder** | Wiring internal config refs | `core/injectors/structural.py` |
+| **Model Class** | User UI (Train vs Resume) | `models/<family>/<name>.py` |
 
 ---
 
-## Pro-Tip: The "Golden Rule" of `_get_architecture_params`
-
-Always ensure every parameter you want saved into the `metadata` of a trained model is returned by `_get_architecture_params`. This ensures that when a user runs `RTMPose(model="path/to/config.toml")`, the engine automatically knows the `input_size` and `simcc_sigma` without the user providing them again.
+## The "Golden Rule" of Resumption
+Never rely on method defaults inside `resume()`. By using `None` as defaults and recovering state from `self._source_toml`, we guarantee that a resumed experiment is mathematically identical to the original, even if the library code's default values change in the future.

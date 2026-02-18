@@ -89,7 +89,7 @@ def get_config_file(model_name: str | ModelName) -> Path:
 class ConfigManager:
     """Consolidated manager for constructing UserConfig and handling temporary config lifecycle."""
 
-    def build_user_config(
+    def create_fresh_config(
         self,
         model: str,
         dataset_config_path: Union[str, Path],
@@ -108,8 +108,9 @@ class ConfigManager:
         evaluator_metric: Union[str, List[str]] = "CocoMetric",
         resume: Union[bool, str] = False,
         architecture_params: Optional[Dict[str, Any]] = None,
+        **kwargs,
     ) -> toml_config.UserConfig:
-        """Assembles a full UserConfig object from training parameters and dataset TOML."""
+        """Assembles a brand new UserConfig object from training parameters and dataset TOML."""
         dataset_cfg = DatasetConfig.from_toml(Path(dataset_config_path))
 
         dataset_name = dataset_cfg.dataset_name
@@ -171,6 +172,41 @@ class ConfigManager:
                 resume=resume,
             ),
         )
+
+    def recover_config_from_toml(
+        self,
+        toml_path: Path,
+        **kwargs,
+    ) -> toml_config.UserConfig:
+        """Loads an existing UserConfig and applies training parameter overrides.
+
+        This ensures that when resuming, we maintain architectural and dataset
+        consistency while allowing extensions (e.g. increasing epochs).
+        """
+        user_cfg = toml_config.load_user_config(toml_path)
+
+        # Update training parameters with any explicit overrides provided to train()
+        training_fields = [
+            "epochs",
+            "batch_size",
+            "learning_rate",
+            "weight_decay",
+            "device",
+            "work_dir",
+            "log_level",
+            "amp",
+            "num_workers",
+            "enable_tensorboard",
+            "evaluator_metric",
+            "resume",
+        ]
+
+        for field in training_fields:
+            if field in kwargs and kwargs[field] is not None:
+                setattr(user_cfg.training, field, kwargs[field])
+
+        logger.debug(f"Recovered and updated resume configuration from: {toml_path}")
+        return user_cfg
 
     def load_metadata_from_toml(self, config_path: Path) -> Dict[str, Any]:
         """Extracts training metadata from a user_config.toml file.

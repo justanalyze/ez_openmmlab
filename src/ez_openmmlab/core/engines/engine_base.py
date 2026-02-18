@@ -65,11 +65,12 @@ class EZMMLab(ABC):
         self._cfg: Optional[Config] = None
         self._temp_config_file: Optional[Path] = None
         self._source_dir: Optional[Path] = None  # Directory of the source config
+        self._source_toml: Optional[Path] = None  # Path to the source TOML file
         self._using_custom_weights: bool = checkpoint_path is not None
 
         # --- 4. Initialization Sequence ---
-        self._validate_inputs(model, checkpoint_path)
         self._resolve_resources(model, checkpoint_path)
+        self._validate_inputs(model, self.checkpoint_path)
 
     def _configure_logging(self, log_level: str) -> None:
         """Configures the global logger level."""
@@ -87,14 +88,21 @@ class EZMMLab(ABC):
         checkpoint_path: Optional[Union[str, Path]],
     ) -> None:
         """Performs initial validation of provided arguments."""
-        if isinstance(model, (Path, str)) and str(model).endswith(".toml"):
-            if not checkpoint_path:
-                raise ValueError(
-                    "Checkpoint path is required when using a custom config.toml"
-                )
+        is_toml = isinstance(model, (Path, str)) and str(model).endswith(".toml")
 
-        # Enforce explicit configuration for custom weights to prevent head size mismatches
-        if checkpoint_path and not str(model).endswith(".toml"):
+        # 1. Check for missing checkpoint in custom config context
+        if is_toml and not checkpoint_path:
+            # We allow missing checkpoint if we are LOADING for training resume,
+            # but we warn the user that inference will fail.
+            logger.warning(
+                f"No checkpoint resolved for custom config: {model}. "
+                "Inference will fail, but you can still call .resume() "
+                "to continue training using MMEngine's auto-resume."
+            )
+
+        # 2. Enforce explicit configuration for custom weights to prevent head size mismatches
+        # This applies when a user provides weights manually (Case 2 in resolve_resources)
+        if checkpoint_path and self._using_custom_weights and not is_toml:
             if self.num_classes is None and self.num_keypoints is None:
                 raise ValueError(
                     f"You provided custom weights ({checkpoint_path}) but no custom configuration. "
@@ -116,10 +124,14 @@ class EZMMLab(ABC):
         # Case 1: Custom Configuration via TOML
         if isinstance(model, (Path, str)) and str(model).endswith(".toml"):
             config_toml = Path(model)
+            self._source_toml = config_toml.absolute()
             self._source_dir = config_toml.parent.absolute()
-            self.checkpoint_path = (
-                Path(checkpoint_path) if checkpoint_path else None
-            )
+            
+            # Smart Resolution: Attempt to find checkpoint in TOML directory if not provided
+            if checkpoint_path:
+                self.checkpoint_path = Path(checkpoint_path)
+            else:
+                self.checkpoint_path = self._try_resolve_checkpoint(self._source_dir)
 
             # 1.1 Load explicit metadata from TOML
             meta = self._config_manager.load_metadata_from_toml(config_toml)
@@ -151,6 +163,35 @@ class EZMMLab(ABC):
                 model, checkpoint_path
             )
             self.config_path = get_config_file(model)
+
+    def _try_resolve_checkpoint(self, directory: Path) -> Optional[Path]:
+        """Smartly attempts to find a checkpoint in the given directory.
+        
+        Priority:
+        1. best_*.pth
+        2. Content of 'last_checkpoint' file
+        """
+        # 1. Search for 'best' checkpoint
+        best_ckpts = list(directory.glob("best_*.pth"))
+        if best_ckpts:
+            # Pick the most recently modified 'best' checkpoint
+            resolved = max(best_ckpts, key=lambda p: p.stat().st_mtime)
+            logger.info(f"Smart-resolved 'best' checkpoint: {resolved.name}")
+            return resolved
+
+        # 2. Fallback to 'last_checkpoint' tracker
+        last_ckpt_tracker = directory / "last_checkpoint"
+        if last_ckpt_tracker.exists():
+            try:
+                ckpt_name = last_ckpt_tracker.read_text().strip()
+                resolved = directory / ckpt_name
+                if resolved.exists():
+                    logger.info(f"Smart-resolved last checkpoint from tracker: {resolved.name}")
+                    return resolved
+            except Exception as e:
+                logger.warning(f"Failed to read 'last_checkpoint' tracker: {e}")
+
+        return None
 
     def __del__(self):
         """Cleanup temporary files."""
@@ -215,6 +256,11 @@ class EZMMLab(ABC):
             show: Whether to pop up a window with the result.
             **kwargs: Library-specific inference arguments.
         """
+        if not self.checkpoint_path:
+            raise ValueError(
+                "No checkpoint found or provided. Inference requires a valid weight file (.pth)."
+            )
+
         # 1. Extract and normalize architecture parameters
         # Use stored architecture_params as defaults for kwargs
         merged_kwargs = {**self.architecture_params, **kwargs}
@@ -301,10 +347,9 @@ class EZMMLab(ABC):
         log_level: Optional[str] = None,
         weight_decay: float = 0.05,
         evaluator_metric: Union[str, List[str]] = "CocoMetric",
-        resume: Union[bool, str] = False,
         **kwargs,
     ) -> None:
-        """Runs the end-to-end training pipeline.
+        """Runs a fresh end-to-end training pipeline.
 
         Args:
             dataset_config_path: Path to the dataset.toml definition.
@@ -317,49 +362,74 @@ class EZMMLab(ABC):
             num_workers: Number of data loading workers.
             enable_tensorboard: Enable TensorBoard visualization.
             log_level: Override for internal framework logging.
-            resume: Whether to resume training. If True, automatically find
-                the latest checkpoint in work_dir. If string, use as path to checkpoint.
+            weight_decay: Optimizer weight decay.
+            evaluator_metric: Metric(s) for validation.
+            **kwargs: Additional architecture-specific parameters.
         """
-        target_log_level = log_level or self.log_level
-        
-        # Enforce TOML-only resume policy
-        if resume and not self._source_dir:
-            raise ValueError(
-                "Resuming training is only supported when the model is initialized "
-                "with a 'user_config.toml' from a previous run to ensure configuration consistency."
-            )
-
-        # Smart WorkDir Resolution: 
-        # If resuming and using default work_dir, prefer the source directory of the model config
-        actual_work_dir = work_dir
-        if resume and work_dir == "./runs/train" and self._source_dir:
-            actual_work_dir = str(self._source_dir)
-            logger.info(f"Auto-resolved resume work_dir to: {actual_work_dir}")
-
-        logger.info(
-            f"Loading dataset configuration from: {dataset_config_path}"
-        )
-
-        # Extract arch-specific parameters using the model's implementation
+        logger.info(f"Assembling fresh training config for: {dataset_config_path}")
         architecture_params = self._get_architecture_params(**kwargs)
 
-        user_config = self._config_manager.build_user_config(
+        user_config = self._config_manager.create_fresh_config(
             model=self.model,
             dataset_config_path=dataset_config_path,
             checkpoint_path=self.checkpoint_path,
             epochs=epochs,
             batch_size=batch_size,
             device=device,
-            work_dir=actual_work_dir,
+            work_dir=work_dir,
             learning_rate=learning_rate,
             amp=amp,
             num_workers=num_workers,
             enable_tensorboard=enable_tensorboard,
-            log_level=target_log_level,
+            log_level=log_level or self.log_level,
             weight_decay=weight_decay,
             evaluator_metric=evaluator_metric,
-            resume=resume,
             architecture_params=architecture_params,
+            **kwargs,
+        )
+
+        self._run_training_workflow(user_config)
+
+    def resume(
+        self,
+        checkpoint: Union[bool, str] = True,
+        epochs: Optional[int] = None,
+        batch_size: Optional[int] = None,
+        learning_rate: Optional[float] = None,
+        work_dir: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        """Resumes an unfinished training session from a source directory.
+
+        Args:
+            checkpoint: Whether to resume. If True, automatically find the latest 
+                checkpoint in the source directory. If string, use as specific path.
+            epochs: Optional override for the total number of epochs.
+            batch_size: Optional override for training batch size.
+            learning_rate: Optional override for the learning rate.
+            work_dir: Optional override for the working directory. If None,
+                it defaults to the directory containing the source configuration.
+            **kwargs: Additional training parameter overrides.
+        """
+        if not self._source_toml:
+            raise ValueError(
+                "Training resumption requires the model to be initialized with "
+                "the 'user_config.toml' from the previous run."
+            )
+
+        # Resolve effective directory context
+        effective_work_dir = work_dir or str(self._source_dir)
+        logger.info(f"Resuming training in context: {effective_work_dir}")
+
+        # Recover and patch context
+        user_config = self._config_manager.recover_config_from_toml(
+            toml_path=self._source_toml,
+            resume=checkpoint,
+            epochs=epochs,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            work_dir=effective_work_dir,
+            **kwargs,
         )
 
         self._run_training_workflow(user_config)
@@ -367,8 +437,6 @@ class EZMMLab(ABC):
     def _run_training_workflow(self, config: UserConfig) -> None:
         """Orchestrates the internal OpenMMLab setup and execution."""
         # 1. Resolve Family and Register Dataset
-        # This solves the 'Evaluation Mismatch' problem by creating a first-class
-        # registered class for the session.
         family = self._get_library_family()
         registered_name = DynamicDatasetRegistry.register_dataset(
             config, family
@@ -390,20 +458,17 @@ class EZMMLab(ABC):
         )
 
         # 4. Load and Patch Configuration
-        # We load the official base config (Flattening inheritances automatically)
         self._cfg = self._load_base_config(config.model.name)
-
-        # Apply all injectors to the memory Config object
         self._inject_user_configs(config)
 
-        # Freeze the configuration into a single self-contained file in the work_dir
+        # Freeze the configuration
         final_config_path = (
             work_dir
             / f"{config.model.name.value}_{config.data.dataset_name}.py"
         )
         self._config_manager.dump_config(self._cfg, final_config_path)
 
-        # 5. Run Training using the finalized self-contained config
+        # 5. Run Training
         self._run_training(final_config_path, config.training.log_level)
 
     def _run_training(self, config_path: Path, log_level: str) -> None:

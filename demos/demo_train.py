@@ -10,10 +10,11 @@ dataset_toml = "tests/data/coco_mini/dataset.toml"
 model.train(
     dataset_config_path=dataset_toml,
     input_size=(320, 320),
-    work_dir="./runs/rtmdet_sample_training",
+    work_dir="./runs/rtmdet_sample_training_v3",
     device="cpu",
     amp=False,
     epochs=100,
     batch_size=2,
     num_workers=2,
+    enable_tensorboard=False,
 )
