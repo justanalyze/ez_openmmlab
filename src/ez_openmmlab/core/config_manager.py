@@ -1,6 +1,6 @@
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from loguru import logger
 from mmengine.config import Config
@@ -108,6 +108,10 @@ class ConfigManager:
         evaluator_metric: Union[str, List[str]] = "CocoMetric",
         resume: Union[bool, str] = False,
         architecture_params: Optional[Dict[str, Any]] = None,
+        # Augmentation parameters
+        scale_factor: Optional[Union[float, Tuple[float, float], List[float]]] = None,
+        rotate_factor: Optional[float] = None,
+        random_flip_prob: Optional[float] = None,
         **kwargs,
     ) -> toml_config.UserConfig:
         """Assembles a brand new UserConfig object from training parameters and dataset TOML."""
@@ -130,7 +134,9 @@ class ConfigManager:
         # --- Delegate Parameter Resolution ---
         model_params_resolver = ModelParamsResolverFactory.get_resolver(model)
         if model_params_resolver:
-            resolved_model_params = model_params_resolver.resolve(**(architecture_params or {}))
+            resolved_model_params = model_params_resolver.resolve(
+                **(architecture_params or {})
+            )
         else:
             resolved_model_params = architecture_params or {}
 
@@ -171,6 +177,11 @@ class ConfigManager:
                 evaluator_metric=evaluator_metric,
                 resume=resume,
             ),
+            augments=toml_config.AugmentationSection(
+                scale_factor=scale_factor,
+                rotate_factor=rotate_factor,
+                random_flip_prob=random_flip_prob,
+            ),
         )
 
     def recover_config_from_toml(
@@ -205,7 +216,15 @@ class ConfigManager:
             if field in kwargs and kwargs[field] is not None:
                 setattr(user_cfg.training, field, kwargs[field])
 
-        logger.debug(f"Recovered and updated resume configuration from: {toml_path}")
+        # Also allow overriding augmentations during resume if passed
+        if "augments" in kwargs and isinstance(kwargs["augments"], dict):
+            for k, v in kwargs["augments"].items():
+                if hasattr(user_cfg.augments, k):
+                    setattr(user_cfg.augments, k, v)
+
+        logger.debug(
+            f"Recovered and updated resume configuration from: {toml_path}"
+        )
         return user_cfg
 
     def load_metadata_from_toml(self, config_path: Path) -> Dict[str, Any]:
@@ -216,10 +235,12 @@ class ConfigManager:
 
         Returns:
             A dictionary containing model_name, num_classes, num_keypoints,
-            metainfo, and architecture_params.
+            metainfo, architecture_params, and augmentation_params.
         """
         if not config_path.exists():
-            raise FileNotFoundError(f"Configuration file not found: {config_path}")
+            raise FileNotFoundError(
+                f"Configuration file not found: {config_path}"
+            )
 
         metadata = {
             "num_classes": None,
@@ -227,6 +248,7 @@ class ConfigManager:
             "metainfo": None,
             "model_name": None,
             "architecture_params": {},
+            "augmentation_params": {},
         }
 
         try:
@@ -239,6 +261,11 @@ class ConfigManager:
             # Pydantic captures these in model_extra because of extra="allow"
             if user_cfg.model.model_extra:
                 metadata["architecture_params"] = user_cfg.model.model_extra
+
+            # Explicitly capture augmentation parameters
+            metadata["augmentation_params"] = user_cfg.augments.model_dump(
+                exclude_none=True
+            )
 
             # Explicitly include classes in metainfo if defined in DataSection
             if user_cfg.data.classes:
@@ -258,7 +285,9 @@ class ConfigManager:
     ) -> Path:
         """Generates a temporary python config file from a custom config.toml."""
         if not toml_path.exists():
-            raise FileNotFoundError(f"Custom config file not found: {toml_path}")
+            raise FileNotFoundError(
+                f"Custom config file not found: {toml_path}"
+            )
 
         user_cfg = toml_config.load_user_config(toml_path)
 
@@ -270,7 +299,9 @@ class ConfigManager:
         content = f'_base_ = ["{base_config_str}"]\n'
 
         # Create temp file
-        temp_file = tempfile.NamedTemporaryFile(suffix=".py", mode="w", delete=False)
+        temp_file = tempfile.NamedTemporaryFile(
+            suffix=".py", mode="w", delete=False
+        )
         temp_file.write(content)
         temp_file.close()
 
@@ -284,7 +315,9 @@ class ConfigManager:
                 config_path.unlink()
                 logger.debug(f"Removed temporary config file: {config_path}")
             except Exception as e:
-                logger.warning(f"Failed to remove temp config file {config_path}: {e}")
+                logger.warning(
+                    f"Failed to remove temp config file {config_path}: {e}"
+                )
 
     def dump_config(self, cfg: Config, output_path: Path) -> Path:
         """Saves a memory Config object to a self-contained .py file.

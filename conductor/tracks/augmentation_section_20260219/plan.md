@@ -11,13 +11,13 @@ Focus: Define the new `AugmentationSection` and ensure it integrates correctly w
 - [x] Task: Update `load_user_config` and `save_user_config` to support the new `[augments]` section.
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Configuration Schema and Data Integrity' (Protocol in workflow.md)
 
-## Phase 2: Configuration Management and Mapping
+## Phase 2: Configuration Management and Mapping [checkpoint: Phase 2 complete]
 Focus: Update the `ConfigManager` to handle the new schema and map API inputs correctly.
 
-- [ ] Task: TDD - Update `tests/unit/test_config_manager.py` to verify mapping of augmentation parameters to the new section.
-- [ ] Task: Update `ConfigManager.create_fresh_config` to populate `AugmentationSection` from training arguments.
-- [ ] Task: Ensure `ConfigManager.load_metadata_from_toml` correctly extracts augmentation parameters.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Configuration Management and Mapping' (Protocol in workflow.md)
+- [x] Task: TDD - Update `tests/unit/test_config_manager.py` to verify mapping of augmentation parameters to the new section.
+- [x] Task: Update `ConfigManager.create_fresh_config` to populate `AugmentationSection` from training arguments.
+- [x] Task: Ensure `ConfigManager.load_metadata_from_toml` correctly extracts augmentation parameters.
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Configuration Management and Mapping' (Protocol in workflow.md)
 
 ## Phase 3: Injector and Surgery Logic Refinement
 Focus: Clean up `MMDetInjector` and `MMPoseInjector` to consume parameters exclusively from the new structure.
