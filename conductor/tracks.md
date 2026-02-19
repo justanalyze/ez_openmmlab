@@ -85,3 +85,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: RTMPose Training Parameter Expansion**
   *Link: [./tracks/rtmpose_param_expansion_20260213/](./tracks/rtmpose_param_expansion_20260213/)*
+---
+
+- [ ] **Track: Dedicated Augmentation Configuration and API**
+*Link: [./tracks/augmentation_section_20260219/](./tracks/augmentation_section_20260219/)*

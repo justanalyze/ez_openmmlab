@@ -1,0 +1,8 @@
+{
+  "track_id": "augmentation_section_20260219",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-02-19T23:55:00Z",
+  "updated_at": "2026-02-19T23:55:00Z",
+  "description": "Create a separate section in the UserConfig for Data Augmentation parameters, named augments. Define Pydantic model. Add validation. Implement serialization. Add unit tests. Refactor injectors and expose in train methods."
+}
