@@ -38,9 +38,9 @@ Focus: Implement the unified `augments` argument, strict validation, and dynamic
 - [x] Task: Update concrete models (`RTMDet`, `RTMPose`, `RTMO`) to use the new `train` signature.
 - [x] Task: Conductor - User Manual Verification 'Phase 4: API Enhancement and Runtime Validation' (Protocol in workflow.md)
 
-## Phase 5: Final Integration and Regression
+## Phase 5: Final Integration and Regression [checkpoint: Phase 5 complete]
 Focus: Ensure the entire system works end-to-end and documentation is accurate.
 
-- [ ] Task: Run full suite of unit and integration tests.
-- [ ] Task: Verify the new `[augments]` section works correctly in a real `dataset.toml` or `user_config.toml`.
-- [ ] Task: Conductor - User Manual Verification 'Phase 5: Final Integration and Regression' (Protocol in workflow.md)
+- [x] Task: Run full suite of unit and integration tests.
+- [x] Task: Verify the new `[augments]` section works correctly in a real `dataset.toml` or `user_config.toml`.
+- [x] Task: Conductor - User Manual Verification 'Phase 5: Final Integration and Regression' (Protocol in workflow.md)
