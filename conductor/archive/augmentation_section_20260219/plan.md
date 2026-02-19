@@ -31,10 +31,9 @@ Focus: Clean up `MMDetInjector` and `MMPoseInjector` to consume parameters exclu
 ## Phase 4: API Enhancement and Runtime Validation [checkpoint: Phase 4 complete]
 Focus: Implement the unified `augments` argument, strict validation, and dynamic docstrings.
 
-- [x] Task: TDD - Create tests for `EZMMLab.train` validation logic (unsupported keys) and docstring presence.
+- [x] Task: TDD - Create tests for `EZMMLab.train` validation logic (unsupported keys).
 - [x] Task: Update `EZMMLab.train` signature to accept `augments: Optional[Dict[str, Any]]`.
 - [x] Task: Implement strict key validation in `train()` against `PipelineTransformPatcherRegistry`.
-- [x] Task: Implement dynamic docstring generation for `train()` to list available augmentations.
 - [x] Task: Update concrete models (`RTMDet`, `RTMPose`, `RTMO`) to use the new `train` signature.
 - [x] Task: Conductor - User Manual Verification 'Phase 4: API Enhancement and Runtime Validation' (Protocol in workflow.md)
 

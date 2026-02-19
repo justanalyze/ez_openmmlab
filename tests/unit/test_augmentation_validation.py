@@ -26,14 +26,3 @@ def test_train_unsupported_augmentation_raises_error():
                     dataset_config_path="dummy.toml",
                     augments={"invalid_key": 1.0}
                 )
-
-def test_train_docstring_contains_augmentations():
-    """Verifies that the train method docstring lists available augmentations."""
-    with patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint", return_value="dummy.pth"):
-        with patch("ez_openmmlab.core.engines.engine_base.get_config_file", return_value="dummy.py"):
-            detector = ConcreteEZDetector(model=ModelName.RTM_DET_TINY)
-            doc = detector.train.__doc__
-            # Since it's dynamic, it should contain the supported keys for mmdet
-            # (assuming scale_factor and random_flip_prob are supported)
-            assert "scale_factor" in doc
-            assert "random_flip_prob" in doc

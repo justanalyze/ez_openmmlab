@@ -69,29 +69,6 @@ class EZMMLab(ABC):
         # --- 4. Initialization Sequence ---
         self._resolve_resources(model, checkpoint_path)
         self._validate_inputs(model, self.checkpoint_path)
-        self._update_train_docstring()
-
-    def _update_train_docstring(self) -> None:
-        """Dynamically updates the train method's docstring with available augmentations."""
-        from ez_openmmlab.core.surgery.pipeline_patchers import (
-            PipelineTransformPatcherRegistry,
-        )
-
-        family = self._get_library_family()
-        supported = PipelineTransformPatcherRegistry.get_supported_augments(
-            family
-        )
-        aug_list = "\n                - ".join(supported)
-
-        extra_doc = f"\n            Available augmentations for this model:\n                - {aug_list}"
-
-        # To modify the docstring of a bound method, we need to modify the underlying function's docstring
-        # but that affects the class. To keep it instance-specific or at least clean, 
-        # we can just append to the existing doc if it hasn't been appended already.
-        if hasattr(self.train, "__func__"):
-            orig_doc = self.train.__func__.__doc__ or ""
-            if "Available augmentations for this model:" not in orig_doc:
-                self.train.__func__.__doc__ = orig_doc + extra_doc
 
     def _validate_augments(self, augments: Optional[Dict[str, Any]]) -> None:
         """Strictly validates augmentation keys against the registry."""

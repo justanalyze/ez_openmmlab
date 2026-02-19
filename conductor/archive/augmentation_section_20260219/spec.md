@@ -19,7 +19,6 @@ Currently, augmentation parameters (like `scale_factor`, `rotate_factor`, and `r
 - Implement **Strict Validation** in `train()`:
     - Validate that keys provided in the `augments` dictionary are supported by the `PipelineTransformPatcherRegistry` for the specific model family.
     - Raise a `ValueError` with a descriptive message if an unsupported key is provided.
-- Implement **Dynamic Docstrings** for the `train` methods to list the currently available augmentations for that specific model at runtime.
 
 ### 2.3. Configuration Management
 - Update `ConfigManager.create_fresh_config` to handle the transition of augmentation parameters into the new `AugmentationSection`.
@@ -40,7 +39,6 @@ Currently, augmentation parameters (like `scale_factor`, `rotate_factor`, and `r
 - [x] `UserConfig` supports a dedicated `[augments]` section in TOML files.
 - [x] `model.train(..., augments={"scale_factor": 0.5})` successfully applies the augmentation.
 - [x] Providing an unsupported augmentation key (e.g., `augments={"invalid_aug": 1.0}`) raises a `ValueError` specifying the available keys for that model family.
-- [x] The `train()` method docstring dynamically lists available augmentations for the model (e.g., RTMDet vs RTMPose).
 - [x] Injectors are refactored to be cleaner and use the consolidated `augments` structure.
 - [x] Existing unit and integration tests pass with the refactored structure.
 - [x] New unit tests validate the `AugmentationSection` and the `train()` validation logic.
