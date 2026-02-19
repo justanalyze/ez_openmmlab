@@ -19,6 +19,7 @@ A user-friendly API for OpenMMLab (Detection, Pose, etc.)
 - **Modular Architecture:** Implementation of the Template Method Pattern (e.g., the `EZDetector` base class) to support multiple architectures while maintaining a consistent training loop.
 - **Multi-Framework Support:** Native support for both MMDetection and MMPose within a unified engine structure.
 - **Decoupled Data:** Separate data definitions (`dataset.toml`) from model logic, allowing for easy dataset switching.
+- **Validated Augmentation API:** Dedicated and strictly validated configuration section for data augmentations (e.g., scaling, rotation, flips).
 - **RTMDet Support:** First-class support for the RTMDet family of high-performance one-stage detectors.
 - **Pose Estimation:** Robust support for RTMPose (top-down) and RTMO (bottom-up) architectures.
 - **Integrated Logging:** Rich, developer-friendly logging powered by Loguru.
