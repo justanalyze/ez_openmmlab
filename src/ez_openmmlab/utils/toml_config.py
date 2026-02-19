@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import tomli
 import tomli_w
@@ -82,6 +82,25 @@ class TrainingSection(BaseModel):
     resume: Union[bool, str] = False
 
 
+class AugmentationSection(BaseModel):
+    """Configuration for data augmentation parameters."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    scale_factor: Optional[Union[float, Tuple[float, float], List[float]]] = Field(
+        None, description="Scaling factor or range for augmentations."
+    )
+    rotate_factor: Optional[float] = Field(
+        None, ge=0.0, description="Rotation factor for augmentations (degrees)."
+    )
+    random_flip_prob: Optional[float] = Field(
+        None,
+        ge=0.0,
+        le=1.0,
+        description="Probability of random horizontal flip. Default 0.5 if relevant transform is present.",
+    )
+
+
 class UserConfig(BaseModel):
     """The master schema for config.toml."""
 
@@ -90,6 +109,7 @@ class UserConfig(BaseModel):
     model: ModelSection
     data: DataSection
     training: TrainingSection
+    augments: AugmentationSection = Field(default_factory=AugmentationSection)
 
 
 # --- Utilities ---

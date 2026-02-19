@@ -2,14 +2,14 @@
 
 This plan outlines the steps to refactor the augmentation configuration into a dedicated section, enhance the training API with strict validation, and clean up the configuration injectors.
 
-## Phase 1: Configuration Schema and Data Integrity
+## Phase 1: Configuration Schema and Data Integrity [checkpoint: Phase 1 complete]
 Focus: Define the new `AugmentationSection` and ensure it integrates correctly with `UserConfig` and TOML serialization.
 
-- [ ] Task: TDD - Create unit tests for `AugmentationSection` validation and `UserConfig` serialization in `tests/unit/test_toml_config.py`.
-- [ ] Task: Implement `AugmentationSection` Pydantic model in `src/ez_openmmlab/utils/toml_config.py`.
-- [ ] Task: Update `UserConfig` to include the `augments` field and migrate fields from `TrainingSection`.
-- [ ] Task: Update `load_user_config` and `save_user_config` to support the new `[augments]` section.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Configuration Schema and Data Integrity' (Protocol in workflow.md)
+- [x] Task: TDD - Create unit tests for `AugmentationSection` validation and `UserConfig` serialization in `tests/unit/test_toml_config.py`.
+- [x] Task: Implement `AugmentationSection` Pydantic model in `src/ez_openmmlab/utils/toml_config.py`.
+- [x] Task: Update `UserConfig` to include the `augments` field and migrate fields from `TrainingSection`.
+- [x] Task: Update `load_user_config` and `save_user_config` to support the new `[augments]` section.
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Configuration Schema and Data Integrity' (Protocol in workflow.md)
 
 ## Phase 2: Configuration Management and Mapping
 Focus: Update the `ConfigManager` to handle the new schema and map API inputs correctly.
