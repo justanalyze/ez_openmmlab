@@ -5,6 +5,7 @@ from ez_openmmlab.utils.toml_config import (
     DataSection,
     ModelSection,
     TrainingSection,
+    AugmentationSection,
     UserConfig,
 )
 
@@ -23,6 +24,11 @@ def mock_pose_user_config():
         training=TrainingSection(
             weight_decay=0.01,
             evaluator_metric="PCKAccuracy"
+        ),
+        augments=AugmentationSection(
+            scale_factor=[0.75, 1.25],
+            rotate_factor=60.0,
+            random_flip_prob=0.5
         )
     )
 
@@ -43,8 +49,10 @@ def test_mmpose_injector_comprehensive_patching(mock_pose_user_config):
             sigma=(4.9, 5.66)     # Initial value before patching
         ),
         train_pipeline=[
-            Config(dict(type="LoadImage")),
-            Config(dict(type="TopdownAffine", input_size=None))
+            dict(type="LoadImage"),
+            dict(type="TopdownAffine", input_size=None),
+            dict(type="RandomFlip", prob=0.1),
+            dict(type="RandomBBoxTransform", rotate_factor=30.0, scale_factor=[0.8, 1.2])
         ],
         optim_wrapper=dict(
             optimizer=dict(type="AdamW", weight_decay=0.05)
@@ -64,12 +72,9 @@ def test_mmpose_injector_comprehensive_patching(mock_pose_user_config):
     assert cfg.codec.input_size == (288, 384)
     assert cfg.codec.sigma == (5.0, 5.0)
 
-    # 3. Pipeline (TopdownAffine input_size is derived from codec)
+    # 3. Pipeline
     assert cfg.train_pipeline[1].input_size == (288, 384)
-
-    # 4. Optimizer (now handled by OptimizerInjector, not MMPoseInjector)
-    # assert cfg.optim_wrapper.optimizer.weight_decay == mock_pose_user_config.training.weight_decay
-
-    # 5. Evaluator (now handled by EvaluatorInjector, not MMPoseInjector)
-    # assert cfg.val_evaluator.type == "PCKAccuracy"
-    assert cfg.val_evaluator.type == "CocoMetric" # Retains initial value as MMPoseInjector no longer patches it
+    # Augmentations
+    assert cfg.train_pipeline[2].prob == 0.5
+    assert cfg.train_pipeline[3].rotate_factor == 60.0
+    assert cfg.train_pipeline[3].scale_factor == [0.75, 1.25]

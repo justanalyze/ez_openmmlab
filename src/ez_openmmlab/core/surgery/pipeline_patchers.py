@@ -52,31 +52,75 @@ class BasePipelineTransformPatcher(ABC):
 
 
 class PipelineTransformPatcherRegistry:
-    """A registry for pipeline transform patchers."""
+    """A registry for pipeline transform patchers, partitioned by model family.
+    
+    This ensures that family-specific transforms (like RTMDet's RandomResize)
+    don't conflict or leak into other model families.
+    """
 
-    _patchers: Dict[str, Type[BasePipelineTransformPatcher]] = {}
+    # Structured as { family_name: { transform_type: patcher_class } }
+    _patchers: Dict[str, Dict[str, Type[BasePipelineTransformPatcher]]] = {
+        "common": {},
+        "mmdet": {},
+        "mmpose": {},
+    }
+
+    # Map user-facing keys to the internal transform types they affect.
+    # This is used for validation and documentation.
+    _user_keys: Dict[str, List[str]] = {
+        "common": ["random_flip_prob"],
+        "mmdet": ["scale_factor"],
+        "mmpose": ["scale_factor", "rotate_factor"],
+    }
 
     @classmethod
-    def register(cls, patcher_cls: Type[BasePipelineTransformPatcher]):
-        """Registers a new pipeline transform patcher."""
+    def get_supported_augments(cls, family: str) -> List[str]:
+        """Returns the list of user-facing augmentation keys supported for a family."""
+        keys = set(cls._user_keys.get("common", []))
+        keys.update(cls._user_keys.get(family, []))
+        return sorted(list(keys))
+
+    @classmethod
+    def register(cls, family: str, patcher_cls: Type[BasePipelineTransformPatcher]):
+        """Registers a new pipeline transform patcher for a specific family.
+        
+        Args:
+            family: One of 'common', 'mmdet', or 'mmpose'.
+            patcher_cls: The patcher class to register.
+        """
+        if family not in cls._patchers:
+            raise ValueError(f"Invalid family '{family}' for pipeline patcher registration.")
+
         if not issubclass(patcher_cls, BasePipelineTransformPatcher):
             raise TypeError(
                 f"Patcher class {patcher_cls.__name__} must inherit from BasePipelineTransformPatcher"
             )
         
+        # Instantiate once to get the transform_type
         instance = patcher_cls() 
         t_type = instance.transform_type
         
-        if t_type in cls._patchers:
-            logger.warning(f"Patcher for '{t_type}' already registered. Overwriting.")
+        if t_type in cls._patchers[family]:
+            logger.warning(f"Patcher for '{t_type}' already registered in family '{family}'. Overwriting.")
             
-        cls._patchers[t_type] = patcher_cls
-        logger.debug(f"Registered pipeline patcher for '{t_type}'")
+        cls._patchers[family][t_type] = patcher_cls
+        logger.debug(f"Registered {family} pipeline patcher for '{t_type}'")
 
     @classmethod
-    def get_patcher(cls, transform_type: str) -> Optional[BasePipelineTransformPatcher]:
-        """Returns an instantiated patcher for the given transform type."""
-        patcher_cls = cls._patchers.get(transform_type)
+    def get_patcher(cls, transform_type: str, family: str) -> Optional[BasePipelineTransformPatcher]:
+        """Returns an instantiated patcher for the given transform type and family.
+        
+        Priority:
+        1. Family-specific patcher (e.g. 'mmdet')
+        2. Common patcher
+        """
+        # 1. Try family-specific
+        patcher_cls = cls._patchers.get(family, {}).get(transform_type)
+        
+        # 2. Fallback to common
+        if not patcher_cls:
+            patcher_cls = cls._patchers["common"].get(transform_type)
+
         return patcher_cls() if patcher_cls else None
 
 
@@ -131,7 +175,7 @@ class TopdownAffinePatcher(InputSizePatcher):
         super().__init__("TopdownAffine", ["input_size"])
 
 
-class BottomupAffinePatcher(InputSizePatcher):
+class BottomupRandomAffinePatcher(InputSizePatcher):
     def __init__(self):
         # BottomupRandomAffine uses both input_size and img_scale
         super().__init__("BottomupRandomAffine", ["input_size", "img_scale"])
@@ -158,9 +202,34 @@ class CachedMixUpPatcher(InputSizePatcher):
         super().__init__("CachedMixUp", ["img_scale"])
 
 
+class YOLOXMixUpPatcher(InputSizePatcher):
+    def __init__(self):
+        super().__init__("YOLOXMixUp", ["img_scale"])
+
+
 class RandomCropPatcher(InputSizePatcher):
     def __init__(self):
         super().__init__("RandomCrop", ["crop_size"])
+
+
+class RandomBBoxTransformPatcher(BasePipelineTransformPatcher):
+    def __init__(self):
+        super().__init__("RandomBBoxTransform")
+
+    def apply(self, transform_cfg, user_config, pipeline_name):
+        # Pull from the NEW augments section
+        scale_factor = user_config.augments.scale_factor
+        rotate_factor = user_config.augments.rotate_factor
+
+        if scale_factor is not None:
+            # RandomBBoxTransform uses scale_factor as a list/tuple range
+            if isinstance(scale_factor, (float, int)):
+                scale_factor = [scale_factor, scale_factor] # Ensure it's a range
+            _assign_cfg_value(transform_cfg, "scale_factor", scale_factor)
+            self._log_patch(pipeline_name, "scale_factor", scale_factor)
+        if rotate_factor is not None:
+            _assign_cfg_value(transform_cfg, "rotate_factor", rotate_factor)
+            self._log_patch(pipeline_name, "rotate_factor", rotate_factor)
 
 
 class PadPatcher(InputSizePatcher):
@@ -218,14 +287,22 @@ class TestTimeAugPatcher(BasePipelineTransformPatcher):
 
 # --- Registration ---
 
-PipelineTransformPatcherRegistry.register(TopdownAffinePatcher)
-PipelineTransformPatcherRegistry.register(BottomupAffinePatcher)
-PipelineTransformPatcherRegistry.register(BottomupResizePatcher)
-PipelineTransformPatcherRegistry.register(MosaicPatcher)
-PipelineTransformPatcherRegistry.register(CachedMosaicPatcher)
-PipelineTransformPatcherRegistry.register(CachedMixUpPatcher)
-PipelineTransformPatcherRegistry.register(RandomCropPatcher)
-PipelineTransformPatcherRegistry.register(PadPatcher)
-PipelineTransformPatcherRegistry.register(ResizePatcher)
-PipelineTransformPatcherRegistry.register(RTMDetRandomResizePatcher)
-PipelineTransformPatcherRegistry.register(TestTimeAugPatcher)
+# Common (Applicable to multiple families if types match)
+PipelineTransformPatcherRegistry.register("common", PadPatcher)
+
+# MMDet specific
+PipelineTransformPatcherRegistry.register("mmdet", ResizePatcher)
+PipelineTransformPatcherRegistry.register("mmdet", RTMDetRandomResizePatcher)
+PipelineTransformPatcherRegistry.register("mmdet", MosaicPatcher)
+PipelineTransformPatcherRegistry.register("mmdet", CachedMosaicPatcher)
+PipelineTransformPatcherRegistry.register("mmdet", CachedMixUpPatcher)
+PipelineTransformPatcherRegistry.register("mmdet", RandomCropPatcher) # Confirmed mmdet only
+PipelineTransformPatcherRegistry.register("mmdet", TestTimeAugPatcher)
+
+# MMPose specific
+PipelineTransformPatcherRegistry.register("mmpose", TopdownAffinePatcher)
+PipelineTransformPatcherRegistry.register("mmpose", BottomupRandomAffinePatcher)
+PipelineTransformPatcherRegistry.register("mmpose", BottomupResizePatcher)
+PipelineTransformPatcherRegistry.register("mmpose", MosaicPatcher) # Used by RTMO
+PipelineTransformPatcherRegistry.register("mmpose", YOLOXMixUpPatcher) # Used by RTMO
+PipelineTransformPatcherRegistry.register("mmpose", RandomBBoxTransformPatcher) # Used by RTMPose

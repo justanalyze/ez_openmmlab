@@ -19,24 +19,24 @@ Focus: Update the `ConfigManager` to handle the new schema and map API inputs co
 - [x] Task: Ensure `ConfigManager.load_metadata_from_toml` correctly extracts augmentation parameters.
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Configuration Management and Mapping' (Protocol in workflow.md)
 
-## Phase 3: Injector and Surgery Logic Refinement
+## Phase 3: Injector and Surgery Logic Refinement [checkpoint: Phase 3 complete]
 Focus: Clean up `MMDetInjector` and `MMPoseInjector` to consume parameters exclusively from the new structure.
 
-- [ ] Task: TDD - Update `tests/unit/test_injectors.py` and `tests/unit/test_pose_injector_refinement.py` to reflect the schema changes.
-- [ ] Task: Refactor `MMDetInjector._patch_pipelines` to use `user_config.augments`.
-- [ ] Task: Refactor `MMPoseInjector._patch_pipelines` to use `user_config.augments`.
-- [ ] Task: Verify that `PipelineTransformPatcherRegistry` correctly services the refactored injectors.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Injector and Surgery Logic Refinement' (Protocol in workflow.md)
+- [x] Task: TDD - Update `tests/unit/test_injectors.py` and `tests/unit/test_pose_injector_refinement.py` to reflect the schema changes.
+- [x] Task: Refactor `MMDetInjector._patch_pipelines` to use `user_config.augments`.
+- [x] Task: Refactor `MMPoseInjector._patch_pipelines` to use `user_config.augments`.
+- [x] Task: Verify that `PipelineTransformPatcherRegistry` correctly services the refactored injectors.
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Injector and Surgery Logic Refinement' (Protocol in workflow.md)
 
-## Phase 4: API Enhancement and Runtime Validation
+## Phase 4: API Enhancement and Runtime Validation [checkpoint: Phase 4 complete]
 Focus: Implement the unified `augments` argument, strict validation, and dynamic docstrings.
 
-- [ ] Task: TDD - Create tests for `EZMMLab.train` validation logic (unsupported keys) and docstring presence.
-- [ ] Task: Update `EZMMLab.train` signature to accept `augments: Optional[Dict[str, Any]]`.
-- [ ] Task: Implement strict key validation in `train()` against `PipelineTransformPatcherRegistry`.
-- [ ] Task: Implement dynamic docstring generation for `train()` to list available augmentations.
-- [ ] Task: Update concrete models (`RTMDet`, `RTMPose`, `RTMO`) to use the new `train` signature.
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: API Enhancement and Runtime Validation' (Protocol in workflow.md)
+- [x] Task: TDD - Create tests for `EZMMLab.train` validation logic (unsupported keys) and docstring presence.
+- [x] Task: Update `EZMMLab.train` signature to accept `augments: Optional[Dict[str, Any]]`.
+- [x] Task: Implement strict key validation in `train()` against `PipelineTransformPatcherRegistry`.
+- [x] Task: Implement dynamic docstring generation for `train()` to list available augmentations.
+- [x] Task: Update concrete models (`RTMDet`, `RTMPose`, `RTMO`) to use the new `train` signature.
+- [x] Task: Conductor - User Manual Verification 'Phase 4: API Enhancement and Runtime Validation' (Protocol in workflow.md)
 
 ## Phase 5: Final Integration and Regression
 Focus: Ensure the entire system works end-to-end and documentation is accurate.

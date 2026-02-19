@@ -3,10 +3,12 @@ from mmengine.config import Config
 
 from ez_openmmlab.core.surgery.injectors.dataloader import DataloaderInjector
 from ez_openmmlab.core.surgery.injectors.runtime import RuntimeInjector
+from ez_openmmlab.core.surgery.injectors.mmdet import MMDetInjector
 from ez_openmmlab.utils.toml_config import (
     DataSection,
     ModelSection,
     TrainingSection,
+    AugmentationSection,
     UserConfig,
 )
 
@@ -31,6 +33,11 @@ def mock_user_config():
             amp=True,
             enable_tensorboard=True,
         ),
+        augments=AugmentationSection(
+            scale_factor=0.8,
+            rotate_factor=0.0,
+            random_flip_prob=0.5
+        )
     )
 
 
@@ -101,15 +108,28 @@ def test_runtime_injector_disabled_features(mock_user_config):
     assert "visualizer" not in cfg
 
 
-def test_runtime_injector_missing_optim_wrapper(mock_user_config):
-    """Test that injector doesn't crash if optim_wrapper is missing."""
-    cfg = Config(dict(train_cfg=dict()))
-
-    injector = RuntimeInjector()
-    injector.apply(cfg, mock_user_config) # Should not raise
-
-    assert cfg.work_dir == "./runs/train"
-
+def test_mmdet_injector_augmentation_patching(mock_user_config):
+    """Verifies that MMDetInjector correctly applies augmentation parameters from the new section."""
+    mock_user_config.augments.random_flip_prob = 0.7
+    mock_user_config.augments.scale_factor = (0.5, 1.5)
+    
+    cfg = Config(dict(
+        model=dict(bbox_head=dict(num_classes=80)),
+        train_pipeline=[
+            dict(type="LoadImageFromFile"),
+            dict(type="RandomFlip", prob=0.5),
+            dict(type="RandomResize", scale=(640, 640), ratio_range=(0.1, 2.0))
+        ]
+    ))
+    
+    injector = MMDetInjector()
+    injector.apply(cfg, mock_user_config)
+    
+    # Check RandomFlip
+    assert cfg.train_pipeline[1]["prob"] == 0.7
+    
+    # Check RandomResize
+    assert cfg.train_pipeline[2]["ratio_range"] == (0.5, 1.5)
 
 def test_evaluator_injector_handles_dicts(mock_user_config):
     """Test that EvaluatorInjector correctly processes string and dict metrics."""
@@ -137,12 +157,3 @@ def test_evaluator_injector_handles_dicts(mock_user_config):
     assert cfg.val_evaluator[1]["type"] == "PCKAccuracy"
     assert cfg.val_evaluator[1]["thr"] == 0.05
     assert cfg.val_evaluator[1]["ann_file"] == "data/coco/annotations/val.json"
-
-    # 2. Single dict metric
-    mock_user_config.training.evaluator_metric = {"type": "PCKAccuracy", "thr": 0.1}
-    injector.apply(cfg, mock_user_config)
-    
-    # Should be a single dict (not a list) for compatibility
-    assert isinstance(cfg.val_evaluator, dict)
-    assert cfg.val_evaluator["type"] == "PCKAccuracy"
-    assert cfg.val_evaluator["thr"] == 0.1

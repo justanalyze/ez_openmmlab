@@ -168,6 +168,7 @@ class RTMPose(EZMMPose):
         input_size: Tuple[int, int] = (192, 256),
         simcc_sigma: Optional[Tuple[float, float]] = None,
         feature_map_size: Optional[Tuple[int, int]] = None,
+        augments: Optional[Dict[str, Any]] = None,
         **kwargs,
     ) -> None:
         """Runs a fresh RTMPose training pipeline with architecture-specific parameters.
@@ -188,6 +189,7 @@ class RTMPose(EZMMPose):
             feature_map_size: Custom feature map size. If None, derived as input_size // 32.
             weight_decay: Optimizer weight decay. Defaults to 0.05.
             evaluator_metric: Metric(s) for validation. Defaults to "CocoMetric".
+            augments: Dictionary of data augmentation parameters.
             det_model: Optional detector model name for evaluation.
             det_weights: Optional path to detector weights.
             det_cat_ids: Optional detector category IDs.
@@ -209,6 +211,7 @@ class RTMPose(EZMMPose):
             input_size=input_size,
             simcc_sigma=simcc_sigma,
             feature_map_size=feature_map_size,
+            augments=augments,
             **kwargs,
         )
 

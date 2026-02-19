@@ -90,7 +90,9 @@ model = RTMDet("rtmdet_tiny")
 model.train(
     dataset_config_path="dataset.toml",
     epochs=100,
-    batch_size=16
+    batch_size=16,
+    scale_factor=(0.5, 2.0), # Example: Random scaling between 50% and 200%
+    random_flip_prob=0.75 # Example: 75% chance of horizontal flip
 )
 
 # Inference made simple
@@ -128,7 +130,9 @@ model = RTMPose("rtmpose_s")
 # Start training
 model.train(
     dataset_config_path="dataset.toml",
-    epochs=210
+    epochs=210,
+    rotate_factor=90.0, # Example: Rotate up to 90 degrees
+    random_flip_prob=0.5 # Example: 50% chance of horizontal flip
 )
 
 # Inference

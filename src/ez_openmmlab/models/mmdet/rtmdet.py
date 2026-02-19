@@ -74,6 +74,7 @@ class RTMDet(EZMMDetector):
         input_size: Tuple[int, int] = (640, 640),
         weight_decay: float = 0.05,
         evaluator_metric: Union[str, List[str]] = "CocoMetric",
+        augments: Optional[Dict[str, Any]] = None,
         **kwargs,
     ) -> None:
         """Runs a fresh RTMDet training pipeline with architecture-specific parameters.
@@ -92,6 +93,7 @@ class RTMDet(EZMMDetector):
             input_size: Target resolution (width, height). Defaults to (640, 640).
             weight_decay: Optimizer weight decay. Defaults to 0.05.
             evaluator_metric: Metric(s) for validation. Defaults to "CocoMetric".
+            augments: Dictionary of data augmentation parameters.
             **kwargs: Additional parameters.
         """
         super().train(
@@ -108,6 +110,7 @@ class RTMDet(EZMMDetector):
             weight_decay=weight_decay,
             evaluator_metric=evaluator_metric,
             input_size=input_size,
+            augments=augments,
             **kwargs,
         )
 

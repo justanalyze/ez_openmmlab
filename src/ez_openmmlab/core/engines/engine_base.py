@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from loguru import logger
 from mmengine.config import Config
@@ -41,9 +41,7 @@ class EZMMLab(ABC):
         self.log_level = log_level
         self._configure_logging(log_level)
 
-        logger.info(
-            f"Initializing {self.__class__.__name__} with model: '{model}'"
-        )
+        logger.info(f"Initializing {self.__class__.__name__} with model: '{model}'")
 
         # Ensure noisy warnings are suppressed when engine starts
         from ez_openmmlab import mute_warnings
@@ -64,17 +62,57 @@ class EZMMLab(ABC):
 
         self._cfg: Optional[Config] = None
         self._temp_config_file: Optional[Path] = None
-        self._source_dir: Optional[Path] = (
-            None  # Directory of the source config
-        )
-        self._source_toml: Optional[Path] = (
-            None  # Path to the source TOML file
-        )
+        self._source_dir: Optional[Path] = None  # Directory of the source config
+        self._source_toml: Optional[Path] = None  # Path to the source TOML file
         self._using_custom_weights: bool = checkpoint_path is not None
 
         # --- 4. Initialization Sequence ---
         self._resolve_resources(model, checkpoint_path)
         self._validate_inputs(model, self.checkpoint_path)
+        self._update_train_docstring()
+
+    def _update_train_docstring(self) -> None:
+        """Dynamically updates the train method's docstring with available augmentations."""
+        from ez_openmmlab.core.surgery.pipeline_patchers import (
+            PipelineTransformPatcherRegistry,
+        )
+
+        family = self._get_library_family()
+        supported = PipelineTransformPatcherRegistry.get_supported_augments(
+            family
+        )
+        aug_list = "\n                - ".join(supported)
+
+        extra_doc = f"\n            Available augmentations for this model:\n                - {aug_list}"
+
+        # To modify the docstring of a bound method, we need to modify the underlying function's docstring
+        # but that affects the class. To keep it instance-specific or at least clean, 
+        # we can just append to the existing doc if it hasn't been appended already.
+        if hasattr(self.train, "__func__"):
+            orig_doc = self.train.__func__.__doc__ or ""
+            if "Available augmentations for this model:" not in orig_doc:
+                self.train.__func__.__doc__ = orig_doc + extra_doc
+
+    def _validate_augments(self, augments: Optional[Dict[str, Any]]) -> None:
+        """Strictly validates augmentation keys against the registry."""
+        if not augments:
+            return
+
+        from ez_openmmlab.core.surgery.pipeline_patchers import (
+            PipelineTransformPatcherRegistry,
+        )
+
+        family = self._get_library_family()
+        supported = PipelineTransformPatcherRegistry.get_supported_augments(
+            family
+        )
+
+        for key in augments:
+            if key not in supported:
+                raise ValueError(
+                    f"Unsupported augmentation key '{key}' for {self.__class__.__name__}. "
+                    f"Available augmentations for this model: {supported}"
+                )
 
     def _configure_logging(self, log_level: str) -> None:
         """Configures the global logger level."""
@@ -92,9 +130,7 @@ class EZMMLab(ABC):
         checkpoint_path: Optional[Union[str, Path]],
     ) -> None:
         """Performs initial validation of provided arguments."""
-        is_toml = isinstance(model, (Path, str)) and str(model).endswith(
-            ".toml"
-        )
+        is_toml = isinstance(model, (Path, str)) and str(model).endswith(".toml")
 
         # 1. Check for missing checkpoint in custom config context
         if is_toml and not checkpoint_path:
@@ -137,9 +173,7 @@ class EZMMLab(ABC):
             if checkpoint_path:
                 self.checkpoint_path = Path(checkpoint_path)
             else:
-                self.checkpoint_path = self._try_resolve_checkpoint(
-                    self._source_dir
-                )
+                self.checkpoint_path = self._try_resolve_checkpoint(self._source_dir)
 
             # 1.1 Load explicit metadata from TOML
             meta = self._config_manager.load_metadata_from_toml(config_toml)
@@ -164,12 +198,8 @@ class EZMMLab(ABC):
 
         # Case 2: Standard Model Name
         else:
-            self.model = (
-                model.value if isinstance(model, ModelName) else str(model)
-            )
-            self.checkpoint_path = ensure_model_checkpoint(
-                model, checkpoint_path
-            )
+            self.model = model.value if isinstance(model, ModelName) else str(model)
+            self.checkpoint_path = ensure_model_checkpoint(model, checkpoint_path)
             self.config_path = get_config_file(model)
 
     def _try_resolve_checkpoint(self, directory: Path) -> Optional[Path]:
@@ -199,9 +229,7 @@ class EZMMLab(ABC):
                     )
                     return resolved
             except Exception as e:
-                logger.warning(
-                    f"Failed to read 'last_checkpoint' tracker: {e}"
-                )
+                logger.warning(f"Failed to read 'last_checkpoint' tracker: {e}")
 
         return None
 
@@ -289,17 +317,13 @@ class EZMMLab(ABC):
             raise RuntimeError("Inferencer failed to initialize.")
 
         # 4. Delegate execution to child
-        raw_results = self._run_inference(
-            inputs, actual_out_dir, show, **kwargs
-        )
+        raw_results = self._run_inference(inputs, actual_out_dir, show, **kwargs)
 
         # 5. Format results
         if not hasattr(self, "_formatter") or self._formatter is None:
             raise RuntimeError("Result formatter not initialized.")
 
-        return self._formatter.map_results(
-            raw_results, inputs, self._get_class_names()
-        )
+        return self._formatter.map_results(raw_results, inputs, self._get_class_names())
 
     @abstractmethod
     def _init_inferencer(self, device: str, **kwargs) -> None:
@@ -359,6 +383,7 @@ class EZMMLab(ABC):
         log_level: Optional[str] = None,
         weight_decay: float = 0.05,
         evaluator_metric: Union[str, List[str]] = "CocoMetric",
+        augments: Optional[Dict[str, Any]] = None,
         **kwargs,
     ) -> None:
         """Runs a fresh end-to-end training pipeline.
@@ -376,12 +401,20 @@ class EZMMLab(ABC):
             log_level: Override for internal framework logging.
             weight_decay: Optimizer weight decay.
             evaluator_metric: Metric(s) for validation.
+            augments: Dictionary of data augmentation parameters.
             **kwargs: Additional architecture-specific parameters.
         """
         logger.info(
             f"Assembling fresh training config for: {dataset_config_path}"
         )
+        self._validate_augments(augments)
         architecture_params = self._get_architecture_params(**kwargs)
+
+        # Extract individual augmentation values for create_fresh_config
+        aug_dict = augments or {}
+        scale_factor = aug_dict.get("scale_factor")
+        rotate_factor = aug_dict.get("rotate_factor")
+        random_flip_prob = aug_dict.get("random_flip_prob")
 
         user_config = self._config_manager.create_fresh_config(
             model=self.model,
@@ -399,6 +432,9 @@ class EZMMLab(ABC):
             weight_decay=weight_decay,
             evaluator_metric=evaluator_metric,
             architecture_params=architecture_params,
+            scale_factor=scale_factor,
+            rotate_factor=rotate_factor,
+            random_flip_prob=random_flip_prob,
             **kwargs,
         )
 
@@ -451,10 +487,8 @@ class EZMMLab(ABC):
     def _run_training_workflow(self, config: UserConfig) -> None:
         """Orchestrates the internal OpenMMLab setup and execution."""
         # 1. Register Dataset
-        config.data.registered_class_name = (
-            DynamicDatasetRegistry.register_dataset(
-                config, self._get_library_family()
-            )
+        config.data.registered_class_name = DynamicDatasetRegistry.register_dataset(
+            config, self._get_library_family()
         )
 
         # 2. Setup Artifacts
@@ -465,17 +499,14 @@ class EZMMLab(ABC):
         )
 
         save_user_config(config, work_dir / "user_config.toml")
-        logger.info(
-            f"User configuration saved to: {work_dir / 'user_config.toml'}"
-        )
+        logger.info(f"User configuration saved to: {work_dir / 'user_config.toml'}")
 
         # 3. Prepare Final Configuration
         self._cfg = self._load_base_config(config.model.name)
         self._inject_user_configs(config)
 
         final_config_path = (
-            work_dir
-            / f"{config.model.name.value}_{config.data.dataset_name}.py"
+            work_dir / f"{config.model.name.value}_{config.data.dataset_name}.py"
         )
         self._config_manager.dump_config(self._cfg, final_config_path)
 
@@ -485,9 +516,7 @@ class EZMMLab(ABC):
         # 5. Synchronize State
         self._sync_state_after_training(work_dir, final_config_path)
 
-    def _sync_state_after_training(
-        self, work_dir: Path, config_path: Path
-    ) -> None:
+    def _sync_state_after_training(self, work_dir: Path, config_path: Path) -> None:
         """Synchronizes engine state with newly trained weights and persistent configs."""
         logger.info("Synchronizing model state with newly trained weights...")
 
