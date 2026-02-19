@@ -436,40 +436,59 @@ class EZMMLab(ABC):
 
     def _run_training_workflow(self, config: UserConfig) -> None:
         """Orchestrates the internal OpenMMLab setup and execution."""
-        # 1. Resolve Family and Register Dataset
-        family = self._get_library_family()
-        registered_name = DynamicDatasetRegistry.register_dataset(
-            config, family
+        # 1. Register Dataset
+        config.data.registered_class_name = DynamicDatasetRegistry.register_dataset(
+            config, self._get_library_family()
         )
-        config.data.registered_class_name = registered_name
 
-        # 2. Setup Work Directory
+        # 2. Setup Artifacts
         work_dir = Path(config.training.work_dir)
         work_dir.mkdir(parents=True, exist_ok=True)
-
-        # 3. Artifact Tracking
-        config.model.base_config_path = str(
-            get_config_file(config.model.name).absolute()
-        )
-
+        config.model.base_config_path = str(get_config_file(config.model.name).absolute())
+        
         save_user_config(config, work_dir / "user_config.toml")
-        logger.info(
-            f"User configuration saved to: {work_dir / 'user_config.toml'}"
-        )
+        logger.info(f"User configuration saved to: {work_dir / 'user_config.toml'}")
 
-        # 4. Load and Patch Configuration
+        # 3. Prepare Final Configuration
         self._cfg = self._load_base_config(config.model.name)
         self._inject_user_configs(config)
-
-        # Freeze the configuration
-        final_config_path = (
-            work_dir
-            / f"{config.model.name.value}_{config.data.dataset_name}.py"
-        )
+        
+        final_config_path = work_dir / f"{config.model.name.value}_{config.data.dataset_name}.py"
         self._config_manager.dump_config(self._cfg, final_config_path)
 
-        # 5. Run Training
+        # 4. Execute Training
         self._run_training(final_config_path, config.training.log_level)
+
+        # 5. Synchronize State
+        self._sync_state_after_training(work_dir, final_config_path)
+
+    def _sync_state_after_training(self, work_dir: Path, config_path: Path) -> None:
+        """Synchronizes engine state with newly trained weights and persistent configs."""
+        logger.info("Synchronizing model state with newly trained weights...")
+
+        # Resolve weights
+        new_checkpoint = self._try_resolve_checkpoint(work_dir)
+        if new_checkpoint:
+            self.checkpoint_path = new_checkpoint
+            self._using_custom_weights = True
+        else:
+            logger.warning(f"No checkpoints found in {work_dir}. Inference may use stale weights.")
+
+        # Update persistent configuration context
+        self._source_toml = (work_dir / "user_config.toml").absolute()
+        self._source_dir = work_dir.absolute()
+        self.config_path = config_path
+
+        # Refresh metadata (critical for first-time training of custom models)
+        meta = self._config_manager.load_metadata_from_toml(self._source_toml)
+        self.num_classes = meta.get("num_classes")
+        self.num_keypoints = meta.get("num_keypoints")
+        self.metainfo = meta.get("metainfo")
+        self.architecture_params = meta.get("architecture_params", {})
+
+        # Clear inferencer to force re-initialization on next predict() call
+        if hasattr(self, "_inferencer"):
+            self._inferencer = None
 
     def _run_training(self, config_path: Path, log_level: str) -> None:
         """Initializes the MMEngine Runner and starts training."""

@@ -1,16 +1,11 @@
-# 🚀 ez_openmmlab: Openmmlab Made EZ
+# 🚀 ez_openmmlab: OpenMMLab Made EZ
 
-`ez_openmmlab` is a streamlined Python wrapper designed to unlock the full potential of the [OpenMMLab](https://github.com/open-mmlab) ecosystem. It eliminates the traditional "OpenMMLab Tax", the complexity of nested Python configurations and notorious dependency conflicts, providing a unified, "Config-First" workflow.
+Train and deploy SOTA models like **RTMDet**, **RTMPose**, and **RTMO** in minutes, not days. `ez_openmmlab` is a high-level, **TOML-first** wrapper that makes the OpenMMLab ecosystem actually usable.
 
----
-
-## 💡 Why ez_openmmlab?
-
-OpenMMLab produces State-of-the-Art (SOTA) models like **RTMDet**, **RTMPose**, and **RTMO** that consistently dominate benchmarks. However, for many developers, the barrier to entry is high:
-
-1.  **The Dependency Whack-a-Mole:** Installing MMDet or MMPose often feels like a frustrating game of whack-a-mole, trying to align specific versions of Torch, MMCV, and CUDA. `ez_openmmlab` resolves this "dependency hell" with optimized, reproducible environments.
-2.  **Config Fatigue:** Customizing a model for your own dataset usually requires editing 500-line Python files spread across multiple directories. We've replaced this with a simple, human-readable **TOML-First** workflow.
-3.  **High-Bar Complexity:** Taking advantage of these SOTA models shouldn't require deep expertise in framework internals. We provide the power of OpenMMLab without the stress.
+- **EZ Environment:** Reproducible setups that just work.
+- **EZ Configuration:** Human-readable TOML replaces 500-line Python config "surgery".
+- **EZ Workflow:** A unified API for training and inference across the entire ecosystem. (MMDet an MMPose so far...)
+- **Unified API:** One interface for Detection, Segmentation, and Pose Estimation.
 
 ---
 
@@ -63,9 +58,12 @@ uv sync --extra gpu  # or --extra cpu
 
 ## 📖 Quick Start
 
-### 1. Define your Data (`dataset.toml`)
+Choose your task to see how EZ it is:
 
-Describe your dataset once. Forget about framework internals.
+<details>
+<summary><b>🔍 Object Detection & Segmentation (RTMDet)</b></summary>
+
+#### 1. Define Data (`dataset.toml`)
 
 ```toml
 data_root = "datasets/my_project"
@@ -80,37 +78,64 @@ ann_file = "annotations/val.json"
 img_dir = "images/val"
 ```
 
-### 2. Train Models using a familiar API ;)
+#### 2. Train & Predict
 
 ```python
 from ez_openmmlab import RTMDet
 
-# Initialize (choices: rtmdet_tiny, rtmdet_s, rtmdet-ins_m, etc.)
-detector = RTMDet("rtmdet_tiny")
+# Initialize (choices: rtmdet_tiny, rtmdet_s, rtmdet_m, etc.)
+model = RTMDet("rtmdet_tiny")
 
 # Start training on your custom data
-detector.train(
+model.train(
     dataset_config_path="dataset.toml",
     epochs=100,
     batch_size=16
 )
+
+# Inference made simple
+results = model.predict("sample.jpg", show=True)
 ```
 
-### 3. Inference Made Simple
+</details>
+
+<details>
+<summary><b>🧘 Pose Estimation (RTMPose / RTMO)</b></summary>
+
+#### 1. Define Data (`dataset.toml`)
+
+```toml
+data_root = "datasets/pose_data"
+classes = ["person"] # Usually 'person' for pose estimation
+
+[train]
+ann_file = "annotations/person_keypoints_train2017.json"
+img_dir = "train2017"
+
+[val]
+ann_file = "annotations/person_keypoints_val2017.json"
+img_dir = "val2017"
+```
+
+#### 2. Train & Predict
 
 ```python
 from ez_openmmlab import RTMPose
 
-# Load a model with custom weights easily
-model = RTMPose(
-    model="rtmpose_s",
+# Initialize (choices: rtmpose_s, rtmpose_m, rtmo_s, etc.)
+model = RTMPose("rtmpose_s")
+
+# Start training
+model.train(
+    dataset_config_path="dataset.toml",
+    epochs=210
 )
 
-results = model.predict("sample.jpg", show=True)
-
-for bbox in results[0].boxes:
-    print(f"Bbox: {bbox.xyxy}, Class {bbox.cls}, Confidence: {bbox.conf}")
+# Inference
+results = model.predict("player.jpg", show=True)
 ```
+
+</details>
 
 ---
 
@@ -125,8 +150,6 @@ for bbox in results[0].boxes:
 ## 🤝 Acknowledgements
 
 `ez_openmmlab` wouldn't exist without the relentless research and engineering of the **OpenMMLab** team. Their models are world-class and still competing with (and beating) the newest architectures out there.
-
-We aren't replacing OpenMMLab; we're **amplifying** it. We want to make sure every developer can take advantage of these incredible tools without being held back by the complexity of the stack.
 
 **Currently Supported:**
 
