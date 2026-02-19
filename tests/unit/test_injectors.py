@@ -1,8 +1,8 @@
 import pytest
 from mmengine.config import Config
 
-from ez_openmmlab.core.injectors.dataloader import DataloaderInjector
-from ez_openmmlab.core.injectors.runtime import RuntimeInjector
+from ez_openmmlab.core.surgery.injectors.dataloader import DataloaderInjector
+from ez_openmmlab.core.surgery.injectors.runtime import RuntimeInjector
 from ez_openmmlab.utils.toml_config import (
     DataSection,
     ModelSection,
@@ -113,7 +113,7 @@ def test_runtime_injector_missing_optim_wrapper(mock_user_config):
 
 def test_evaluator_injector_handles_dicts(mock_user_config):
     """Test that EvaluatorInjector correctly processes string and dict metrics."""
-    from ez_openmmlab.core.injectors.evaluator import EvaluatorInjector
+    from ez_openmmlab.core.surgery.injectors.evaluator import EvaluatorInjector
 
     # 1. Mixed metrics: string and dict
     mock_user_config.training.evaluator_metric = [

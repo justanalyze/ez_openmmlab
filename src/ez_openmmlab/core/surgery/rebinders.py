@@ -5,10 +5,10 @@ from mmengine.config import Config
 
 from ez_openmmlab.utils.toml_config import UserConfig
 
-from .base import BaseConfigInjector
+from .base import BaseConfigSurgery
 
 
-class StructuralRebinder(BaseConfigInjector):
+class StructuralRebinder(BaseConfigSurgery):
     """Base class for re-binding internal configuration references."""
 
     def _get_path(self, obj: any, path: str) -> Optional[any]:

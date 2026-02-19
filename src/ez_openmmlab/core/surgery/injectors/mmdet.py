@@ -3,11 +3,11 @@ from mmengine.config import Config
 
 from ez_openmmlab.utils.toml_config import UserConfig
 
-from .base import BaseConfigInjector
-from .pipeline_patchers import PipelineTransformPatcherRegistry
+from ..base import BaseConfigSurgery
+from ..pipeline_patchers import PipelineTransformPatcherRegistry
 
 
-class MMDetInjector(BaseConfigInjector):
+class MMDetInjector(BaseConfigSurgery):
     """Handles MMDetection-specific configuration patches."""
 
     def apply(self, cfg: Config, user_config: UserConfig) -> None:

@@ -37,22 +37,24 @@ img_dir = "v/"
 
     # Mock the Runner and the base configuration loading to avoid full OpenMMLab init
     with patch("ez_openmmlab.core.engines.engine_base.Runner.from_cfg") as mock_runner_cls:
-        mock_runner = MagicMock()
-        mock_runner_cls.return_value = mock_runner
-        
-        with patch("ez_openmmlab.core.config_manager.DatasetConfig.from_toml", return_value=mock_ds):
-            with patch("ez_openmmlab.core.engines.engine_base.EZMMLab._load_base_config") as mock_load:
-                mock_cfg = MagicMock()
-                mock_load.return_value = mock_cfg
-                
-                # 2. Instantiate and call train
-                # We mock the resource resolution to avoid needing real config files
-                with patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint", return_value=tmp_path / "m.pth"):
-                    with patch("ez_openmmlab.core.engines.engine_base.get_config_file", return_value=tmp_path / "c.py"):
-                        model = RTMPose("rtmpose_s")
+        with patch("ez_openmmlab.core.engines.engine_base.Config.fromfile") as mock_from_file:
+            mock_runner = MagicMock()
+            mock_runner_cls.return_value = mock_runner
+            
+            with patch("ez_openmmlab.core.config_manager.DatasetConfig.from_toml", return_value=mock_ds):
+                with patch("ez_openmmlab.core.engines.engine_base.EZMMLab._load_base_config") as mock_load:
+                    mock_cfg = MagicMock()
+                    mock_load.return_value = mock_cfg
+                    
+                    # 2. Instantiate and call train
+                    # We mock the resource resolution to avoid needing real config files
+                    with patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint", return_value=tmp_path / "m.pth"):
+                        with patch("ez_openmmlab.core.engines.engine_base.get_config_file", return_value=tmp_path / "c.py"):
+                            model = RTMPose("rtmpose_s")
                         
                         model.train(
                             dataset_config_path=dataset_toml,
+                            work_dir=str(tmp_path / "train"),
                             input_size=(288, 384),
                             evaluator_metric="PCKAccuracy",
                             epochs=1,
@@ -62,7 +64,7 @@ img_dir = "v/"
     # 3. Verify that the effective configuration reflects the overrides
     # The Effective Config is saved in work_dir/user_config.toml
     import tomli
-    saved_config_path = Path("./runs/train/user_config.toml")
+    saved_config_path = tmp_path / "train" / "user_config.toml"
     with open(saved_config_path, "rb") as f:
         saved_data = tomli.load(f)
         

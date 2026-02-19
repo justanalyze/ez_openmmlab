@@ -3,10 +3,10 @@ from mmengine.config import Config
 
 from ez_openmmlab.utils.toml_config import UserConfig
 
-from .base import BaseConfigInjector
+from ..base import BaseConfigSurgery
 
 
-class RuntimeInjector(BaseConfigInjector):
+class RuntimeInjector(BaseConfigSurgery):
     """Configures optimizer, AMP, epochs, and basic logging."""
 
     def apply(self, cfg: Config, user_config: UserConfig) -> None:

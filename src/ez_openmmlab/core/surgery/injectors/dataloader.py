@@ -4,10 +4,10 @@ from mmengine.config import Config
 
 from ez_openmmlab.utils.toml_config import UserConfig
 
-from .base import BaseConfigInjector
+from ..base import BaseConfigSurgery
 
 
-class DataloaderInjector(BaseConfigInjector):
+class DataloaderInjector(BaseConfigSurgery):
     """Configures dataset paths, batch sizes, and workers for all loaders."""
 
     def apply(self, cfg: Config, user_config: UserConfig) -> None:

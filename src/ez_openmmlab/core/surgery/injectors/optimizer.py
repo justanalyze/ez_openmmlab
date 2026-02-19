@@ -3,10 +3,10 @@ from mmengine.config import Config
 
 from ez_openmmlab.utils.toml_config import UserConfig
 
-from .base import BaseConfigInjector
+from ..base import BaseConfigSurgery
 
 
-class OptimizerInjector(BaseConfigInjector):
+class OptimizerInjector(BaseConfigSurgery):
     """Applies global optimization hyperparameters (weight decay, etc.) to the config."""
 
     def apply(self, cfg: Config, user_config: UserConfig) -> None:

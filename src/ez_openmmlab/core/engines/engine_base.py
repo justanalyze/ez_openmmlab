@@ -9,7 +9,7 @@ from mmengine.runner import Runner
 from ez_openmmlab.core.config_manager import ConfigManager, get_config_file
 from ez_openmmlab.core.datasets import DynamicDatasetRegistry
 from ez_openmmlab.core.inference.results import InferenceResult
-from ez_openmmlab.core.injectors import get_injectors
+from ez_openmmlab.core.surgery import get_surgeries
 from ez_openmmlab.schemas.model import ModelName
 from ez_openmmlab.utils.context import switch_to_lib_root
 from ez_openmmlab.utils.download import ensure_model_checkpoint
@@ -64,8 +64,12 @@ class EZMMLab(ABC):
 
         self._cfg: Optional[Config] = None
         self._temp_config_file: Optional[Path] = None
-        self._source_dir: Optional[Path] = None  # Directory of the source config
-        self._source_toml: Optional[Path] = None  # Path to the source TOML file
+        self._source_dir: Optional[Path] = (
+            None  # Directory of the source config
+        )
+        self._source_toml: Optional[Path] = (
+            None  # Path to the source TOML file
+        )
         self._using_custom_weights: bool = checkpoint_path is not None
 
         # --- 4. Initialization Sequence ---
@@ -88,7 +92,9 @@ class EZMMLab(ABC):
         checkpoint_path: Optional[Union[str, Path]],
     ) -> None:
         """Performs initial validation of provided arguments."""
-        is_toml = isinstance(model, (Path, str)) and str(model).endswith(".toml")
+        is_toml = isinstance(model, (Path, str)) and str(model).endswith(
+            ".toml"
+        )
 
         # 1. Check for missing checkpoint in custom config context
         if is_toml and not checkpoint_path:
@@ -126,12 +132,14 @@ class EZMMLab(ABC):
             config_toml = Path(model)
             self._source_toml = config_toml.absolute()
             self._source_dir = config_toml.parent.absolute()
-            
+
             # Smart Resolution: Attempt to find checkpoint in TOML directory if not provided
             if checkpoint_path:
                 self.checkpoint_path = Path(checkpoint_path)
             else:
-                self.checkpoint_path = self._try_resolve_checkpoint(self._source_dir)
+                self.checkpoint_path = self._try_resolve_checkpoint(
+                    self._source_dir
+                )
 
             # 1.1 Load explicit metadata from TOML
             meta = self._config_manager.load_metadata_from_toml(config_toml)
@@ -166,7 +174,7 @@ class EZMMLab(ABC):
 
     def _try_resolve_checkpoint(self, directory: Path) -> Optional[Path]:
         """Smartly attempts to find a checkpoint in the given directory.
-        
+
         Priority:
         1. best_*.pth
         2. Content of 'last_checkpoint' file
@@ -186,10 +194,14 @@ class EZMMLab(ABC):
                 ckpt_name = last_ckpt_tracker.read_text().strip()
                 resolved = directory / ckpt_name
                 if resolved.exists():
-                    logger.info(f"Smart-resolved last checkpoint from tracker: {resolved.name}")
+                    logger.info(
+                        f"Smart-resolved last checkpoint from tracker: {resolved.name}"
+                    )
                     return resolved
             except Exception as e:
-                logger.warning(f"Failed to read 'last_checkpoint' tracker: {e}")
+                logger.warning(
+                    f"Failed to read 'last_checkpoint' tracker: {e}"
+                )
 
         return None
 
@@ -199,14 +211,14 @@ class EZMMLab(ABC):
             self._config_manager.cleanup_temp_config(self._temp_config_file)
 
     def _load_and_patch_config(self, **kwargs) -> Config:
-        """Loads the model config and applies all registered plugin injectors."""
+        """Loads the model config and applies all registered plugin surgeries."""
         with switch_to_lib_root(self.model):
             cfg = Config.fromfile(str(self.config_path))
 
             # Trigger patching if custom metadata or architecture params are provided
             dummy_user_cfg = self._get_dummy_user_config(**kwargs)
-            for injector in get_injectors(self.model):
-                injector.apply(cfg, dummy_user_cfg)
+            for surgery in get_surgeries(self.model):
+                surgery.apply(cfg, dummy_user_cfg)
 
             return cfg
 
@@ -366,7 +378,9 @@ class EZMMLab(ABC):
             evaluator_metric: Metric(s) for validation.
             **kwargs: Additional architecture-specific parameters.
         """
-        logger.info(f"Assembling fresh training config for: {dataset_config_path}")
+        logger.info(
+            f"Assembling fresh training config for: {dataset_config_path}"
+        )
         architecture_params = self._get_architecture_params(**kwargs)
 
         user_config = self._config_manager.create_fresh_config(
@@ -402,7 +416,7 @@ class EZMMLab(ABC):
         """Resumes an unfinished training session from a source directory.
 
         Args:
-            checkpoint: Whether to resume. If True, automatically find the latest 
+            checkpoint: Whether to resume. If True, automatically find the latest
                 checkpoint in the source directory. If string, use as specific path.
             epochs: Optional override for the total number of epochs.
             batch_size: Optional override for training batch size.
@@ -437,23 +451,32 @@ class EZMMLab(ABC):
     def _run_training_workflow(self, config: UserConfig) -> None:
         """Orchestrates the internal OpenMMLab setup and execution."""
         # 1. Register Dataset
-        config.data.registered_class_name = DynamicDatasetRegistry.register_dataset(
-            config, self._get_library_family()
+        config.data.registered_class_name = (
+            DynamicDatasetRegistry.register_dataset(
+                config, self._get_library_family()
+            )
         )
 
         # 2. Setup Artifacts
         work_dir = Path(config.training.work_dir)
         work_dir.mkdir(parents=True, exist_ok=True)
-        config.model.base_config_path = str(get_config_file(config.model.name).absolute())
-        
+        config.model.base_config_path = str(
+            get_config_file(config.model.name).absolute()
+        )
+
         save_user_config(config, work_dir / "user_config.toml")
-        logger.info(f"User configuration saved to: {work_dir / 'user_config.toml'}")
+        logger.info(
+            f"User configuration saved to: {work_dir / 'user_config.toml'}"
+        )
 
         # 3. Prepare Final Configuration
         self._cfg = self._load_base_config(config.model.name)
         self._inject_user_configs(config)
-        
-        final_config_path = work_dir / f"{config.model.name.value}_{config.data.dataset_name}.py"
+
+        final_config_path = (
+            work_dir
+            / f"{config.model.name.value}_{config.data.dataset_name}.py"
+        )
         self._config_manager.dump_config(self._cfg, final_config_path)
 
         # 4. Execute Training
@@ -462,7 +485,9 @@ class EZMMLab(ABC):
         # 5. Synchronize State
         self._sync_state_after_training(work_dir, final_config_path)
 
-    def _sync_state_after_training(self, work_dir: Path, config_path: Path) -> None:
+    def _sync_state_after_training(
+        self, work_dir: Path, config_path: Path
+    ) -> None:
         """Synchronizes engine state with newly trained weights and persistent configs."""
         logger.info("Synchronizing model state with newly trained weights...")
 
@@ -472,7 +497,9 @@ class EZMMLab(ABC):
             self.checkpoint_path = new_checkpoint
             self._using_custom_weights = True
         else:
-            logger.warning(f"No checkpoints found in {work_dir}. Inference may use stale weights.")
+            logger.warning(
+                f"No checkpoints found in {work_dir}. Inference may use stale weights."
+            )
 
         # Update persistent configuration context
         self._source_toml = (work_dir / "user_config.toml").absolute()
@@ -507,9 +534,9 @@ class EZMMLab(ABC):
         return cfg
 
     def _inject_user_configs(self, config: UserConfig) -> None:
-        """Applies configuration changes using the registered plugin injectors."""
+        """Applies configuration changes using the registered plugin surgeries."""
         if not self._cfg:
             raise RuntimeError("Base config not loaded.")
 
-        for injector in get_injectors(self.model):
-            injector.apply(self._cfg, config)
+        for surgery in get_surgeries(self.model):
+            surgery.apply(self._cfg, config)

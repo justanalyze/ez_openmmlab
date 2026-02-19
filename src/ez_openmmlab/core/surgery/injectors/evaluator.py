@@ -3,10 +3,10 @@ from mmengine.config import Config
 
 from ez_openmmlab.utils.toml_config import UserConfig
 
-from .base import BaseConfigInjector
+from ..base import BaseConfigSurgery
 
 
-class EvaluatorInjector(BaseConfigInjector):
+class EvaluatorInjector(BaseConfigSurgery):
     """Configures the metric(s) for validation and testing across all model families."""
 
     def apply(self, cfg: Config, user_config: UserConfig) -> None:
