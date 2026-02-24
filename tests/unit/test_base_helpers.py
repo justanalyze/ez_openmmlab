@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from ez_openmmlab.utils.input import normalize_inputs
-from ez_openmmlab.utils.path import get_unique_dir
+from ez_openmmlab.core.utils.input import normalize_inputs
+from ez_openmmlab.core.utils.path import get_unique_dir
 
 
 def test_resolve_out_dir(tmp_path):

@@ -1,7 +1,7 @@
 import platform
 from unittest.mock import patch
 from pathlib import Path
-from ez_openmmlab.utils.path import get_unique_dir, get_user_cache_dir
+from ez_openmmlab.core.utils.path import get_unique_dir, get_user_cache_dir
 
 
 def test_get_user_cache_dir_linux():

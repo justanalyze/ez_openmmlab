@@ -8,7 +8,7 @@ from mmdet.utils import register_all_modules
 
 from ez_openmmlab.core.inference.formatters import DetectionResultFormatter
 from ez_openmmlab.core.schema.models import ModelName
-from ez_openmmlab.utils.context import switch_to_lib_root
+from ez_openmmlab.core.utils.context import switch_to_lib_root
 
 from .engine_base import EZMMLab
 

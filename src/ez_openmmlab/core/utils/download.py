@@ -13,7 +13,7 @@ from rich.progress import (
 )
 
 from ez_openmmlab.core.schema.models import ModelName
-from ez_openmmlab.utils.path import get_user_cache_dir
+from ez_openmmlab.core.utils.path import get_user_cache_dir
 
 
 def download_checkpoint(url: str, dest_path: Path) -> None:
