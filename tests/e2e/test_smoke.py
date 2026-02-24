@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from ez_openmmlab import RTMDet
-from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.core.schema.models import ModelName
 
 
 @pytest.fixture(scope="module")

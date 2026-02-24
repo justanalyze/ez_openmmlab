@@ -5,7 +5,7 @@ import numpy as np
 
 from ez_openmmlab.core.inference.results import Boxes, InferenceResult, Keypoints
 from ez_openmmlab.models.mmpose import RTMPose
-from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.core.schema.models import ModelName
 
 
 @patch("mmengine.infer.infer._load_checkpoint")

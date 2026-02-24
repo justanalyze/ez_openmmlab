@@ -4,7 +4,7 @@ import pytest
 
 from ez_openmmlab import RTMDet
 from ez_openmmlab.core.inference.results import Boxes, InferenceResult
-from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.core.schema.models import ModelName
 
 
 @pytest.mark.parametrize("model", [ModelName.RTM_DET_TINY])

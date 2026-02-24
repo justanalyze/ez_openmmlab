@@ -5,7 +5,7 @@ from loguru import logger
 
 from ez_openmmlab import RTMPose
 from ez_openmmlab.core.inference.results import InferenceResult
-from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.core.schema.models import ModelName
 
 # 1. Initialize RTMPose with the tiny variant and our new checkpoint
 

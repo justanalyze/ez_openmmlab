@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 from ez_openmmlab.core.engines.engine_base import EZMMLab
-from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.core.schema.models import ModelName
 
 # Concrete implementation for testing abstract base class
 class ConcreteEZMMLab(EZMMLab):

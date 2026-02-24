@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from ez_openmmlab.core.engines.mmdet import EZMMDetector
-from ez_openmmlab.schemas.model import (
+from ez_openmmlab.core.schema.models import (
     RTM_DET_CONFIGS,
     RTM_DET_INS_CONFIGS,
     ModelName,

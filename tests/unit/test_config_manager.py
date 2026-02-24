@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 from ez_openmmlab.core.config_manager import ConfigManager, get_config_file
-from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.core.schema.models import ModelName
 
 class TestConfigManager:
     def test_get_config_path_standard(self):

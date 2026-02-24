@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from ez_openmmlab import RTMDet
-from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.core.schema.models import ModelName
 
 
 @patch("ez_openmmlab.core.engines.mmdet.DetInferencer")

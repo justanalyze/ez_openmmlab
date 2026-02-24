@@ -4,12 +4,12 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 
 from ez_openmmlab import RTMDet
-from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.core.schema.models import ModelName
 
 
 @patch("ez_openmmlab.core.engines.engine_base.Runner")
 @patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
-@patch("ez_openmmlab.schemas.dataset.DatasetConfig.from_toml")
+@patch("ez_openmmlab.core.schema.datasets.DatasetConfig.from_toml")
 @patch("ez_openmmlab.core.engines.mmdet.DetInferencer")
 @patch("cv2.imread")
 def test_full_custom_config_flow(mock_imread, mock_inferencer_cls, mock_ds_from_toml, mock_ensure, mock_runner, tmp_path):

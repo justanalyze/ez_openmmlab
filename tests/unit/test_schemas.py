@@ -1,9 +1,9 @@
 import pytest
 from pydantic import ValidationError
 
-from ez_openmmlab.schemas.dataset import DatasetConfig
-from ez_openmmlab.schemas.model import ModelName
-from ez_openmmlab.core.config_schema import TrainingSection, UserConfig
+from ez_openmmlab.core.schema.datasets import DatasetConfig
+from ez_openmmlab.core.schema.models import ModelName
+from ez_openmmlab.core.schema.config import TrainingSection, UserConfig
 
 
 def test_training_section_defaults():

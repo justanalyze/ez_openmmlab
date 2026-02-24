@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 from mmengine.config import Config
 
-from ez_openmmlab.core.config_schema import UserConfig
+from ez_openmmlab.core.schema.config import UserConfig
 
 
 class BaseConfigSurgery(ABC):

@@ -10,12 +10,12 @@ from ez_openmmlab.core.config_manager import ConfigManager, get_config_file
 from ez_openmmlab.core.datasets import DynamicDatasetRegistry
 from ez_openmmlab.core.inference.results import InferenceResult
 from ez_openmmlab.core.surgery import get_surgeries
-from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.core.schema.models import ModelName
 from ez_openmmlab.utils.context import switch_to_lib_root
 from ez_openmmlab.utils.download import ensure_model_checkpoint
 from ez_openmmlab.utils.input import normalize_inputs
 from ez_openmmlab.utils.path import get_unique_dir
-from ez_openmmlab.core.config_schema import (
+from ez_openmmlab.core.schema.config import (
     DataSection,
     ModelSection,
     TrainingSection,

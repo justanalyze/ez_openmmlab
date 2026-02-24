@@ -8,7 +8,7 @@ This guide outlines the standard procedure for integrating a new OpenMMLab model
 
 Before writing the model logic, you must register its identity and configuration mapping.
 
-1.  **Update `src/ez_openmmlab/schemas/model.py`**:
+1.  **Update `src/ez_openmmlab/core/schema/models.py`**:
     *   Add a new entry to the `ModelName` Enum.
     *   Create a dictionary mapping the Enum name to its official OpenMMLab `.py` config path (relative to the library's `configs/` root).
     *   Add the new mapping to the `SUPPORTED_CONFIGS` aggregate.

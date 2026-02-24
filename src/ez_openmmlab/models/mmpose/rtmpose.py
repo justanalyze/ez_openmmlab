@@ -7,7 +7,7 @@ from mmpose.apis import MMPoseInferencer
 
 from ez_openmmlab.core.engines.mmpose import EZMMPose
 from ez_openmmlab.core.inference.results import InferenceResult
-from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.core.schema.models import ModelName
 
 
 class RTMPose(EZMMPose):
@@ -57,7 +57,9 @@ class RTMPose(EZMMPose):
         det_weights_path = None
 
         if det_model is None:
-            det_config = "rtmdet-tiny_8xb32-300e_coco"
+            from ez_openmmlab.core.config_manager import get_config_file
+
+            det_config = str(get_config_file(ModelName.RTM_DET_TINY))
         else:
             # Handle ModelName enum
             if isinstance(det_model, ModelName):

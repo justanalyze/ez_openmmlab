@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from ez_openmmlab.models.mmdet import RTMDet
 from ez_openmmlab.models.mmpose import RTMPose
-from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.core.schema.models import ModelName
 
 class ConcreteEZDetector(RTMDet):
     def _init_inferencer(self, device, **kwargs): pass

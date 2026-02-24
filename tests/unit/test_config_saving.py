@@ -2,8 +2,8 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from ez_openmmlab.models.mmdet import RTMDet
-from ez_openmmlab.schemas.model import ModelName
-from ez_openmmlab.core.config_schema import load_user_config
+from ez_openmmlab.core.schema.models import ModelName
+from ez_openmmlab.core.schema.config import load_user_config
 
 
 class ConcreteEZDetector(RTMDet):
@@ -16,7 +16,7 @@ class ConcreteEZDetector(RTMDet):
 
 @patch("ez_openmmlab.core.engines.engine_base.Runner")
 @patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
-@patch("ez_openmmlab.schemas.dataset.DatasetConfig.from_toml")
+@patch("ez_openmmlab.core.schema.datasets.DatasetConfig.from_toml")
 def test_train_saves_base_config_path(
     mock_ds_from_toml, mock_ensure, mock_runner, tmp_path
 ):

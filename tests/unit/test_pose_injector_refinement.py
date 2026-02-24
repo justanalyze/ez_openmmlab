@@ -1,7 +1,7 @@
 import pytest
 from mmengine.config import Config
 from ez_openmmlab.core.surgery.injectors.mmpose import MMPoseInjector
-from ez_openmmlab.core.config_schema import (
+from ez_openmmlab.core.schema.config import (
     DataSection,
     ModelSection,
     TrainingSection,

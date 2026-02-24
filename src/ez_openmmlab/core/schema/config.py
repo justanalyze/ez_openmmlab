@@ -5,7 +5,7 @@ import tomli
 import tomli_w
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
-from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.core.schema.models import ModelName
 
 
 # --- Pydantic Models for Validation ---

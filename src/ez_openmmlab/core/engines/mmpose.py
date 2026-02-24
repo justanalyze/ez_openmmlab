@@ -7,7 +7,7 @@ from mmpose.apis import MMPoseInferencer
 
 from ez_openmmlab.core.engines.engine_base import EZMMLab
 from ez_openmmlab.core.inference.formatters import PoseResultFormatter
-from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.core.schema.models import ModelName
 from ez_openmmlab.utils.context import switch_to_lib_root
 
 

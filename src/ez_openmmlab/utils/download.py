@@ -12,7 +12,7 @@ from rich.progress import (
     TransferSpeedColumn,
 )
 
-from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.core.schema.models import ModelName
 from ez_openmmlab.utils.path import get_user_cache_dir
 
 

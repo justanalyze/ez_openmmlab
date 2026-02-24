@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from ez_openmmlab.core.datasets import DynamicDatasetRegistry
-from ez_openmmlab.core.config_schema import UserConfig, ModelSection, DataSection, TrainingSection
+from ez_openmmlab.core.schema.config import UserConfig, ModelSection, DataSection, TrainingSection
 
 def test_dynamic_registration_mmpose():
     """Verify that a class is created and registered in mmpose."""

@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from ez_openmmlab.core.config_manager import ConfigManager
-from ez_openmmlab.schemas.model import ModelName
+from ez_openmmlab.core.schema.models import ModelName
 
 def test_create_fresh_config_with_augments(tmp_path):
     """Verifies that augmentation parameters are correctly mapped to AugmentationSection."""
