@@ -5,48 +5,17 @@ from loguru import logger
 from mmengine.config import Config
 from mmpose.apis import MMPoseInferencer
 
-from ez_openmmlab.core.config_manager import get_config_file
 from ez_openmmlab.core.engines.mmpose import EZMMPose
 from ez_openmmlab.core.inference.results import InferenceResult
-from ez_openmmlab.schemas.model import RTM_POSE_CONFIGS, ModelName
-from ez_openmmlab.utils.download import ensure_model_checkpoint
+from ez_openmmlab.schemas.model import ModelName
 
 
 class RTMPose(EZMMPose):
-    """RTMPose implementation for high-performance 2D keypoint estimation."""
+    """Top-down RTMPose architecture."""
 
-    def __init__(
-        self,
-        model: Union[ModelName, str, Path],
-        checkpoint_path: Optional[Union[str, Path]] = None,
-        log_level: str = "INFO",
-        **kwargs,
-    ):
-        """Initializes a new RTMPose engine.
-
-        RTMPose is a top-down pose estimation model family. Unlike bottom-up models,
-        it requires a bounding box detector (like RTMDet) to first identify persons
-        before estimating their keypoints.
-
-        Args:
-            model: The pose model variant to use. Supported: 'rtmpose_tiny', 'rtmpose_s',
-                'rtmpose_m', 'rtmpose_l'. Can be :class:`ModelName`, string, or TOML path.
-            checkpoint_path: Path to custom pose weights (.pth). If None, official
-                weights are downloaded automatically.
-            log_level: Global logging level for the engine. Defaults to "INFO".
-            **kwargs: Additional configuration parameters passed to the base engine.
-        """
-        self._validate_model(model)
-        super().__init__(model, checkpoint_path, log_level, **kwargs)
-
-    def _validate_model(self, model: Union[ModelName, str, Path]) -> None:
-        """Validates that the provided model is a supported RTMPose variant."""
-        if isinstance(model, (str, Path)) and str(model).endswith(".toml"):
-            return
-
-        name = model.value if isinstance(model, ModelName) else str(model)
-        if name not in RTM_POSE_CONFIGS:
-            supported = ", ".join(RTM_POSE_CONFIGS.keys())
+    def _validate_model_name(self, name: str) -> None:
+        supported = ["rtmpose_tiny", "rtmpose_s", "rtmpose_m", "rtmpose_l"]
+        if name not in supported and not Path(name).exists():
             raise ValueError(
                 f"Invalid model variant '{name}' for RTMPose. "
                 f"Supported variants: {supported}, or a path to a custom config.toml"
@@ -63,41 +32,42 @@ class RTMPose(EZMMPose):
     def _instantiate_inferencer(
         self, cfg: Config, device: str, **kwargs
     ) -> MMPoseInferencer:
-        """Instantiates the RTMPose inferencer with detector resolution."""
-        # 1. Resolve detector components (Stage 1)
-        # Extract parameters from kwargs (provided by predict/train defaults)
-        det_config, det_weights, det_cat_ids = self._resolve_detector_params(
-            det_model=kwargs.get("det_model") or "rtmdet_tiny",
-            det_weights=kwargs.get("det_weights"),
-            det_cat_ids=kwargs.get("det_cat_ids") or [0],
-        )
+        """Initializes the top-down RTMPose inferencer with a detector."""
+        det_config, det_weights, det_cat_ids = self._resolve_detector_params(**kwargs)
 
-        # 2. Instantiate
         return MMPoseInferencer(
             pose2d=cfg,
             pose2d_weights=str(self.checkpoint_path),
+            device=device,
             det_model=det_config,
             det_weights=det_weights,
             det_cat_ids=det_cat_ids,
-            device=device,
         )
 
     def _resolve_detector_params(
-        self,
-        det_model: Union[ModelName, str, Path],
-        det_weights: Optional[Union[str, Path]],
-        det_cat_ids: List[int],
-    ) -> tuple:
-        """Resolves detector config, weights, and category IDs to absolute paths."""
-        if det_model in [m.value for m in ModelName]:
-            det_config = str(get_config_file(det_model))
-            det_weights_path = det_weights
-            if not det_weights_path:
-                det_weights_path = str(ensure_model_checkpoint(det_model))
+        self, **kwargs
+    ) -> Tuple[Optional[str], Optional[str], List[int]]:
+        """Resolves detector configuration for top-down inference."""
+        det_model = kwargs.get("det_model")
+        det_weights = kwargs.get("det_weights")
+        det_cat_ids = kwargs.get("det_cat_ids", [0])  # Default to person class
+
+        # If no custom detector provided, use default RTMDet-Tiny
+        det_config = None
+        det_weights_path = None
+
+        if det_model is None:
+            det_config = "rtmdet-tiny_8xb32-300e_coco"
         else:
-            det_config = det_model
-            # Only resolve to absolute path if it looks like a file path and exists
-            # This preserves registry keys (e.g. 'yolox_tiny_8x8...') while handling local configs
+            # Handle ModelName enum
+            if isinstance(det_model, ModelName):
+                from ez_openmmlab.core.config_manager import get_config_file
+
+                det_config = str(get_config_file(det_model))
+            else:
+                det_config = str(det_model)
+
+            # Ensure absolute path if local file
             if isinstance(det_config, (str, Path)) and (
                 Path(det_config).exists() or "/" in str(det_config)
             ):
@@ -169,6 +139,7 @@ class RTMPose(EZMMPose):
         simcc_sigma: Optional[Tuple[float, float]] = None,
         feature_map_size: Optional[Tuple[int, int]] = None,
         augments: Optional[Dict[str, Any]] = None,
+        dry_run: bool = False,
         **kwargs,
     ) -> None:
         """Runs a fresh RTMPose training pipeline with architecture-specific parameters.
@@ -190,6 +161,7 @@ class RTMPose(EZMMPose):
             weight_decay: Optimizer weight decay. Defaults to 0.05.
             evaluator_metric: Metric(s) for validation. Defaults to "CocoMetric".
             augments: Dictionary of data augmentation parameters.
+            dry_run: If True, only generates the final config file without starting training.
             det_model: Optional detector model name for evaluation.
             det_weights: Optional path to detector weights.
             det_cat_ids: Optional detector category IDs.
@@ -212,6 +184,7 @@ class RTMPose(EZMMPose):
             simcc_sigma=simcc_sigma,
             feature_map_size=feature_map_size,
             augments=augments,
+            dry_run=dry_run,
             **kwargs,
         )
 
@@ -222,6 +195,7 @@ class RTMPose(EZMMPose):
         batch_size: Optional[int] = None,
         learning_rate: Optional[float] = None,
         work_dir: Optional[str] = None,
+        dry_run: bool = False,
         **kwargs,
     ) -> None:
         """Resumes an RTMPose training session.
@@ -233,6 +207,7 @@ class RTMPose(EZMMPose):
             batch_size: Optional override for batch size.
             learning_rate: Optional override for learning rate.
             work_dir: Optional override for working directory.
+            dry_run: If True, only generates the final config file without starting training.
             **kwargs: Additional overrides (e.g. det_model, etc.).
         """
         super().resume(
@@ -241,5 +216,6 @@ class RTMPose(EZMMPose):
             batch_size=batch_size,
             learning_rate=learning_rate,
             work_dir=work_dir,
+            dry_run=dry_run,
             **kwargs,
         )

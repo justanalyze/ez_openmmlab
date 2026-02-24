@@ -1,49 +1,19 @@
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from loguru import logger
 from mmengine.config import Config
 from mmpose.apis import MMPoseInferencer
 
 from ez_openmmlab.core.engines.mmpose import EZMMPose
-from ez_openmmlab.schemas.model import RTMO_CONFIGS, ModelName
+from ez_openmmlab.schemas.model import ModelName
 
 
 class RTMO(EZMMPose):
-    """RTMO implementation for one-stage, multi-person 2D pose estimation."""
+    """Bottom-up RTMO architecture."""
 
-    def __init__(
-        self,
-        model: Union[ModelName, str, Path],
-        checkpoint_path: Optional[Union[str, Path]] = None,
-        log_level: str = "INFO",
-        **kwargs,
-    ):
-        """Initializes a new RTMO engine.
-
-        RTMO (Towards High-Performance One-Stage Real-Time Multi-Person Pose Estimation)
-        is a bottom-up model, meaning it detects people and their poses in a single
-        pass without requiring a separate object detector.
-
-        Args:
-            model: The model variant to use. Supported: 'rtmo_s', 'rtmo_m', 'rtmo_l'.
-                Can be a :class:`ModelName`, string, or path to a `config.toml`.
-            checkpoint_path: Path to a custom model checkpoint (.pth). If None,
-                the official weights will be downloaded automatically.
-            log_level: Global logging level for the engine. Defaults to "INFO".
-            **kwargs: Additional configuration parameters passed to the base engine.
-        """
-        self._validate_model(model)
-        super().__init__(model, checkpoint_path, log_level, **kwargs)
-
-    def _validate_model(self, model: Union[ModelName, str, Path]) -> None:
-        """Validates that the provided model is a supported RTMO variant."""
-        if isinstance(model, (str, Path)) and str(model).endswith(".toml"):
-            return
-
-        name = model.value if isinstance(model, ModelName) else str(model)
-        if name not in RTMO_CONFIGS:
-            supported = ", ".join(RTMO_CONFIGS.keys())
+    def _validate_model_name(self, name: str) -> None:
+        supported = ["rtmo_s", "rtmo_m", "rtmo_l"]
+        if name not in supported and not Path(name).exists():
             raise ValueError(
                 f"Invalid model variant '{name}' for RTMO. "
                 f"Supported variants: {supported}, or a path to a custom config.toml"
@@ -72,6 +42,7 @@ class RTMO(EZMMPose):
         weight_decay: float = 0.05,
         evaluator_metric: Union[str, List[str]] = "CocoMetric",
         augments: Optional[Dict[str, Any]] = None,
+        dry_run: bool = False,
         **kwargs,
     ) -> None:
         """Runs a fresh RTMO training pipeline with architecture-specific parameters.
@@ -91,6 +62,7 @@ class RTMO(EZMMPose):
             weight_decay: Optimizer weight decay. Defaults to 0.05.
             evaluator_metric: Metric(s) for validation. Defaults to "CocoMetric".
             augments: Dictionary of data augmentation parameters.
+            dry_run: If True, only generates the final config file without starting training.
             **kwargs: Additional parameters.
         """
         super().train(
@@ -108,6 +80,7 @@ class RTMO(EZMMPose):
             evaluator_metric=evaluator_metric,
             input_size=input_size,
             augments=augments,
+            dry_run=dry_run,
             **kwargs,
         )
 
@@ -118,17 +91,19 @@ class RTMO(EZMMPose):
         batch_size: Optional[int] = None,
         learning_rate: Optional[float] = None,
         work_dir: Optional[str] = None,
+        dry_run: bool = False,
         **kwargs,
     ) -> None:
         """Resumes an RTMO training session.
 
         Args:
-            checkpoint: Whether to resume. If True, automatically find the latest 
+            checkpoint: Whether to resume. If True, automatically find the latest
                 checkpoint in the source directory. If string, use as specific path.
             epochs: Optional override for total epochs.
             batch_size: Optional override for batch size.
             learning_rate: Optional override for learning rate.
             work_dir: Optional override for working directory.
+            dry_run: If True, only generates the final config file without starting training.
             **kwargs: Additional overrides.
         """
         super().resume(
@@ -137,6 +112,7 @@ class RTMO(EZMMPose):
             batch_size=batch_size,
             learning_rate=learning_rate,
             work_dir=work_dir,
+            dry_run=dry_run,
             **kwargs,
         )
 

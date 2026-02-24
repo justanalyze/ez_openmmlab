@@ -5,6 +5,7 @@ Train and deploy SOTA models like **RTMDet**, **RTMPose**, and **RTMO** in minut
 - **EZ Environment:** Reproducible setups that just work.
 - **EZ Configuration:** Human-readable TOML replaces 500-line Python config "surgery".
 - **EZ Workflow:** A unified API for training and inference across the entire ecosystem. (MMDet an MMPose so far...)
+- **Config Verification:** Validate your final flattened configuration without starting a training run.
 - **Unified API:** One interface for Detection, Segmentation, and Pose Estimation.
 
 ---

@@ -80,9 +80,7 @@ class EZMMLab(ABC):
         )
 
         family = self._get_library_family()
-        supported = PipelineTransformPatcherRegistry.get_supported_augments(
-            family
-        )
+        supported = PipelineTransformPatcherRegistry.get_supported_augments(family)
 
         for key in augments:
             if key not in supported:
@@ -361,6 +359,7 @@ class EZMMLab(ABC):
         weight_decay: float = 0.05,
         evaluator_metric: Union[str, List[str]] = "CocoMetric",
         augments: Optional[Dict[str, Any]] = None,
+        dry_run: bool = False,
         **kwargs,
     ) -> None:
         """Runs a fresh end-to-end training pipeline.
@@ -379,11 +378,10 @@ class EZMMLab(ABC):
             weight_decay: Optimizer weight decay.
             evaluator_metric: Metric(s) for validation.
             augments: Dictionary of data augmentation parameters.
+            dry_run: If True, only generates the final config file without starting training.
             **kwargs: Additional architecture-specific parameters.
         """
-        logger.info(
-            f"Assembling fresh training config for: {dataset_config_path}"
-        )
+        logger.info(f"Assembling fresh training config for: {dataset_config_path}")
         self._validate_augments(augments)
         architecture_params = self._get_architecture_params(**kwargs)
 
@@ -415,7 +413,7 @@ class EZMMLab(ABC):
             **kwargs,
         )
 
-        self._run_training_workflow(user_config)
+        self._run_training_workflow(user_config, dry_run=dry_run)
 
     def resume(
         self,
@@ -424,6 +422,7 @@ class EZMMLab(ABC):
         batch_size: Optional[int] = None,
         learning_rate: Optional[float] = None,
         work_dir: Optional[str] = None,
+        dry_run: bool = False,
         **kwargs,
     ) -> None:
         """Resumes an unfinished training session from a source directory.
@@ -436,6 +435,7 @@ class EZMMLab(ABC):
             learning_rate: Optional override for the learning rate.
             work_dir: Optional override for the working directory. If None,
                 it defaults to the directory containing the source configuration.
+            dry_run: If True, only generates the final config file without starting training.
             **kwargs: Additional training parameter overrides.
         """
         if not self._source_toml:
@@ -459,9 +459,9 @@ class EZMMLab(ABC):
             **kwargs,
         )
 
-        self._run_training_workflow(user_config)
+        self._run_training_workflow(user_config, dry_run=dry_run)
 
-    def _run_training_workflow(self, config: UserConfig) -> None:
+    def _run_training_workflow(self, config: UserConfig, dry_run: bool = False) -> None:
         """Orchestrates the internal OpenMMLab setup and execution."""
         # 1. Register Dataset
         config.data.registered_class_name = DynamicDatasetRegistry.register_dataset(
@@ -486,6 +486,10 @@ class EZMMLab(ABC):
             work_dir / f"{config.model.name.value}_{config.data.dataset_name}.py"
         )
         self._config_manager.dump_config(self._cfg, final_config_path)
+
+        if dry_run:
+            logger.info(f"Dry run enabled. Config generated at: {final_config_path}")
+            return
 
         # 4. Execute Training
         self._run_training(final_config_path, config.training.log_level)

@@ -75,6 +75,7 @@ class RTMDet(EZMMDetector):
         weight_decay: float = 0.05,
         evaluator_metric: Union[str, List[str]] = "CocoMetric",
         augments: Optional[Dict[str, Any]] = None,
+        dry_run: bool = False,
         **kwargs,
     ) -> None:
         """Runs a fresh RTMDet training pipeline with architecture-specific parameters.
@@ -94,6 +95,7 @@ class RTMDet(EZMMDetector):
             weight_decay: Optimizer weight decay. Defaults to 0.05.
             evaluator_metric: Metric(s) for validation. Defaults to "CocoMetric".
             augments: Dictionary of data augmentation parameters.
+            dry_run: If True, only generates the final config file without starting training.
             **kwargs: Additional parameters.
         """
         super().train(
@@ -111,6 +113,7 @@ class RTMDet(EZMMDetector):
             evaluator_metric=evaluator_metric,
             input_size=input_size,
             augments=augments,
+            dry_run=dry_run,
             **kwargs,
         )
 
@@ -121,17 +124,19 @@ class RTMDet(EZMMDetector):
         batch_size: Optional[int] = None,
         learning_rate: Optional[float] = None,
         work_dir: Optional[str] = None,
+        dry_run: bool = False,
         **kwargs,
     ) -> None:
         """Resumes an RTMDet training session.
 
         Args:
-            checkpoint: Whether to resume. If True, automatically find the latest 
+            checkpoint: Whether to resume. If True, automatically find the latest
                 checkpoint in the source directory. If string, use as specific path.
             epochs: Optional override for total epochs.
             batch_size: Optional override for batch size.
             learning_rate: Optional override for learning rate.
             work_dir: Optional override for working directory.
+            dry_run: If True, only generates the final config file without starting training.
             **kwargs: Additional overrides.
         """
         super().resume(
@@ -140,5 +145,7 @@ class RTMDet(EZMMDetector):
             batch_size=batch_size,
             learning_rate=learning_rate,
             work_dir=work_dir,
+            dry_run=dry_run,
             **kwargs,
         )
+
