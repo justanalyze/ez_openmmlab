@@ -2,7 +2,7 @@ import copy
 from loguru import logger
 from mmengine.config import Config
 
-from ez_openmmlab.utils.toml_config import UserConfig
+from ez_openmmlab.core.config_schema import UserConfig
 
 from ..base import BaseConfigSurgery
 from ..pipeline_patchers import PipelineTransformPatcherRegistry, _assign_cfg_value

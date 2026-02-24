@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple, Type, Union
 from loguru import logger
 from mmengine.config import Config
 
-from ez_openmmlab.utils.toml_config import UserConfig
+from ez_openmmlab.core.config_schema import UserConfig
 
 
 # --- Core Infrastructure ---

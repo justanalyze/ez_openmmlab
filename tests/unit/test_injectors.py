@@ -4,7 +4,7 @@ from mmengine.config import Config
 from ez_openmmlab.core.surgery.injectors.dataloader import DataloaderInjector
 from ez_openmmlab.core.surgery.injectors.runtime import RuntimeInjector
 from ez_openmmlab.core.surgery.injectors.mmdet import MMDetInjector
-from ez_openmmlab.utils.toml_config import (
+from ez_openmmlab.core.config_schema import (
     DataSection,
     ModelSection,
     TrainingSection,

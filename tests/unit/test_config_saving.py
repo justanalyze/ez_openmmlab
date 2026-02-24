@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 from ez_openmmlab.models.mmdet import RTMDet
 from ez_openmmlab.schemas.model import ModelName
-from ez_openmmlab.utils.toml_config import load_user_config
+from ez_openmmlab.core.config_schema import load_user_config
 
 
 class ConcreteEZDetector(RTMDet):

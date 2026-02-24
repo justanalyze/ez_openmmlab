@@ -8,7 +8,7 @@ from mmengine.config import Config
 from ez_openmmlab.core.resolvers import ModelParamsResolverFactory
 from ez_openmmlab.schemas.dataset import DatasetConfig
 from ez_openmmlab.schemas.model import ModelName
-from ez_openmmlab.utils import toml_config
+from ez_openmmlab.core import config_schema as toml_config
 
 
 class BaseConfigLoader:

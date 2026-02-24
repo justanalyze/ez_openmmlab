@@ -3,7 +3,7 @@ from pydantic import ValidationError
 
 from ez_openmmlab.schemas.dataset import DatasetConfig
 from ez_openmmlab.schemas.model import ModelName
-from ez_openmmlab.utils.toml_config import TrainingSection, UserConfig
+from ez_openmmlab.core.config_schema import TrainingSection, UserConfig
 
 
 def test_training_section_defaults():

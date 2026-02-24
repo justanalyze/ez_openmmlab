@@ -15,7 +15,7 @@ from ez_openmmlab.utils.context import switch_to_lib_root
 from ez_openmmlab.utils.download import ensure_model_checkpoint
 from ez_openmmlab.utils.input import normalize_inputs
 from ez_openmmlab.utils.path import get_unique_dir
-from ez_openmmlab.utils.toml_config import (
+from ez_openmmlab.core.config_schema import (
     DataSection,
     ModelSection,
     TrainingSection,

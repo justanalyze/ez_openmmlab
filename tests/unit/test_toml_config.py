@@ -5,7 +5,7 @@ import tomli
 from pydantic import ValidationError
 
 from ez_openmmlab.schemas.model import ModelName
-from ez_openmmlab.utils.toml_config import (
+from ez_openmmlab.core.config_schema import (
     DataSection,
     ModelSection,
     TrainingSection,

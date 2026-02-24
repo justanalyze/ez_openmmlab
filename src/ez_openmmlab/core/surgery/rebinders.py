@@ -3,7 +3,7 @@ from typing import Optional
 from loguru import logger
 from mmengine.config import Config
 
-from ez_openmmlab.utils.toml_config import UserConfig
+from ez_openmmlab.core.config_schema import UserConfig
 
 from .base import BaseConfigSurgery
 
