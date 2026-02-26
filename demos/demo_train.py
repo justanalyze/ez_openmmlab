@@ -18,4 +18,6 @@ model.train(
     num_workers=2,
     enable_tensorboard=False,
     augments={"scale_factor": (0.567, 1.523), "random_flip_prob": 0.432},
+    stage2_num_epochs=50,
+    dry_run=True,
 )

@@ -37,7 +37,6 @@ class RTMO(EZMMPose):
         num_workers: int = 4,
         enable_tensorboard: bool = False,
         log_level: Optional[str] = None,
-        # RTMO Specific
         input_size: Tuple[int, int] = (640, 640),
         weight_decay: float = 0.05,
         evaluator_metric: Union[str, List[str]] = "CocoMetric",
@@ -131,3 +130,4 @@ class RTMO(EZMMPose):
             pose2d_weights=str(self.checkpoint_path),
             device=device,
         )
+

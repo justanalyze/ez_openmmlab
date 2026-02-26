@@ -136,13 +136,13 @@ class RTMPose(EZMMPose):
         log_level: Optional[str] = None,
         weight_decay: float = 0.05,
         evaluator_metric: Union[str, List[str]] = "CocoMetric",
+        augments: Optional[Dict[str, Any]] = None,
+        dry_run: bool = False,
+        stage2_num_epochs: int = 20,
         # RTMPose Specific
         input_size: Tuple[int, int] = (192, 256),
         simcc_sigma: Optional[Tuple[float, float]] = None,
         feature_map_size: Optional[Tuple[int, int]] = None,
-        augments: Optional[Dict[str, Any]] = None,
-        dry_run: bool = False,
-        stage2_num_epochs: int = 20,
         **kwargs,
     ) -> None:
         """Runs a fresh RTMPose training pipeline with architecture-specific parameters.
@@ -198,33 +198,33 @@ class RTMPose(EZMMPose):
         checkpoint: Union[bool, str] = True,
         epochs: Optional[int] = None,
         batch_size: Optional[int] = None,
-                learning_rate: Optional[float] = None,
-                work_dir: Optional[str] = None,
-                dry_run: bool = False,
-                stage2_num_epochs: Optional[int] = None,
-                **kwargs,
-            ) -> None:
-                """Resumes an RTMPose training session.
-        
-                Args:
-                    checkpoint: Whether to resume. If True, automatically find the latest 
-                        checkpoint in the source directory. If string, use as specific path.
-                    epochs: Optional override for total epochs.
-                    batch_size: Optional override for batch size.
-                    learning_rate: Optional override for learning rate.
-                    work_dir: Optional override for working directory.
-                    dry_run: If True, only generates the final config file without starting training.
-                    stage2_num_epochs: Optional override for stage 2 training pipeline epochs.
-                    **kwargs: Additional overrides (e.g. det_model, etc.).
-                """
-                super().resume(
-                    checkpoint=checkpoint,
-                    epochs=epochs,
-                    batch_size=batch_size,
-                    learning_rate=learning_rate,
-                    work_dir=work_dir,
-                    dry_run=dry_run,
-                    stage2_num_epochs=stage2_num_epochs,
-                    **kwargs,
-                )
-        
+        learning_rate: Optional[float] = None,
+        work_dir: Optional[str] = None,
+        dry_run: bool = False,
+        stage2_num_epochs: Optional[int] = None,
+        **kwargs,
+    ) -> None:
+        """Resumes an RTMPose training session.
+
+        Args:
+            checkpoint: Whether to resume. If True, automatically find the latest
+                checkpoint in the source directory. If string, use as specific path.
+            epochs: Optional override for total epochs.
+            batch_size: Optional override for batch size.
+            learning_rate: Optional override for learning rate.
+            work_dir: Optional override for working directory.
+            dry_run: If True, only generates the final config file without starting training.
+            stage2_num_epochs: Optional override for stage 2 training pipeline epochs.
+            **kwargs: Additional overrides (e.g. det_model, etc.).
+        """
+        super().resume(
+            checkpoint=checkpoint,
+            epochs=epochs,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            work_dir=work_dir,
+            dry_run=dry_run,
+            stage2_num_epochs=stage2_num_epochs,
+            **kwargs,
+        )
+

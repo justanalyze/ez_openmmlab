@@ -70,7 +70,6 @@ class RTMDet(EZMMDetector):
         num_workers: int = 4,
         enable_tensorboard: bool = False,
         log_level: Optional[str] = None,
-        # RTMDet Specific
         input_size: Tuple[int, int] = (640, 640),
         weight_decay: float = 0.05,
         evaluator_metric: Union[str, List[str]] = "CocoMetric",
@@ -154,4 +153,3 @@ class RTMDet(EZMMDetector):
             stage2_num_epochs=stage2_num_epochs,
             **kwargs,
         )
-
