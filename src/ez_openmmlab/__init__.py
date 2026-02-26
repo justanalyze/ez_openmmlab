@@ -18,9 +18,6 @@ except ImportError:
 # Ensure MMDet modules are registered with default scope immediately
 register_mmdet(init_default_scope=True)
 
-from .core.engines.engine_base import EZMMLab
-from .core.engines.mmdet import EZMMDetector
-from .core.engines.mmpose import EZMMPose
 from .models.mmdet import RTMDet
 from .models.mmpose import RTMO, RTMPose
 
@@ -28,9 +25,6 @@ __all__ = [
     "RTMDet",
     "RTMPose",
     "RTMO",
-    "EZMMLab",
-    "EZMMDetector",
-    "EZMMPose",
     "mute_warnings",
 ]
 

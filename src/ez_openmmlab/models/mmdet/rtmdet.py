@@ -76,6 +76,7 @@ class RTMDet(EZMMDetector):
         evaluator_metric: Union[str, List[str]] = "CocoMetric",
         augments: Optional[Dict[str, Any]] = None,
         dry_run: bool = False,
+        stage2_num_epochs: int = 20,
         **kwargs,
     ) -> None:
         """Runs a fresh RTMDet training pipeline with architecture-specific parameters.
@@ -96,6 +97,7 @@ class RTMDet(EZMMDetector):
             evaluator_metric: Metric(s) for validation. Defaults to "CocoMetric".
             augments: Dictionary of data augmentation parameters.
             dry_run: If True, only generates the final config file without starting training.
+            stage2_num_epochs: Number of epochs for stage 2 training pipeline.
             **kwargs: Additional parameters.
         """
         super().train(
@@ -114,6 +116,7 @@ class RTMDet(EZMMDetector):
             input_size=input_size,
             augments=augments,
             dry_run=dry_run,
+            stage2_num_epochs=stage2_num_epochs,
             **kwargs,
         )
 
@@ -125,6 +128,7 @@ class RTMDet(EZMMDetector):
         learning_rate: Optional[float] = None,
         work_dir: Optional[str] = None,
         dry_run: bool = False,
+        stage2_num_epochs: Optional[int] = None,
         **kwargs,
     ) -> None:
         """Resumes an RTMDet training session.
@@ -137,6 +141,7 @@ class RTMDet(EZMMDetector):
             learning_rate: Optional override for learning rate.
             work_dir: Optional override for working directory.
             dry_run: If True, only generates the final config file without starting training.
+            stage2_num_epochs: Optional override for stage 2 training pipeline epochs.
             **kwargs: Additional overrides.
         """
         super().resume(
@@ -146,6 +151,7 @@ class RTMDet(EZMMDetector):
             learning_rate=learning_rate,
             work_dir=work_dir,
             dry_run=dry_run,
+            stage2_num_epochs=stage2_num_epochs,
             **kwargs,
         )
 

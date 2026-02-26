@@ -95,7 +95,7 @@ class HookRebinder(StructuralRebinder):
                     )
 
                 # 2. Sync Switch Timing
-                stage2_duration = getattr(cfg, "stage2_num_epochs", 20)
+                stage2_duration = user_config.training.stage2_num_epochs
                 new_switch_epoch = max(1, new_max_epochs - stage2_duration)
 
                 hook.switch_epoch = new_switch_epoch

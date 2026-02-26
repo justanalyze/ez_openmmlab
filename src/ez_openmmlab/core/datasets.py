@@ -24,7 +24,7 @@ class DynamicDatasetRegistry:
         Raises:
             ValueError: If dataset_name is missing or already registered.
         """
-        # 1. Extract metadata
+        # Extract metadata
         dataset_name = config.data.dataset_name
         if not dataset_name:
             raise ValueError(
@@ -36,11 +36,15 @@ class DynamicDatasetRegistry:
         class_name = dataset_name
         metainfo = config.data.metainfo or {}
 
-        # 1.1 Ensure 'classes' are present in metainfo (required by base datasets)
+        # Ensure 'classes' are present in metainfo (required by base datasets)
         if config.data.classes:
             metainfo["classes"] = config.data.classes
 
-        # 1.2 Deep convert numeric string keys to integers
+        # Ensure 'dataset_name' is present in metainfo for OpenMMLab utilities
+        if "dataset_name" not in metainfo:
+            metainfo["dataset_name"] = dataset_name
+
+        # Deep convert numeric string keys to integers
         # This is critical when loading from TOML, as TOML keys are always strings.
         # MMPose utilities expect integer keys for keypoint_info and skeleton_info.
         metainfo = cls._deep_convert_numeric_keys(metainfo)
@@ -137,3 +141,4 @@ class DynamicDatasetRegistry:
         # Register it
         DATASETS.register_module(name=name, module=DynamicClass)
         cls._registered_datasets[name] = DynamicClass
+

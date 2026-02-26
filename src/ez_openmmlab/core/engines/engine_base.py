@@ -360,6 +360,7 @@ class EZMMLab(ABC):
         evaluator_metric: Union[str, List[str]] = "CocoMetric",
         augments: Optional[Dict[str, Any]] = None,
         dry_run: bool = False,
+        stage2_num_epochs: int = 20,
         **kwargs,
     ) -> None:
         """Runs a fresh end-to-end training pipeline.
@@ -379,6 +380,7 @@ class EZMMLab(ABC):
             evaluator_metric: Metric(s) for validation.
             augments: Dictionary of data augmentation parameters.
             dry_run: If True, only generates the final config file without starting training.
+            stage2_num_epochs: Number of epochs for stage 2 training pipeline.
             **kwargs: Additional architecture-specific parameters.
         """
         logger.info(f"Assembling fresh training config for: {dataset_config_path}")
@@ -410,6 +412,7 @@ class EZMMLab(ABC):
             scale_factor=scale_factor,
             rotate_factor=rotate_factor,
             random_flip_prob=random_flip_prob,
+            stage2_num_epochs=stage2_num_epochs,
             **kwargs,
         )
 
@@ -423,6 +426,7 @@ class EZMMLab(ABC):
         learning_rate: Optional[float] = None,
         work_dir: Optional[str] = None,
         dry_run: bool = False,
+        stage2_num_epochs: Optional[int] = None,
         **kwargs,
     ) -> None:
         """Resumes an unfinished training session from a source directory.
@@ -436,6 +440,7 @@ class EZMMLab(ABC):
             work_dir: Optional override for the working directory. If None,
                 it defaults to the directory containing the source configuration.
             dry_run: If True, only generates the final config file without starting training.
+            stage2_num_epochs: Optional override for stage 2 training pipeline epochs.
             **kwargs: Additional training parameter overrides.
         """
         if not self._source_toml:
@@ -456,6 +461,7 @@ class EZMMLab(ABC):
             batch_size=batch_size,
             learning_rate=learning_rate,
             work_dir=effective_work_dir,
+            stage2_num_epochs=stage2_num_epochs,
             **kwargs,
         )
 

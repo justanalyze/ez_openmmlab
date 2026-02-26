@@ -51,7 +51,8 @@ def test_dynamic_registration_mmdet():
     assert class_name in DATASETS.module_dict
     
     dynamic_cls = DATASETS.get(class_name)
-    assert dynamic_cls.METAINFO == {"classes": ["cat"]}
+    assert dynamic_cls.METAINFO["classes"] == ["cat"]
+    assert dynamic_cls.METAINFO["dataset_name"] == "TestDet"
 
 def test_duplicate_registration_raises_error():
     """Verify that using the same dataset_name twice raises ValueError."""
@@ -86,3 +87,26 @@ def test_missing_dataset_name_raises_error():
     
     with pytest.raises(ValueError, match="dataset_name' is missing"):
         DynamicDatasetRegistry.register_dataset(config, "mmdet")
+
+def test_dataset_name_injection_into_metainfo():
+    """Verify that dataset_name is automatically added to metainfo if missing."""
+    config = UserConfig(
+        model=ModelSection(name="rtmdet_tiny", num_classes=1),
+        data=DataSection(
+            root=".",
+            dataset_name="InjectionTest",
+            classes=["item"],
+            metainfo={} # Empty metainfo
+        ),
+        training=TrainingSection()
+    )
+    
+    DynamicDatasetRegistry.register_dataset(config, "mmdet")
+    
+    from mmdet.registry import DATASETS
+    dynamic_cls = DATASETS.get("InjectionTest")
+    
+    # It should have both classes (from config.data.classes) 
+    # and dataset_name (from config.data.dataset_name)
+    assert dynamic_cls.METAINFO["dataset_name"] == "InjectionTest"
+    assert dynamic_cls.METAINFO["classes"] == ["item"]

@@ -107,6 +107,7 @@ class ConfigManager:
         weight_decay: float = 0.05,
         evaluator_metric: Union[str, List[str]] = "CocoMetric",
         resume: Union[bool, str] = False,
+        stage2_num_epochs: int = 20,
         architecture_params: Optional[Dict[str, Any]] = None,
         # Augmentation parameters
         scale_factor: Optional[Union[float, Tuple[float, float], List[float]]] = None,
@@ -176,6 +177,7 @@ class ConfigManager:
                 enable_tensorboard=enable_tensorboard,
                 evaluator_metric=evaluator_metric,
                 resume=resume,
+                stage2_num_epochs=stage2_num_epochs,
             ),
             augments=toml_config.AugmentationSection(
                 scale_factor=scale_factor,
@@ -210,6 +212,7 @@ class ConfigManager:
             "enable_tensorboard",
             "evaluator_metric",
             "resume",
+            "stage2_num_epochs",
         ]
 
         for field in training_fields:

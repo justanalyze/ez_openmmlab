@@ -80,6 +80,7 @@ class TrainingSection(BaseModel):
     amp: bool = True
     evaluator_metric: Optional[Union[str, dict, List[Union[str, dict]]]] = None
     resume: Union[bool, str] = False
+    stage2_num_epochs: int = Field(20, ge=0, description="Number of epochs for stage 2 training pipeline")
 
 
 class AugmentationSection(BaseModel):

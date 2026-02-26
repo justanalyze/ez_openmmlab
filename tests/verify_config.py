@@ -18,7 +18,9 @@ def verify_model_config(model_cls, model_name, dataset_toml, description):
             model.train(
                 dataset_config_path=dataset_toml,
                 dry_run=True,
-                work_dir=work_dir
+                work_dir=work_dir,
+                epochs=100,
+                stage2_num_epochs=30
             )
             
             # Manually resolve the config path (model_VerifyDataset.py)
@@ -31,6 +33,14 @@ def verify_model_config(model_cls, model_name, dataset_toml, description):
             # Basic common verifications
             assert cfg.train_dataloader is not None
             assert cfg.val_dataloader is not None
+
+            # Verify Stage 2 Switch timing if hook is present
+            if hasattr(cfg, "custom_hooks"):
+                for hook in cfg.custom_hooks:
+                    if "PipelineSwitchHook" in hook.type:
+                        # 100 - 30 = 70
+                        assert hook.switch_epoch == 70
+                        print(f"Verified Stage 2 switch_epoch: {hook.switch_epoch}")
             
             # Model-specific verifications can be added here
             if model_cls == RTMDet:
@@ -65,7 +75,8 @@ img_dir = "val2017"
             model=dict(bbox_head=dict(num_classes=80), head=dict(out_channels=17)),
             train_dataloader=dict(dataset=dict(pipeline=[])),
             val_dataloader=dict(dataset=dict(pipeline=[])),
-            optim_wrapper=dict(optimizer=dict())
+            optim_wrapper=dict(optimizer=dict()),
+            custom_hooks=[dict(type="PipelineSwitchHook", switch_epoch=80)]
         ))):
             
             try:
