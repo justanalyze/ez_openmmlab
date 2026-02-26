@@ -77,6 +77,12 @@ class HookRebinder(StructuralRebinder):
     """Ensures custom hooks use the patched pipeline variables (e.g., Stage 2 transitions)."""
 
     def apply(self, cfg: Config, user_config: UserConfig) -> None:
+        stage2_duration = user_config.training.stage2_num_epochs
+
+        # 0. Sync top-level variable for clarity/consistency
+        cfg.stage2_num_epochs = stage2_duration
+        logger.debug(f"[Structural] Injected stage2_num_epochs: {stage2_duration}")
+
         if not hasattr(cfg, "custom_hooks"):
             return
 
