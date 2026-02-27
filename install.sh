@@ -48,25 +48,21 @@ case $choice in
         ;;
 esac
 
-# 3. Ensure Submodules are Initialized
-echo -e "\n${YELLOW}📦 Synchronizing submodules...${NC}"
-git submodule update --init --recursive
-
-# 4. Bootstrap Build Dependencies (The "EZ" Insurance)
+# 3. Bootstrap Build Dependencies (The "EZ" Insurance)
 echo -e "\n${YELLOW}🛠️  Bootstrapping build dependencies...${NC}"
 # uv pip install will automatically create a .venv if one doesn't exist
 uv pip install setuptools==80 wheel
 
-# 5. Install PyTorch + Core Vision Libraries
+# 4. Install PyTorch + Core Vision Libraries
 echo -e "\n${YELLOW}🔥 Installing PyTorch stack (${EXTRA})...${NC}"
 uv pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url $TORCH_INDEX
 
-# 6. Final Project Sync
+# 5. Final Project Sync
 echo -e "\n${YELLOW}🔄 Finalizing project synchronization...${NC}"
 # This will install mmdet, mmpose (as editables), mmcv, and other dependencies
 uv sync --extra $EXTRA
 
-# 7. Verification
+# 6. Verification
 echo -e "\n${YELLOW}🔍 Verifying installation...${NC}"
 if uv run --extra $EXTRA python -c "import ez_openmmlab; import mmdet; import mmpose; print('Verification Successful!')" &> /dev/null; then
     echo -e "${GREEN}✅ Installation complete and verified!${NC}"
