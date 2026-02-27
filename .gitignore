@@ -26,10 +26,10 @@ checkpoints/
 *.pkl
 
 # Local directories
-output_test/
-runs/
-dummy_data/
-datasets/
+/output_test/
+/runs/
+/dummy_data/
+/datasets/
 
 .gemini/
 gha-creds-*.json
