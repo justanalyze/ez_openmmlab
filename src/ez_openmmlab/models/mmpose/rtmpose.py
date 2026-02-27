@@ -52,41 +52,49 @@ class RTMPose(EZMMPose):
         det_weights = kwargs.get("det_weights")
         det_cat_ids = kwargs.get("det_cat_ids", [0])  # Default to person class
 
-        # If no custom detector provided, use default RTMDet-Tiny
+        from ez_openmmlab.core.config_manager import get_config_file
+        from ez_openmmlab.core.utils.download import ensure_model_checkpoint
+
         det_config = None
         det_weights_path = None
 
         if det_model is None:
-            from ez_openmmlab.core.config_manager import get_config_file
-
+            # Default to RTMDet-Tiny
             det_config = str(get_config_file(ModelName.RTM_DET_TINY).absolute())
+            det_weights_path = str(ensure_model_checkpoint(ModelName.RTM_DET_TINY))
         else:
             # Handle ModelName enum
             if isinstance(det_model, ModelName):
-                from ez_openmmlab.core.config_manager import get_config_file
-
                 det_config = str(get_config_file(det_model).absolute())
+                det_weights_path = (
+                    str(det_weights)
+                    if det_weights
+                    else str(ensure_model_checkpoint(det_model))
+                )
             elif isinstance(det_model, str):
                 # Check if it's a known model name that needs resolution
                 try:
-                    from ez_openmmlab.core.config_manager import get_config_file
-
                     # This will raise ValueError if not a known ModelName
-                    resolved_path = get_config_file(ModelName(det_model))
-                    det_config = str(resolved_path.absolute())
+                    model_enum = ModelName(det_model)
+                    det_config = str(get_config_file(model_enum).absolute())
+                    det_weights_path = (
+                        str(det_weights)
+                        if det_weights
+                        else str(ensure_model_checkpoint(model_enum))
+                    )
                 except ValueError:
                     # Not a known ModelName, treat as path or raw string for MMDet
                     det_config = det_model
+                    det_weights_path = str(det_weights) if det_weights else None
             else:
                 det_config = str(det_model)
+                det_weights_path = str(det_weights) if det_weights else None
 
             # Ensure absolute path if local file
             if isinstance(det_config, (str, Path)) and (
                 Path(det_config).exists() or "/" in str(det_config)
             ):
                 det_config = str(Path(det_config).absolute())
-
-            det_weights_path = str(det_weights) if det_weights else None
 
         return det_config, det_weights_path, det_cat_ids
 
