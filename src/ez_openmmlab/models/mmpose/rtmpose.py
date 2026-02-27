@@ -59,13 +59,24 @@ class RTMPose(EZMMPose):
         if det_model is None:
             from ez_openmmlab.core.config_manager import get_config_file
 
-            det_config = str(get_config_file(ModelName.RTM_DET_TINY))
+            det_config = str(get_config_file(ModelName.RTM_DET_TINY).absolute())
         else:
             # Handle ModelName enum
             if isinstance(det_model, ModelName):
                 from ez_openmmlab.core.config_manager import get_config_file
 
-                det_config = str(get_config_file(det_model))
+                det_config = str(get_config_file(det_model).absolute())
+            elif isinstance(det_model, str):
+                # Check if it's a known model name that needs resolution
+                try:
+                    from ez_openmmlab.core.config_manager import get_config_file
+
+                    # This will raise ValueError if not a known ModelName
+                    resolved_path = get_config_file(ModelName(det_model))
+                    det_config = str(resolved_path.absolute())
+                except ValueError:
+                    # Not a known ModelName, treat as path or raw string for MMDet
+                    det_config = det_model
             else:
                 det_config = str(det_model)
 
