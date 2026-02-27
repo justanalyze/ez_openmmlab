@@ -470,9 +470,7 @@ class EZMMLab(ABC):
     def _run_training_workflow(self, config: UserConfig, dry_run: bool = False) -> None:
         """Orchestrates the internal OpenMMLab setup and execution."""
         # 1. Register Dataset
-        config.data.registered_class_name = DynamicDatasetRegistry.register_dataset(
-            config, self._get_library_family()
-        )
+        DynamicDatasetRegistry.register_dataset(config, self._get_library_family())
 
         # 2. Setup Artifacts
         work_dir = Path(config.training.work_dir)

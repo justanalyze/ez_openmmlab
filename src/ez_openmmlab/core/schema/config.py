@@ -24,7 +24,6 @@ class DataSection(BaseModel):
 
     root: str
     dataset_name: Optional[str] = None
-    registered_class_name: Optional[str] = None
     train_ann: str = "annotations/instances_train2017.json"
     train_img: str = "train2017/"
     val_ann: str = "annotations/instances_val2017.json"

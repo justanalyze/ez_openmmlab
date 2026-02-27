@@ -43,7 +43,7 @@ def mock_user_config():
 
 def test_dataloader_injector_applies_paths_and_params(mock_user_config):
     """Test that DataloaderInjector correctly sets paths and parameters."""
-    mock_user_config.data.registered_class_name = "MyDynamicDataset"
+    mock_user_config.data.dataset_name = "MyDynamicDataset"
     cfg = Config(dict(
         train_dataloader=dict(dataset=dict()),
         val_dataloader=dict(dataset=dict())

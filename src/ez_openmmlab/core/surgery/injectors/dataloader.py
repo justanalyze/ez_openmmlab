@@ -14,8 +14,8 @@ class DataloaderInjector(BaseConfigSurgery):
         cfg.data_root = user_config.data.root
 
         # Sync dataset_type if we have a dynamic registration
-        if user_config.data.registered_class_name:
-            cfg.dataset_type = user_config.data.registered_class_name
+        if user_config.data.dataset_name:
+            cfg.dataset_type = user_config.data.dataset_name
 
         metainfo = self._assemble_metainfo(user_config)
 
@@ -45,8 +45,8 @@ class DataloaderInjector(BaseConfigSurgery):
         dl.persistent_workers = user_config.training.num_workers > 0
 
         # Use the dynamically registered class if available
-        if user_config.data.registered_class_name:
-            dl.dataset.type = user_config.data.registered_class_name
+        if user_config.data.dataset_name:
+            dl.dataset.type = user_config.data.dataset_name
 
         if name == "train_dataloader":
             dl.dataset.ann_file = user_config.data.train_ann_path
