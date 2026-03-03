@@ -50,41 +50,39 @@ class RTMPose(EZMMPose):
         """Resolves detector configuration for top-down inference."""
         det_model = kwargs.get("det_model")
         det_weights = kwargs.get("det_weights")
-        det_cat_ids = kwargs.get("det_cat_ids", [0])  # Default to person class
+        det_cat_ids = kwargs.get("det_cat_ids")
+        det_cat_ids = (
+            [0] if det_cat_ids is None else det_cat_ids
+        )  # Default to person class
+
+        # If no custom detector provided, use default RTMDet-Tiny
+        det_config = None
+        det_weights_path = None
 
         from ez_openmmlab.core.config_manager import get_config_file
         from ez_openmmlab.core.utils.download import ensure_model_checkpoint
 
-        det_config = None
-        det_weights_path = None
-
         if det_model is None:
             # Default to RTMDet-Tiny
             det_config = str(get_config_file(ModelName.RTM_DET_TINY).absolute())
-            det_weights_path = str(ensure_model_checkpoint(ModelName.RTM_DET_TINY))
+            det_weights_path = str(ensure_model_checkpoint(ModelName.RTM_DET_TINY.value))
         else:
-            # Handle ModelName enum
-            if isinstance(det_model, ModelName):
-                det_config = str(get_config_file(det_model).absolute())
-                det_weights_path = (
-                    str(det_weights)
-                    if det_weights
-                    else str(ensure_model_checkpoint(det_model))
+            # Handle ModelName enum or string names that match known models
+            if isinstance(det_model, (ModelName, str)) and not Path(str(det_model)).exists():
+                model_name_str = (
+                    det_model.value if isinstance(det_model, ModelName) else det_model
                 )
-            elif isinstance(det_model, str):
-                # Check if it's a known model name that needs resolution
                 try:
-                    # This will raise ValueError if not a known ModelName
-                    model_enum = ModelName(det_model)
-                    det_config = str(get_config_file(model_enum).absolute())
-                    det_weights_path = (
-                        str(det_weights)
-                        if det_weights
-                        else str(ensure_model_checkpoint(model_enum))
-                    )
+                    # Attempt to resolve as a known model name
+                    det_config = str(get_config_file(det_model).absolute())
+                    # Resolve weights if not explicitly provided
+                    if not det_weights:
+                        det_weights_path = str(ensure_model_checkpoint(model_name_str))
+                    else:
+                        det_weights_path = str(det_weights)
                 except ValueError:
-                    # Not a known ModelName, treat as path or raw string for MMDet
-                    det_config = det_model
+                    # Not a known model name, treat as literal path/config
+                    det_config = str(det_model)
                     det_weights_path = str(det_weights) if det_weights else None
             else:
                 det_config = str(det_model)
@@ -95,6 +93,9 @@ class RTMPose(EZMMPose):
                 Path(det_config).exists() or "/" in str(det_config)
             ):
                 det_config = str(Path(det_config).absolute())
+
+            if det_weights_path and Path(det_weights_path).exists():
+                det_weights_path = str(Path(det_weights_path).absolute())
 
         return det_config, det_weights_path, det_cat_ids
 
@@ -246,4 +247,3 @@ class RTMPose(EZMMPose):
             stage2_num_epochs=stage2_num_epochs,
             **kwargs,
         )
-
