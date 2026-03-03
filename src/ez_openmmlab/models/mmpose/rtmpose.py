@@ -5,9 +5,11 @@ from loguru import logger
 from mmengine.config import Config
 from mmpose.apis import MMPoseInferencer
 
+from ez_openmmlab.core.config_manager import get_config_file
 from ez_openmmlab.core.engines.mmpose import EZMMPose
 from ez_openmmlab.core.inference.results import InferenceResult
 from ez_openmmlab.core.schema.models import ModelName
+from ez_openmmlab.core.utils.download import ensure_model_checkpoint
 
 
 class RTMPose(EZMMPose):
@@ -50,54 +52,72 @@ class RTMPose(EZMMPose):
         """Resolves detector configuration for top-down inference."""
         det_model = kwargs.get("det_model")
         det_weights = kwargs.get("det_weights")
-        det_cat_ids = kwargs.get("det_cat_ids")
-        det_cat_ids = (
-            [0] if det_cat_ids is None else det_cat_ids
-        )  # Default to person class
+        det_cat_ids = kwargs.get("det_cat_ids") or [0]  # Default to person (COCO)
 
-        # If no custom detector provided, use default RTMDet-Tiny
-        det_config = None
-        det_weights_path = None
+        # 1. Resolve Config Path and Model Identity
+        det_config, model_enum = self._resolve_detector_config(det_model)
 
-        from ez_openmmlab.core.config_manager import get_config_file
-        from ez_openmmlab.core.utils.download import ensure_model_checkpoint
+        # 2. Resolve Weight Path
+        det_weights_path = self._resolve_detector_weights(det_weights, model_enum)
 
+        # 3. Final Normalization
+        return (
+            self._normalize_resource_path(det_config),
+            self._normalize_resource_path(det_weights_path) if det_weights_path else None,
+            det_cat_ids,
+        )
+
+    def _resolve_detector_config(self, det_model: Any) -> Tuple[str, Optional[ModelName]]:
+        """Determines the detector config path and associated ModelName enum."""
+        # Case A: Use default RTMDet-Tiny
         if det_model is None:
-            # Default to RTMDet-Tiny
-            det_config = str(get_config_file(ModelName.RTM_DET_TINY).absolute())
-            det_weights_path = str(ensure_model_checkpoint(ModelName.RTM_DET_TINY.value))
-        else:
-            # Handle ModelName enum or string names that match known models
-            if isinstance(det_model, (ModelName, str)) and not Path(str(det_model)).exists():
-                model_name_str = (
-                    det_model.value if isinstance(det_model, ModelName) else det_model
-                )
-                try:
-                    # Attempt to resolve as a known model name
-                    det_config = str(get_config_file(det_model).absolute())
-                    # Resolve weights if not explicitly provided
-                    if not det_weights:
-                        det_weights_path = str(ensure_model_checkpoint(model_name_str))
-                    else:
-                        det_weights_path = str(det_weights)
-                except ValueError:
-                    # Not a known model name, treat as literal path/config
-                    det_config = str(det_model)
-                    det_weights_path = str(det_weights) if det_weights else None
-            else:
-                det_config = str(det_model)
-                det_weights_path = str(det_weights) if det_weights else None
+            return (
+                str(get_config_file(ModelName.RTM_DET_TINY).absolute()),
+                ModelName.RTM_DET_TINY,
+            )
 
-            # Ensure absolute path if local file
-            if isinstance(det_config, (str, Path)) and (
-                Path(det_config).exists() or "/" in str(det_config)
-            ):
-                det_config = str(Path(det_config).absolute())
+        # Case B: Resolve named model (Enum or string identifier)
+        model_enum = self._get_model_enum(det_model)
+        if model_enum:
+            return str(get_config_file(model_enum).absolute()), model_enum
 
-            if det_weights_path and Path(det_weights_path).exists():
-                det_weights_path = str(Path(det_weights_path).absolute())
+        # Case C: Custom path or raw config string
+        return str(det_model), None
 
-        return det_config, det_weights_path, det_cat_ids
+    def _resolve_detector_weights(
+        self, det_weights: Any, model_enum: Optional[ModelName]
+    ) -> Optional[str]:
+        """Determines the detector weight path based on explicit input or model identity."""
+        if det_weights:
+            return str(det_weights)
+
+        if model_enum:
+            # Auto-resolve/download weights for known models
+            return str(ensure_model_checkpoint(model_enum.value))
+
+        return None
+
+    def _get_model_enum(self, identifier: Any) -> Optional[ModelName]:
+        """Attempts to resolve an identifier to a ModelName enum."""
+        if isinstance(identifier, ModelName):
+            return identifier
+
+        model_str = str(identifier)
+        # If it's a local file that exists, it's a custom path, not a known model name
+        if Path(model_str).exists():
+            return None
+
+        try:
+            return ModelName(model_str)
+        except ValueError:
+            return None
+
+    def _normalize_resource_path(self, path_str: str) -> str:
+        """Ensures path is absolute if it refers to a local file on disk."""
+        path = Path(path_str)
+        if path.exists():
+            return str(path.absolute())
+        return path_str
 
     def predict(
         self,
