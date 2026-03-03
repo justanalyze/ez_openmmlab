@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ez_openmmlab Installation Script
-# This script automates the installation and bootstrapping process to ensure 
+# This script automates the installation and bootstrapping process to ensure
 # all complex build dependencies for OpenMMLab are handled correctly.
 
 set -e
@@ -19,7 +19,7 @@ NC='\033[0m' # No Color
 echo -e "${GREEN}🚀 Welcome to the ez_openmmlab Installer!${NC}"
 
 # 1. Check for uv
-if ! command -v uv &> /dev/null; then
+if ! command -v uv &>/dev/null; then
     echo -e "${RED}❌ 'uv' is not installed.${NC}"
     echo -e "Please install it first: ${YELLOW}curl -LsSf https://astral.sh/uv/install.sh | sh${NC}"
     exit 1
@@ -32,20 +32,20 @@ echo "2) CPU"
 read -p "Enter choice [1-2]: " choice
 
 case $choice in
-    1)
-        EXTRA="gpu"
-        TORCH_INDEX="https://download.pytorch.org/whl/cu117"
-        echo -e "\n✅ ${GREEN}Targeting GPU (CUDA 11.7)${NC}"
-        ;;
-    2)
-        EXTRA="cpu"
-        TORCH_INDEX="https://download.pytorch.org/whl/cpu"
-        echo -e "\n✅ ${GREEN}Targeting CPU${NC}"
-        ;;
-    *)
-        echo -e "${RED}Invalid choice. Exiting.${NC}"
-        exit 1
-        ;;
+1)
+    EXTRA="gpu"
+    TORCH_INDEX="https://download.pytorch.org/whl/cu117"
+    echo -e "\n✅ ${GREEN}Targeting GPU (CUDA 11.7)${NC}"
+    ;;
+2)
+    EXTRA="cpu"
+    TORCH_INDEX="https://download.pytorch.org/whl/cpu"
+    echo -e "\n✅ ${GREEN}Targeting CPU${NC}"
+    ;;
+*)
+    echo -e "${RED}Invalid choice. Exiting.${NC}"
+    exit 1
+    ;;
 esac
 
 # 3. Bootstrap Build Dependencies (The "EZ" Insurance)
@@ -64,10 +64,10 @@ uv sync --extra $EXTRA
 
 # 6. Verification
 echo -e "\n${YELLOW}🔍 Verifying installation...${NC}"
-if uv run --extra $EXTRA python -c "import ez_openmmlab; import mmdet; import mmpose; print('Verification Successful!')" &> /dev/null; then
+if uv run --extra $EXTRA python -c "import ez_openmmlab; import mmdet; import mmpose; print('Verification Successful!')" &>/dev/null; then
     echo -e "${GREEN}✅ Installation complete and verified!${NC}"
     echo -e "\nTo get started, try running one of the demos:"
-    echo -e "${YELLOW}uv run --extra $EXTRA python demos/demo_rtmdet-bbox.py${NC}"
+    echo -e "${YELLOW}uv run --extra $EXTRA python demos/demo_rtmpose.py${NC}"
 else
     echo -e "${RED}❌ Verification failed.${NC} There might be an issue with the environment."
     echo -e "Please check the error logs or try: ${YELLOW}uv sync --extra $EXTRA --force-reinstall${NC}"
