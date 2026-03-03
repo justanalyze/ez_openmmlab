@@ -1,3 +1,4 @@
+import cv2
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -293,6 +294,10 @@ class EZMMLab(ABC):
 
         # 4. Delegate execution to child
         raw_results = self._run_inference(inputs, actual_out_dir, show, **kwargs)
+
+        # 4.1 Cleanup visualization if needed
+        if show:
+            cv2.destroyAllWindows()
 
         # 5. Format results
         if not hasattr(self, "_formatter") or self._formatter is None:

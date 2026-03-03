@@ -226,8 +226,20 @@ class InferenceResult:
         return img
 
     def show(self, title: str = "Inference Result"):
-        """Displays the plotted image in a window."""
+        """Displays the plotted image in a window with graceful closing."""
         img = self.plot()
         cv2.imshow(title, img)
-        cv2.waitKey(0)
+
+        # OpenCV window closing event loop
+        # Continues until 'q', 'ESC', 'x' is pressed OR the window is closed
+        while True:
+            # Wait for 10ms to check for key events and window status
+            key = cv2.waitKey(10) & 0xFF
+            if key in [ord("q"), ord("x"), 27]: # q, x, or ESC
+                break
+
+            # Check if the window was closed via the [x] button
+            if cv2.getWindowProperty(title, cv2.WND_PROP_VISIBLE) < 1:
+                break
+
         cv2.destroyAllWindows()
