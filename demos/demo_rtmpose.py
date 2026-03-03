@@ -1,33 +1,23 @@
-from loguru import logger
-
 from ez_openmmlab import RTMPose
 
-# RTMPose is a TOP-DOWN model.
-model = RTMPose(model="rtmpose_tiny", log_level="INFO")
+# 1. RTMPose is a TOP-DOWN two-stage model (detector then pose)
+# By default, it uses a lightweight RTMDet-Tiny as the detector.
+model = RTMPose("rtmpose_tiny")
 
-image_path = "./demos/demo.jpg"
-
-# predict() handles single image or list of images
-# Now always returns a List[InferenceResult]
+# 2. Predict image with pose estimation
 results = model.predict(
-    image_path=image_path,
-    det_model="rtmdet_tiny",
-    device="cpu",
+    image_path="demos/demo.jpg",
+    device="cpu", # Change to "cuda" if you have a GPU
     show=True,
-    out_dir="./runs/demo_rtmpose",
-    bbox_thr=0.4,
-    kpt_thr=0.5,
+    out_dir="runs/rtmpose_demo",
 )
 
-# Take the first result since we only passed one image
+# 3. Access keypoints results
 result = results[0]
+print(f"Detected pose for {len(result.keypoints)} people.")
 
-if result.keypoints is None:
-    logger.warning("No keypoints detected.")
-else:
-    logger.info(f"Estimated pose for {len(result.keypoints)} people")
-
-    for i in range(len(result.keypoints)):
-        logger.info(
-            f"Person {i}: Overall Keypoint Scores: {result.keypoints.conf[i]}, Keypoints_coords: {result.keypoints.xy[i]} Keypoints: {len(result.keypoints.xy[i])}"
-        )
+for i in range(len(result.keypoints)):
+    # Keypoints data available as xy coords and confidence
+    kpts = result.keypoints.xy[i]
+    kpts_conf = result.keypoints.conf[i]
+    print(f"Person {i}: {len(kpts)} keypoints, average confidence: {kpts_conf.mean():.2f}")

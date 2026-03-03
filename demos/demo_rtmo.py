@@ -1,34 +1,22 @@
-from typing import List
-
-from loguru import logger
-
 from ez_openmmlab import RTMO
-from ez_openmmlab.core.inference.results import InferenceResult
 
-# RTMO is a BOTTOM-UP model.
+# 1. RTMO is a BOTTOM-UP one-stage model (no separate detector needed)
 model = RTMO("rtmo_s")
 
-image_path = "./demos/demo.jpg"
-image_path_2 = "tests/data/coco_mini/images/000000000389.jpg"
-
-# Run batch inference with RTMO
-# Now always returns a List[InferenceResult]
-results: List[InferenceResult] = model.predict(
-    image_path=[image_path, image_path_2],
-    device="cpu",
+# 2. Predict image with pose estimation
+results = model.predict(
+    image_path="demos/demo.jpg",
+    device="cpu", # Change to "cuda" if you have a GPU
     show=True,
-    out_dir="./runs/demo_rtmo_batch",
-    bbox_thr=0.5,
-    kpt_thr=0.5,
+    out_dir="runs/rtmo_demo",
 )
 
-logger.info(f"Bottom-up pose estimation complete for {len(results)} images.")
+# 3. Access keypoints results
+result = results[0]
+print(f"Detected pose for {len(result.keypoints)} people.")
 
-for img_idx, res in enumerate(results):
-    if res.keypoints is None:
-        logger.info(f"Image {img_idx}: No people detected.")
-        continue
-
-    logger.info(f"Image {img_idx} found {len(res.keypoints)} people")
-    for i in range(len(res.keypoints)):
-        logger.info(f"Person {i} keypoints: {res.keypoints.xy[i]}")
+for i in range(len(result.keypoints)):
+    # Keypoints data available as xy coords and confidence
+    kpts = result.keypoints.xy[i]
+    kpts_conf = result.keypoints.conf[i]
+    print(f"Person {i}: {len(kpts)} keypoints, average confidence: {kpts_conf.mean():.2f}")

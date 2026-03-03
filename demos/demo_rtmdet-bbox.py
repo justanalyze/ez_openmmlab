@@ -1,45 +1,22 @@
-from typing import List
-
-from loguru import logger
-
 from ez_openmmlab import RTMDet
-from ez_openmmlab.core.inference.results import InferenceResult
 
-# 1. Simple Initialization
-model = RTMDet("rtmdet_s")
+# 1. Initialize the model (options: rtmdet_tiny, rtmdet_s, rtmdet_m, etc.)
+model = RTMDet("rtmdet_tiny")
 
-# 2. Path to our sample image
-image_path = "./demos/demo.jpg"
-
-# 3. Batch Inference Example
-# ez_openmmlab supports passing a list of images for faster processing
-images = [image_path, image_path]
-batch_results: List[InferenceResult] = model.predict(
-    image_path=images,
-    device="cpu",
+# 2. Run inference (supports image path, list of paths, or directory)
+results = model.predict(
+    image_path="demos/demo.jpg",
+    device="cpu", # Change to "cuda" if you have a GPU
     show=True,
-    confidence=0.5,
-    out_dir="./runs/demo_detection_batch",
+    out_dir="runs/rtmdet_demo",
 )
 
-logger.info(f"Batch inference complete. Processed {len(batch_results)} images.")
-
-# 4. Single Image Inference with Structured Result Access
-results: List[InferenceResult] = model.predict(
-    image_path=image_path,
-    device="cpu",
-    show=False,
-    confidence=0.5,
-    out_dir="./runs/demo_detection_single",
-)
-
+# 3. Access structured results easily
 result = results[0]
+print(f"Detected {len(result.boxes)} objects.")
 
-if result.boxes is None:
-    logger.info("No objects detected.")
-else:
-    logger.info(f"Single detection found {len(result.boxes)} objects")
-    for i in range(len(result.boxes)):
-        logger.info(
-            f"[{i}] Label ID: {int(result.boxes.cls[i])}, Score: {result.boxes.conf[i]:.2f}, BBox: {result.boxes.xyxy[i]}"
-        )
+for i in range(len(result.boxes)):
+    label = result.names[int(result.boxes.cls[i])]
+    conf = result.boxes.conf[i]
+    bbox = result.boxes.xyxy[i]
+    print(f"- {label} ({conf:.2f}): {bbox}")

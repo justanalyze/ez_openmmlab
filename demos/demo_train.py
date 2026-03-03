@@ -1,23 +1,22 @@
 from ez_openmmlab import RTMDet
 
-# 1. Select your base architecture
-model = RTMDet(model="rtmdet_tiny")
+# 1. Choose your base architecture (rtmdet, rtmpose, etc.)
+model = RTMDet("rtmdet_tiny")
 
-# 2. Path to your simple data definition
+# 2. Point to your simple dataset definition (TOML-first approach)
 dataset_toml = "tests/data/coco_mini/dataset.toml"
 
-# 3. Start training
+# 3. Start training on your custom data
 model.train(
     dataset_config_path=dataset_toml,
-    input_size=(320, 320),
-    work_dir="./runs/rtmdet_sample_training_v3",
-    device="cpu",
-    amp=False,
     epochs=100,
-    batch_size=2,
-    num_workers=2,
-    enable_tensorboard=False,
-    augments={"scale_factor": (0.567, 1.523), "random_flip_prob": 0.432},
-    stage2_num_epochs=50,
-    dry_run=True,
+    batch_size=8,
+    device="cpu", # Change to "cuda" if you have a GPU
+    work_dir="runs/rtmdet_training_demo",
+    # Powerful data augmentation simplified to a few keys
+    augments={
+        "scale_factor": (0.5, 2.0),
+        "random_flip_prob": 0.5,
+    },
+    dry_run=True, # Set to False to actually start training
 )
