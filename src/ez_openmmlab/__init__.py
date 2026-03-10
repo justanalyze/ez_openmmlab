@@ -29,6 +29,28 @@ __all__ = [
 ]
 
 
+def create(
+    model: str,
+    checkpoint: str | None = None,
+    log_level: str = "INFO",
+    **kwargs,
+):
+    """Unified entry point to instantiate any ez_openmmlab model.
+
+    Args:
+        model: Name of the model (e.g. 'rtmdet_tiny') or path to config.toml.
+        checkpoint: Optional path to custom weights.
+        log_level: Logging verbosity.
+        **kwargs: Additional architecture or training overrides.
+    """
+    return ModelFactory.get_model(
+        model_name=model,
+        checkpoint_path=checkpoint,
+        log_level=log_level,
+        **kwargs,
+    )
+
+
 def mute_warnings():
     """Helper to suppress MMLab and noisy library verbosity manually."""
     import logging

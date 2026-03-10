@@ -68,6 +68,8 @@ if uv run --extra $EXTRA python -c "import ez_openmmlab; import mmdet; import mm
     echo -e "${GREEN}✅ Installation complete and verified!${NC}"
     echo -e "\nTo get started, try running one of the demos:"
     echo -e "${YELLOW}uv run --extra $EXTRA python demos/demo_rtmpose.py${NC}"
+    echo -e "\nOr try the CLI:"
+    echo -e "${YELLOW}uv run --extra $EXTRA ez-mmlab predict rtmdet_tiny demos/demo.jpg${NC}"
 else
     echo -e "${RED}❌ Verification failed.${NC} There might be an issue with the environment."
     echo -e "Please check the error logs or try: ${YELLOW}uv sync --extra $EXTRA --force-reinstall${NC}"

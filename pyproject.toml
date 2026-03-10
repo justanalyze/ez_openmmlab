@@ -24,7 +24,7 @@ dependencies = [
 ]
 
 [project.scripts]
-ez-mmdet = "ez_openmmlab.cli:app"
+ez-mmlab = "ez_openmmlab.cli:app"
 
 # --- optional dependencies (the switch) ---
 [project.optional-dependencies]
