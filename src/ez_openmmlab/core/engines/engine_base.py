@@ -401,9 +401,14 @@ class EZMMLab(ABC):
         manager = DockerExportManager(project_root=project_root)
 
         # 3.1 Resolve Docker Tag
-        # Use provided tag or pick a sensible default based on device
-        default_tag = "ubuntu20.04-cuda11.8-mmdeploy1.3.1" if device == "cuda" else "latest"
+        # Use provided tag or pick the only valid stable default
+        default_tag = "ubuntu20.04-cuda11.8-mmdeploy1.3.1"
         image_tag = kwargs.pop("image_tag", default_tag)
+
+        logger.warning(
+            f"MMDeploy export requires the 'openmmlab/mmdeploy:{image_tag}' Docker image (~11.3 GB). "
+            "If not found locally, it will be downloaded automatically."
+        )
 
         # 4. Construct and Run Command
         # Note: model_cfg and checkpoint must be absolute for the manager to map them

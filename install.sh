@@ -55,15 +55,11 @@ read -p "Enable MMDeploy? [y/N]: " enable_mmdeploy
 
 if [[ "$enable_mmdeploy" =~ ^[Yy]$ ]]; then
     if command -v docker &>/dev/null; then
-        # Determine the best tag based on hardware choice
-        if [ "$EXTRA" == "gpu" ]; then
-            # We use a stable CUDA 11.8 + MMDeploy 1.3.1 tag for GPU
-            DOCKER_TAG="ubuntu20.04-cuda11.8-mmdeploy1.3.1"
-        else
-            DOCKER_TAG="latest"
-        fi
+        # We use the only stable available tag for both CPU and GPU
+        DOCKER_TAG="ubuntu20.04-cuda11.8-mmdeploy1.3.1"
         
-        echo -e "🐳 ${GREEN}Docker found. Pulling MMDeploy image: ${YELLOW}openmmlab/mmdeploy:$DOCKER_TAG${NC} (this may take a few minutes)..."
+        echo -e "\n⚠️  ${YELLOW}WARNING: The MMDeploy Docker image is approximately 11.3 GB.${NC}"
+        echo -e "🐳 ${GREEN}Docker found. Pulling: ${YELLOW}openmmlab/mmdeploy:$DOCKER_TAG${NC}..."
         docker pull openmmlab/mmdeploy:$DOCKER_TAG || echo -e "${RED}⚠️ Failed to pull image. You may need to pull it manually later.${NC}"
     else
         echo -e "${RED}❌ Docker is not installed.${NC}"
