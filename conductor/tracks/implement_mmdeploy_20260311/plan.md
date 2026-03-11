@@ -12,15 +12,15 @@
     - [x] Verify correct config resolution for `mmpose` (onnx/tensorrt).
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Registry' (Protocol in workflow.md)
 
-## Phase 2: Docker Orchestration logic
-- [ ] Task: Implement `DockerExportManager`
-    - [ ] Create a class to handle path translation (Host path -> Container path).
-    - [ ] Implement logic to construct the `docker run` command string with appropriate volume mounts.
-    - [ ] Add a method to execute the command using `subprocess.run` and stream logs.
-- [ ] Task: Write tests for `DockerExportManager`
-    - [ ] Test path translation utility.
-    - [ ] Test command string construction (mocking the filesystem).
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Docker Orchestration logic' (Protocol in workflow.md)
+## Phase 2: Docker Orchestration logic [checkpoint: 39565e1]
+- [x] Task: Implement `DockerExportManager` [75de274]
+    - [x] Create a class to handle path translation (Host path -> Container path).
+    - [x] Implement logic to construct the `docker run` command string with appropriate volume mounts.
+    - [x] Add a method to execute the command using `subprocess.run` and stream logs.
+- [x] Task: Write tests for `DockerExportManager` [75de274]
+    - [x] Test path translation utility.
+    - [x] Test command string construction (mocking the filesystem).
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Docker Orchestration logic' (Protocol in workflow.md)
 
 ## Phase 3: Engine Integration
 - [ ] Task: Update `EZMMLab` base class
