@@ -23,6 +23,11 @@ class DockerExportManager:
         Raises:
             ValueError: If the path is outside the project root and cannot be mapped.
         """
+        path_str = str(host_path)
+        # If the path is already pointing to internal MMDeploy configs, return as-is
+        if path_str.startswith("/mmdeploy"):
+            return path_str
+
         path = Path(host_path).absolute()
         try:
             relative = path.relative_to(self.project_root)

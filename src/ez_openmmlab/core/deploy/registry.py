@@ -4,15 +4,15 @@ class DeployConfigRegistry:
     """Registry mapping ez_openmmlab model families to MMDeploy configuration files."""
 
     # Internal mapping between families and their deployment configurations
-    # These paths are relative to the MMDeploy root inside the Docker container
+    # These paths are absolute paths INSIDE the MMDeploy Docker container
     _REGISTRY = {
         "mmdet": {
-            "onnx": "configs/mmdet/detection/detection_onnxruntime_dynamic.py",
-            "tensorrt": "configs/mmdet/detection/detection_tensorrt_dynamic-320x320-640x640.py",
+            "onnx": "/mmdeploy/configs/mmdet/detection/detection_onnxruntime_dynamic.py",
+            "tensorrt": "/mmdeploy/configs/mmdet/detection/detection_tensorrt_dynamic-320x320-640x640.py",
         },
         "mmpose": {
-            "onnx": "configs/mmpose/pose-detection_onnxruntime_static.py",
-            "tensorrt": "configs/mmpose/pose-detection_tensorrt_static-256x192.py",
+            "onnx": "/mmdeploy/configs/mmpose/pose-detection_onnxruntime_static.py",
+            "tensorrt": "/mmdeploy/configs/mmpose/pose-detection_tensorrt_static-256x192.py",
         }
     }
 
