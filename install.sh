@@ -48,21 +48,38 @@ case $choice in
     ;;
 esac
 
-# 3. Bootstrap Build Dependencies (The "EZ" Insurance)
+# 3. Optional: MMDeploy (Docker) Dependency
+echo -e "\n${YELLOW}Do you want to enable Model Export support (requires Docker)?${NC}"
+read -p "Enable MMDeploy? [y/N]: " enable_mmdeploy
+
+if [[ "$enable_mmdeploy" =~ ^[Yy]$ ]]; then
+    if command -v docker &>/dev/null; then
+        echo -e "🐳 ${GREEN}Docker found. Pulling MMDeploy image (this may take a few minutes)...${NC}"
+        docker pull openmmlab/mmdeploy:latest || echo -e "${RED}⚠️ Failed to pull image. You may need to pull it manually later.${NC}"
+    else
+        echo -e "${RED}❌ Docker is not installed.${NC}"
+        echo -e "Please install Docker to use model export features: ${YELLOW}https://docs.docker.com/get-docker/${NC}"
+        echo -e "Proceeding with standard installation..."
+    fi
+else
+    echo -e "⏭️  ${YELLOW}Skipping MMDeploy/Docker setup.${NC}"
+fi
+
+# 4. Bootstrap Build Dependencies (The "EZ" Insurance)
 echo -e "\n${YELLOW}🛠️  Bootstrapping build dependencies...${NC}"
 # uv pip install will automatically create a .venv if one doesn't exist
 uv pip install setuptools==80 wheel
 
-# 4. Install PyTorch + Core Vision Libraries
+# 5. Install PyTorch + Core Vision Libraries
 echo -e "\n${YELLOW}🔥 Installing PyTorch stack (${EXTRA})...${NC}"
 uv pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url $TORCH_INDEX
 
-# 5. Final Project Sync
+# 6. Final Project Sync
 echo -e "\n${YELLOW}🔄 Finalizing project synchronization...${NC}"
 # This will install mmdet, mmpose (as editables), mmcv, and other dependencies
 uv sync --extra $EXTRA
 
-# 6. Verification
+# 7. Verification
 echo -e "\n${YELLOW}🔍 Verifying installation...${NC}"
 if uv run --extra $EXTRA python -c "import ez_openmmlab; import mmdet; import mmpose; print('Verification Successful!')" &>/dev/null; then
     echo -e "${GREEN}✅ Installation complete and verified!${NC}"
@@ -70,6 +87,10 @@ if uv run --extra $EXTRA python -c "import ez_openmmlab; import mmdet; import mm
     echo -e "${YELLOW}uv run --extra $EXTRA python demos/demo_rtmpose.py${NC}"
     echo -e "\nOr try the CLI:"
     echo -e "${YELLOW}uv run --extra $EXTRA ez-mmlab predict rtmdet_tiny demos/demo.jpg${NC}"
+    if [[ "$enable_mmdeploy" =~ ^[Yy]$ ]]; then
+        echo -e "\nTo export a model to ONNX:"
+        echo -e "${YELLOW}uv run --extra $EXTRA ez-mmlab export rtmdet_tiny demos/demo.jpg --format onnx${NC}"
+    fi
 else
     echo -e "${RED}❌ Verification failed.${NC} There might be an issue with the environment."
     echo -e "Please check the error logs or try: ${YELLOW}uv sync --extra $EXTRA --force-reinstall${NC}"
