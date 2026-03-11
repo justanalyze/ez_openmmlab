@@ -35,7 +35,7 @@ def test_e2e_train_predict_loop(smoke_test_data, tmp_path):
         amp=False,
         work_dir=str(work_dir),
         log_level="WARNING",
-        num_workers=4,
+        num_workers=0,
     )
 
     # 2. Verify checkpoint was created

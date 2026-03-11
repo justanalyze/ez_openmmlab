@@ -27,19 +27,20 @@ def test_train_command_requires_dataset_config():
     """Test that the train command fails if dataset_config_path is missing."""
     result = runner.invoke(app, ["train", "rtmdet_tiny"])
     assert result.exit_code != 0
-    assert "Missing argument 'DATASET_CONFIG_PATH'" in result.output
+    assert "Missing argument 'DATASET_CONFIG'" in result.output
 
 
-def test_predict_command_calls_detector_predict(tmp_path):
-    """Test that the predict command initializes RTMDet and calls its predict method."""
+def test_predict_command_calls_factory_and_predict(tmp_path):
+    """Test that the predict command uses ModelFactory and calls predict."""
     checkpoint = tmp_path / "best.pth"
     checkpoint.touch()
     image = tmp_path / "demo.jpg"
     image.touch()
 
-    with patch("ez_openmmlab.cli.RTMDet") as mock_detector_cls:
-        mock_detector_instance = MagicMock()
-        mock_detector_cls.return_value = mock_detector_instance
+    with patch("ez_openmmlab.cli.ModelFactory.get_model") as mock_get_model:
+        mock_model_instance = MagicMock()
+        mock_get_model.return_value = mock_model_instance
+        mock_model_instance.predict.return_value = [MagicMock()]
 
         result = runner.invoke(
             app,
@@ -47,59 +48,51 @@ def test_predict_command_calls_detector_predict(tmp_path):
                 "predict",
                 "rtmdet_tiny",
                 str(image),
-                "--checkpoint-path",
+                "--weights",
                 str(checkpoint),
-                "--out-dir",
+                "--out",
                 "output",
+                "--no-show",
             ],
         )
 
         assert result.exit_code == 0
-        # Verify checkpoint_path was passed to constructor
-        mock_detector_cls.assert_called_once()
-        args, kwargs = mock_detector_cls.call_args
+        # Verify factory was called with correct params
+        mock_get_model.assert_called_once()
+        _, kwargs = mock_get_model.call_args
         assert kwargs["checkpoint_path"] == Path(checkpoint)
 
-        # Verify predict was called without checkpoint_path
-        mock_detector_instance.predict.assert_called_once()
-        _, p_kwargs = mock_detector_instance.predict.call_args
-        assert "checkpoint_path" not in p_kwargs
+        # Verify predict was called
+        mock_model_instance.predict.assert_called_once()
+        _, p_kwargs = mock_model_instance.predict.call_args
+        assert p_kwargs["device"] == "cuda"  # Default
 
 
-def test_predict_command_calls_pose_estimator_predict(tmp_path):
-    """Test that the predict command initializes RTMPose for pose models."""
-    checkpoint = tmp_path / "best.pth"
-    checkpoint.touch()
-    image = tmp_path / "demo.jpg"
-    image.touch()
+def test_train_command_calls_factory_and_train(tmp_path):
+    """Test that the train command uses ModelFactory and calls train."""
+    dataset_toml = tmp_path / "dataset.toml"
+    dataset_toml.touch()
 
-    with patch("ez_openmmlab.cli.RTMPose") as mock_pose_cls:
-        mock_pose_instance = MagicMock()
-        mock_pose_cls.return_value = mock_pose_instance
+    with patch("ez_openmmlab.cli.ModelFactory.get_model") as mock_get_model:
+        mock_model_instance = MagicMock()
+        mock_get_model.return_value = mock_model_instance
 
         result = runner.invoke(
             app,
             [
-                "predict",
-                "rtmpose_tiny",
-                str(image),
-                "--checkpoint-path",
-                str(checkpoint),
-                "--bbox-thr",
-                "0.4",
-                "--kpt-thr",
-                "0.4",
+                "train",
+                "rtmdet_tiny",
+                str(dataset_toml),
+                "--epochs",
+                "5",
+                "--batch-size",
+                "4",
             ],
         )
 
         assert result.exit_code == 0
-        # Verify RTMPose was initialized
-        mock_pose_cls.assert_called_once()
-        _, kwargs = mock_pose_cls.call_args
-        assert kwargs["checkpoint_path"] == Path(checkpoint)
-
-        # Verify predict was called with correct pose parameters
-        mock_pose_instance.predict.assert_called_once()
-        _, p_kwargs = mock_pose_instance.predict.call_args
-        assert p_kwargs["bbox_thr"] == 0.4
-        assert p_kwargs["kpt_thr"] == 0.4
+        mock_get_model.assert_called_once_with("rtmdet_tiny")
+        mock_model_instance.train.assert_called_once()
+        _, t_kwargs = mock_model_instance.train.call_args
+        assert t_kwargs["epochs"] == 5
+        assert t_kwargs["batch_size"] == 4
