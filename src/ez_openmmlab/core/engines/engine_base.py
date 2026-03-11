@@ -405,10 +405,14 @@ class EZMMLab(ABC):
         default_tag = "ubuntu20.04-cuda11.8-mmdeploy1.3.1"
         image_tag = kwargs.pop("image_tag", default_tag)
 
-        logger.warning(
-            f"MMDeploy export requires the 'openmmlab/mmdeploy:{image_tag}' Docker image (~11.3 GB). "
-            "If not found locally, it will be downloaded automatically."
-        )
+        # 3.2 Verify Image exists locally
+        if not manager.check_image_exists(image_tag):
+            raise RuntimeError(
+                f"MMDeploy Docker image 'openmmlab/mmdeploy:{image_tag}' not found locally.\n"
+                "To use model export, please install the MMDeploy dependency by rerunning the installer:\n"
+                "  ./install.sh\n"
+                "And choosing 'y' when prompted for MMDeploy support."
+            )
 
         # 4. Construct and Run Command
         # Note: model_cfg and checkpoint must be absolute for the manager to map them

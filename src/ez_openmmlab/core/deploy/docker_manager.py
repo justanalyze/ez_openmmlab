@@ -123,3 +123,17 @@ class DockerExportManager:
             raise RuntimeError(
                 "MMDeploy export failed. Ensure Docker is running and the image is available."
             ) from e
+
+    def check_image_exists(self, image_tag: str) -> bool:
+        """Checks if the specified MMDeploy image exists locally."""
+        full_image = f"openmmlab/mmdeploy:{image_tag}"
+        try:
+            result = subprocess.run(
+                ["docker", "images", "-q", full_image],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            return len(result.stdout.strip()) > 0
+        except Exception:
+            return False
