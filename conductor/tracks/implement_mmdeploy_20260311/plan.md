@@ -30,10 +30,10 @@
     - [x] Mock the `DockerExportManager` to verify the base class calls it with correct parameters.
 - [x] Task: Conductor - User Manual Verification 'Phase 3: Engine Integration' (Protocol in workflow.md)
 
-## Phase 4: CLI & Final Polish
-- [ ] Task: Add `export` command to CLI
-    - [ ] Update `src/ez_openmmlab/cli/__init__.py` to include the `export` command.
-    - [ ] Map CLI arguments to the `model.export()` call.
-- [ ] Task: Documentation update
-    - [ ] Add "Model Export" section to `README.md` with usage examples.
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: CLI & Final Polish' (Protocol in workflow.md)
+## Phase 4: CLI & Final Polish [checkpoint: c28e84c]
+- [x] Task: Add `export` command to CLI [8ee5d74]
+    - [x] Update `src/ez_openmmlab/cli/__init__.py` to include the `export` command.
+    - [x] Map CLI arguments to the `model.export()` call.
+- [x] Task: Documentation update [6e9c6be]
+    - [x] Add "Model Export" section to `README.md` with usage examples.
+- [x] Task: Conductor - User Manual Verification 'Phase 4: CLI & Final Polish' (Protocol in workflow.md)
