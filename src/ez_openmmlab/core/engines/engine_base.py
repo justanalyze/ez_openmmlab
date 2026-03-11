@@ -349,6 +349,68 @@ class EZMMLab(ABC):
         # 3. No fallback
         return {}
 
+    def export(
+        self,
+        format: str,
+        image: Union[str, Path],
+        output_dir: str = "runs/deploy",
+        device: str = "cpu",
+        **kwargs,
+    ) -> Path:
+        """Exports the model to a production format using MMDeploy via Docker.
+
+        Args:
+            format: Target format ('onnx', 'tensorrt').
+            image: Sample image path for model tracing.
+            output_dir: Host directory to save the exported artifacts.
+            device: 'cpu' or 'cuda'.
+            **kwargs: Additional parameters for MMDeploy.
+
+        Returns:
+            Path to the output directory containing the exported model.
+        """
+        if not self.checkpoint_path or not self.checkpoint_path.exists():
+            raise ValueError("Export requires a valid checkpoint path.")
+
+        from ez_openmmlab.core.deploy.docker_manager import DockerExportManager
+        from ez_openmmlab.core.deploy.registry import DeployConfigRegistry
+
+        # 1. Resolve Project Context
+        # Find the project root by looking for pyproject.toml up from current file
+        current_path = Path(__file__).resolve()
+        project_root = None
+        for parent in current_path.parents:
+            if (parent / "pyproject.toml").exists():
+                project_root = parent
+                break
+        
+        if not project_root:
+            raise RuntimeError("Could not determine project root (pyproject.toml not found).")
+
+        # 2. Resolve Deploy Config
+        registry = DeployConfigRegistry()
+        deploy_cfg = registry.get_deploy_cfg(self._get_library_family(), format)
+
+        # 3. Build Orchestrator
+        manager = DockerExportManager(project_root=project_root)
+
+        # 4. Construct and Run Command
+        # Note: model_cfg and checkpoint must be absolute for the manager to map them
+        cmd = manager.build_command(
+            deploy_cfg=deploy_cfg,
+            model_cfg=str(self.config_path.absolute()),
+            checkpoint=str(self.checkpoint_path.absolute()),
+            test_img=str(Path(image).absolute()),
+            work_dir=output_dir,
+            device=device,
+            **kwargs,
+        )
+
+        manager.run_export(cmd)
+
+        logger.info(f"Export successful. Artifacts saved to: {output_dir}")
+        return Path(output_dir)
+
     def train(
         self,
         dataset_config_path: Union[str, Path],

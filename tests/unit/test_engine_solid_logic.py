@@ -72,3 +72,28 @@ def test_get_class_names_logic():
     mock_model.dataset_meta = {"classes": ["person"]}
     engine._inferencer.model = mock_model
     assert engine._get_class_names() == {0: "person"}
+
+
+def test_export_orchestration(tmp_path):
+    """Test that export() correctly orchestrates the Docker process."""
+    engine = ConcreteMockEngine()
+    engine.checkpoint_path = tmp_path / "best.pth"
+    engine.checkpoint_path.touch()
+    
+    # We need to mock the internals of export
+    with patch("ez_openmmlab.core.deploy.docker_manager.DockerExportManager") as mock_manager_cls, \
+         patch("ez_openmmlab.core.deploy.registry.DeployConfigRegistry") as mock_registry_cls:
+        
+        mock_registry = mock_registry_cls.return_value
+        mock_registry.get_deploy_cfg.return_value = "configs/deploy.py"
+        
+        mock_manager = mock_manager_cls.return_value
+        mock_manager.build_command.return_value = "docker run ..."
+        
+        # Call export
+        engine.export(format="onnx", image="test.jpg", output_dir=str(tmp_path / "export"))
+        
+        # Verify interactions
+        mock_registry.get_deploy_cfg.assert_called_with("mmdet", "onnx")
+        mock_manager.build_command.assert_called()
+        mock_manager.run_export.assert_called_with("docker run ...")
