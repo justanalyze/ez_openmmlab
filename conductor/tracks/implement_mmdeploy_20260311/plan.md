@@ -1,9 +1,9 @@
 # Implementation Plan: MMDeploy Docker-based Model Export
 
 ## Phase 1: Foundation & Registry
-- [ ] Task: Create deployment core structure
-    - [ ] Create directory `src/ez_openmmlab/core/deploy/`
-    - [ ] Initialize `src/ez_openmmlab/core/deploy/__init__.py`
+- [x] Task: Create deployment core structure [c761995]
+    - [x] Create directory `src/ez_openmmlab/core/deploy/`
+    - [x] Initialize `src/ez_openmmlab/core/deploy/__init__.py`
 - [ ] Task: Implement `DeployConfigRegistry`
     - [ ] Define internal mapping between model families (`mmdet`, `mmpose`) and MMDeploy configuration paths.
     - [ ] Implement a resolver to fetch the correct `deploy_cfg` based on format and model.
