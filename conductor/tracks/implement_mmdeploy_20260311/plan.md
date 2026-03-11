@@ -1,16 +1,16 @@
 # Implementation Plan: MMDeploy Docker-based Model Export
 
-## Phase 1: Foundation & Registry
+## Phase 1: Foundation & Registry [checkpoint: 75de274]
 - [x] Task: Create deployment core structure [c761995]
     - [x] Create directory `src/ez_openmmlab/core/deploy/`
     - [x] Initialize `src/ez_openmmlab/core/deploy/__init__.py`
-- [ ] Task: Implement `DeployConfigRegistry`
-    - [ ] Define internal mapping between model families (`mmdet`, `mmpose`) and MMDeploy configuration paths.
-    - [ ] Implement a resolver to fetch the correct `deploy_cfg` based on format and model.
-- [ ] Task: Write tests for `DeployConfigRegistry`
-    - [ ] Verify correct config resolution for `mmdet` (onnx/tensorrt).
-    - [ ] Verify correct config resolution for `mmpose` (onnx/tensorrt).
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Registry' (Protocol in workflow.md)
+- [x] Task: Implement `DeployConfigRegistry` [12c7ffc]
+    - [x] Define internal mapping between model families (`mmdet`, `mmpose`) and MMDeploy configuration paths.
+    - [x] Implement a resolver to fetch the correct `deploy_cfg` based on format and model.
+- [x] Task: Write tests for `DeployConfigRegistry` [12c7ffc]
+    - [x] Verify correct config resolution for `mmdet` (onnx/tensorrt).
+    - [x] Verify correct config resolution for `mmpose` (onnx/tensorrt).
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Foundation & Registry' (Protocol in workflow.md)
 
 ## Phase 2: Docker Orchestration logic
 - [ ] Task: Implement `DockerExportManager`
