@@ -1,7 +1,8 @@
-import subprocess
 from pathlib import Path
 from typing import Union
 from loguru import logger
+import subprocess
+
 
 class DockerExportManager:
     """Manages the execution of MMDeploy via Docker containers."""
@@ -23,7 +24,6 @@ class DockerExportManager:
             ValueError: If the path is outside the project root and cannot be mapped.
         """
         path = Path(host_path).absolute()
-        
         try:
             relative = path.relative_to(self.project_root)
             return f"{self.container_workdir}/{relative}"
@@ -41,7 +41,7 @@ class DockerExportManager:
         test_img: str,
         work_dir: str,
         device: str = "cpu",
-        image_tag: str = "latest"
+        image_tag: str = "latest",
     ) -> str:
         """Constructs the full 'docker run' command string.
 
@@ -65,7 +65,7 @@ class DockerExportManager:
         c_work_dir = self.to_container_path(work_dir)
 
         gpu_flag = "--gpus all" if device == "cuda" else ""
-        
+
         cmd = (
             f"docker run --rm {gpu_flag} "
             f"-v {self.project_root}:{self.container_workdir} "
@@ -87,7 +87,7 @@ class DockerExportManager:
         Raises:
             RuntimeError: If the command fails.
         """
-        logger.info(f"Starting MMDeploy export via Docker...")
+        logger.info("Starting MMDeploy export via Docker...")
         logger.debug(f"Executing: {command}")
 
         try:
@@ -97,8 +97,10 @@ class DockerExportManager:
                 shell=True,
                 check=True,
                 text=True,
-                capture_output=False # Stream to stdout/stderr directly
+                capture_output=False,  # Stream to stdout/stderr directly
             )
         except subprocess.CalledProcessError as e:
             logger.error(f"Docker export failed with exit code {e.returncode}")
-            raise RuntimeError(f"MMDeploy export failed. Ensure Docker is running and the image is available.") from e
+            raise RuntimeError(
+                "MMDeploy export failed. Ensure Docker is running and the image is available."
+            ) from e
