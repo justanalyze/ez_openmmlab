@@ -144,6 +144,30 @@ results = model.predict("player.jpg", show=True)
 
 ---
 
+## 🚀 Model Export (Production)
+
+Deploying OpenMMLab models is often a nightmare due to complex dependencies. `ez_openmmlab` simplifies this by leveraging **MMDeploy via Docker**. Export your models to ONNX or TensorRT with a single command.
+
+### Python API
+```python
+from ez_openmmlab import RTMDet
+
+model = RTMDet("rtmdet_tiny")
+model.export(
+    format="onnx",        # Target format: 'onnx' or 'tensorrt'
+    image="sample.jpg",   # Required for model tracing
+    output_dir="deploy/", # Where to save artifacts
+    device="cpu"          # Use 'cuda' for TensorRT
+)
+```
+
+### CLI
+```bash
+ez-mmlab export rtmdet_tiny sample.jpg --format onnx --out deploy/
+```
+
+---
+
 ## 🗺️ Roadmap
 
 - [ ] **Native Export:** One-click `.export()` to ONNX and TensorRT for production. (For now install [MMDeploy](https://github.com/open-mmlab/mmdeploy) Via Docker to prevent headaches ;) )
