@@ -22,13 +22,13 @@
     - [x] Test command string construction (mocking the filesystem).
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Docker Orchestration logic' (Protocol in workflow.md)
 
-## Phase 3: Engine Integration
-- [ ] Task: Update `EZMMLab` base class
-    - [ ] Add the public `export()` method signature to the abstract base.
-    - [ ] Implement the common orchestration logic in `EZMMLab.export`.
-- [ ] Task: Write integration tests for `model.export()`
-    - [ ] Mock the `DockerExportManager` to verify the base class calls it with correct parameters.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Engine Integration' (Protocol in workflow.md)
+## Phase 3: Engine Integration [checkpoint: 17aec4e]
+- [x] Task: Update `EZMMLab` base class [cc78a16]
+    - [x] Add the public `export()` method signature to the abstract base.
+    - [x] Implement the common orchestration logic in `EZMMLab.export`.
+- [x] Task: Write integration tests for `model.export()` [cc78a16]
+    - [x] Mock the `DockerExportManager` to verify the base class calls it with correct parameters.
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Engine Integration' (Protocol in workflow.md)
 
 ## Phase 4: CLI & Final Polish
 - [ ] Task: Add `export` command to CLI
