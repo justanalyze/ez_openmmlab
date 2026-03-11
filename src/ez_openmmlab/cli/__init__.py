@@ -98,5 +98,36 @@ def predict(
         raise typer.Exit(code=1)
 
 
+@app.command()
+def export(
+    model_name: str = typer.Argument(..., help="Model name (e.g., 'rtmdet_tiny')"),
+    image: Path = typer.Argument(..., help="Sample image path for model tracing"),
+    # Export Options
+    format: str = typer.Option("onnx", help="Target format (onnx, tensorrt)"),
+    weights: Optional[Path] = typer.Option(None, help="Path to custom .pth weights"),
+    output: str = typer.Option("runs/deploy", "--out", "-o", help="Output directory"),
+    device: str = typer.Option("cpu", help="Device for export (cpu, cuda)"),
+):
+    """Exports a model to a production format (ONNX, TensorRT) via Docker."""
+    try:
+        # Instantiate model via factory
+        model = ModelFactory.get_model(model_name, checkpoint_path=weights)
+
+        # Run export
+        model.export(
+            format=format,
+            image=image,
+            output_dir=output,
+            device=device,
+        )
+
+        console.print(f"\n[bold green]Export Successful![/bold green]")
+        console.print(f"Artifacts saved to: [cyan]{output}[/cyan]")
+
+    except Exception as e:
+        console.print(f"[bold red]Export Failed:[/bold red] {e}")
+        raise typer.Exit(code=1)
+
+
 if __name__ == "__main__":
     app()
