@@ -105,13 +105,16 @@ def export(
     # Export Options
     format: str = typer.Option("onnx", help="Target format (onnx, tensorrt)"),
     weights: Optional[Path] = typer.Option(None, help="Path to custom .pth weights"),
+    num_classes: Optional[int] = typer.Option(None, help="Number of classes for custom weights"),
     output: str = typer.Option("runs/deploy", "--out", "-o", help="Output directory"),
     device: str = typer.Option("cpu", help="Device for export (cpu, cuda)"),
 ):
     """Exports a model to a production format (ONNX, TensorRT) via Docker."""
     try:
         # Instantiate model via factory
-        model = ModelFactory.get_model(model_name, checkpoint_path=weights)
+        model = ModelFactory.get_model(
+            model_name, checkpoint_path=weights, num_classes=num_classes
+        )
 
         # Run export
         model.export(

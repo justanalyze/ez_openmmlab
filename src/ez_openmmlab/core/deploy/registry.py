@@ -7,12 +7,12 @@ class DeployConfigRegistry:
     # These paths are absolute paths INSIDE the MMDeploy Docker container
     _REGISTRY = {
         "mmdet": {
-            "onnx": "/mmdeploy/configs/mmdet/detection/detection_onnxruntime_dynamic.py",
-            "tensorrt": "/mmdeploy/configs/mmdet/detection/detection_tensorrt_dynamic-320x320-640x640.py",
+            "onnx": "/root/workspace/mmdeploy/configs/mmdet/detection/detection_onnxruntime_dynamic.py",
+            "tensorrt": "/root/workspace/mmdeploy/configs/mmdet/detection/detection_tensorrt_dynamic-320x320-640x640.py",
         },
         "mmpose": {
-            "onnx": "/mmdeploy/configs/mmpose/pose-detection_onnxruntime_static.py",
-            "tensorrt": "/mmdeploy/configs/mmpose/pose-detection_tensorrt_static-256x192.py",
+            "onnx": "/root/workspace/mmdeploy/configs/mmpose/pose-detection_onnxruntime_static.py",
+            "tensorrt": "/root/workspace/mmdeploy/configs/mmpose/pose-detection_tensorrt_static-256x192.py",
         }
     }
 

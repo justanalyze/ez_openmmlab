@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Union
+from typing import Dict, Union
 from loguru import logger
 import subprocess
 
@@ -10,6 +10,7 @@ class DockerExportManager:
     def __init__(self, project_root: Union[str, Path]):
         self.project_root = Path(project_root).absolute()
         self.container_workdir = "/work"
+        self.container_mmdeploy_root = "/root/workspace/mmdeploy"
 
     def to_container_path(self, host_path: Union[str, Path]) -> str:
         """Translates a local host path to its corresponding path inside the container.
@@ -21,21 +22,23 @@ class DockerExportManager:
             The translated path string starting with container_workdir.
 
         Raises:
-            ValueError: If the path is outside the project root and cannot be mapped.
+            ValueError: If the path is outside the project root.
         """
         path_str = str(host_path)
         # If the path is already pointing to internal MMDeploy configs, return as-is
-        if path_str.startswith("/mmdeploy"):
+        if path_str.startswith(self.container_mmdeploy_root):
             return path_str
 
         path = Path(host_path).absolute()
+
         try:
             relative = path.relative_to(self.project_root)
             return f"{self.container_workdir}/{relative}"
         except ValueError:
             raise ValueError(
-                f"Path '{host_path}' is outside the project root '{self.project_root}' "
-                "and cannot be automatically mapped to the Docker container volumes."
+                f"Path '{host_path}' is outside the project root '{self.project_root}'. "
+                "For Docker-based export, please ensure your checkpoint and image "
+                "are located within the project directory."
             )
 
     def build_command(
@@ -71,15 +74,26 @@ class DockerExportManager:
 
         gpu_flag = "--gpus all" if device == "cuda" else ""
 
+        # Add project submodules to PYTHONPATH inside container
+        python_path = f"PYTHONPATH={self.container_workdir}/libs/mmdetection:{self.container_workdir}/libs/mmpose:$PYTHONPATH"
+
+        deploy_script = f"{self.container_mmdeploy_root}/tools/deploy.py"
+
+        # Pre-install missing dependencies inside the container
+        packages = "pycocotools terminaltables shapely scipy albumentations"
+        inner_cmd = (
+            f"pip install --no-cache-dir {packages} && "
+            f"python3 {deploy_script} {c_deploy} {c_model} {c_checkpoint} {c_test_img} "
+            f"--work-dir {c_work_dir} --device {device}"
+        )
+
         cmd = (
             f"docker run --rm {gpu_flag} "
+            f"-e {python_path} "
             f"-v {self.project_root}:{self.container_workdir} "
             f"-w {self.container_workdir} "
             f"openmmlab/mmdeploy:{image_tag} "
-            f"python /mmdeploy/tools/deploy.py "
-            f"{c_deploy} {c_model} {c_checkpoint} {c_test_img} "
-            f"--work-dir {c_work_dir} "
-            f"--device {device}"
+            f"bash -c '{inner_cmd}'"
         )
         return cmd
 

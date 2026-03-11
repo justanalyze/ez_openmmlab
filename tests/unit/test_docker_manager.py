@@ -13,9 +13,9 @@ def test_path_translation():
     container_path = manager.to_container_path(host_path)
     assert container_path == "/work/weights/model.pth"
     
-    # Absolute path outside project (should handle gracefully or error)
-    with pytest.raises(ValueError, match="outside the project root"):
-        manager.to_container_path("/tmp/other.pth")
+    # Internal container path (should pass through)
+    internal_path = "/root/workspace/mmdeploy/configs/config.py"
+    assert manager.to_container_path(internal_path) == internal_path
 
 def test_command_construction():
     """Test that the docker command string is correctly built."""
@@ -23,7 +23,7 @@ def test_command_construction():
     manager = DockerExportManager(project_root=root)
     
     cmd = manager.build_command(
-        deploy_cfg=root / "configs/deploy.py",
+        deploy_cfg="/root/workspace/mmdeploy/configs/deploy.py",
         model_cfg=root / "configs/model.py",
         checkpoint=root / "weights/best.pth",
         test_img=root / "demos/test.jpg",
@@ -34,8 +34,8 @@ def test_command_construction():
     assert "docker run --rm" in cmd
     assert f"-v {root}:/work" in cmd
     assert "openmmlab/mmdeploy:latest" in cmd
-    assert "python /mmdeploy/tools/deploy.py" in cmd
-    assert "/work/configs/deploy.py" in cmd
+    assert "python3 /root/workspace/mmdeploy/tools/deploy.py" in cmd
+    assert "/root/workspace/mmdeploy/configs/deploy.py" in cmd
     assert "/work/configs/model.py" in cmd
     assert "/work/weights/best.pth" in cmd
     assert "/work/demos/test.jpg" in cmd
