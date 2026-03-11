@@ -23,3 +23,4 @@ A user-friendly API for OpenMMLab (Detection, Pose, etc.)
 - **RTMDet Support:** First-class support for the RTMDet family of high-performance one-stage detectors.
 - **Pose Estimation:** Robust support for RTMPose (top-down) and RTMO (bottom-up) architectures.
 - **Integrated Logging:** Rich, developer-friendly logging powered by Loguru.
+- **Production Export:** Unified API and CLI for exporting models to ONNX and TensorRT formats via MMDeploy Docker orchestration.
