@@ -108,15 +108,17 @@ class EZMMLab(ABC):
         """Performs initial validation of provided arguments."""
         is_toml = isinstance(model, (Path, str)) and str(model).endswith(".toml")
 
-        # 1. Check for missing checkpoint in custom config context
+        # 1. Enforce explicit checkpoint for custom configs during inference/export
+        # We allow missing checkpoint only if the user explicitly wants to LOAD for a training resume,
+        # but for export or direct inference, it must be provided to avoid ambiguity.
         if is_toml and not checkpoint_path:
-            # We allow missing checkpoint if we are LOADING for training resume,
-            # but we warn the user that inference will fail.
-            logger.warning(
-                f"No checkpoint resolved for custom config: {model}. "
-                "Inference will fail, but you can still call .resume() "
-                "to continue training using MMEngine's auto-resume."
-            )
+            # We check if a checkpoint was smart-resolved (e.g. from the same folder)
+            # If not even a smart-resolved one exists, we raise an error.
+            if not self.checkpoint_path:
+                raise ValueError(
+                    f"You initialized the model with a custom config ({model}) but provided no weights. "
+                    "For export or inference, you must explicitly provide the 'checkpoint_path'."
+                )
 
         # 2. Enforce explicit configuration for custom weights to prevent head size mismatches
         # This applies when a user provides weights manually (Case 2 in resolve_resources)
@@ -389,13 +391,17 @@ class EZMMLab(ABC):
             if (parent / "pyproject.toml").exists():
                 project_root = parent
                 break
-        
+
         if not project_root:
-            raise RuntimeError("Could not determine project root (pyproject.toml not found).")
+            raise RuntimeError(
+                "Could not determine project root (pyproject.toml not found)."
+            )
 
         # 2. Resolve Deploy Config
         registry = DeployConfigRegistry()
-        deploy_cfg = registry.get_deploy_cfg(self._get_library_family(), format)
+        deploy_cfg = registry.get_deploy_cfg(
+            self._get_library_family(), format, model_name=self.model
+        )
 
         # 3. Build Orchestrator
         manager = DockerExportManager(project_root=project_root)
@@ -414,11 +420,22 @@ class EZMMLab(ABC):
                 "And choosing 'y' when prompted for MMDeploy support."
             )
 
-        # 4. Construct and Run Command
+        # 4. Prepare Patched Model Config
+        # We generate a flattened, patched config in the output directory
+        # to ensure it's within the project root (for Docker mounting) and
+        # contains all custom metadata from UserConfig (e.g. num_classes).
+        export_work_dir = Path(output_dir)
+        export_work_dir.mkdir(parents=True, exist_ok=True)
+
+        patched_cfg = self._load_and_patch_config(**kwargs)
+        final_cfg_path = export_work_dir / "config.py"
+        self._config_manager.dump_config(patched_cfg, final_cfg_path)
+
+        # 5. Construct and Run Command
         # Note: model_cfg and checkpoint must be absolute for the manager to map them
         cmd = manager.build_command(
             deploy_cfg=deploy_cfg,
-            model_cfg=str(self.config_path.absolute()),
+            model_cfg=str(final_cfg_path.absolute()),
             checkpoint=str(self.checkpoint_path.absolute()),
             test_img=str(Path(image).absolute()),
             work_dir=output_dir,
