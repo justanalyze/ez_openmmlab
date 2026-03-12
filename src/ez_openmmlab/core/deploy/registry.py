@@ -17,8 +17,14 @@ class DeployConfigRegistry:
             },
         },
         "mmpose": {
-            "onnx": "/root/workspace/mmdeploy/configs/mmpose/pose-detection_onnxruntime_static.py",
-            "tensorrt": "/root/workspace/mmdeploy/configs/mmpose/pose-detection_tensorrt_static-256x192.py",
+            "rtmpose": {
+                "onnx": "/root/workspace/mmdeploy/configs/mmpose/pose-detection_simcc_onnxruntime_dynamic.py",
+                "tensorrt": "/root/workspace/mmdeploy/configs/mmpose/pose-detection_simcc_tensorrt_dynamic-256x192.py",
+            },
+            "rtmo": {
+                "onnx": "/root/workspace/mmdeploy/configs/mmpose/pose-detection_rtmo_onnxruntime_dynamic.py",
+                "tensorrt": "/root/workspace/mmdeploy/configs/mmpose/pose-detection_rtmo_tensorrt-fp16_dynamic-640x640.py",
+            },
         },
     }
 
@@ -28,7 +34,7 @@ class DeployConfigRegistry:
         Args:
             family: The model family ('mmdet', 'mmpose').
             format: The target deployment format ('onnx', 'tensorrt').
-            model_name: The specific model name (e.g. 'rtmdet-ins_tiny').
+            model_name: The specific model name (e.g. 'rtmpose_s').
 
         Returns:
             The path to the MMDeploy configuration file.
@@ -46,6 +52,11 @@ class DeployConfigRegistry:
         # Handle mmdet specialization (Detection vs Instance Segmentation)
         if family == "mmdet":
             task = "instance-seg" if "rtmdet-ins" in model_name else "detection"
+            family_configs = family_configs[task]
+
+        # Handle mmpose specialization (RTMPose vs RTMO)
+        if family == "mmpose":
+            task = "rtmo" if "rtmo" in model_name else "rtmpose"
             family_configs = family_configs[task]
 
         if format not in family_configs:
