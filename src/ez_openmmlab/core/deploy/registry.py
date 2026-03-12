@@ -12,8 +12,8 @@ class DeployConfigRegistry:
                 "tensorrt": "/root/workspace/mmdeploy/configs/mmdet/detection/detection_tensorrt_dynamic-320x320-640x640.py",
             },
             "instance-seg": {
-                "onnx": "/root/workspace/mmdeploy/configs/mmdet/instance-seg/instance-seg_onnxruntime_static.py",
-                "tensorrt": "/root/workspace/mmdeploy/configs/mmdet/instance-seg/instance-seg_tensorrt_static-640x640.py",
+                "onnx": "/root/workspace/mmdeploy/configs/mmdet/instance-seg/instance-seg_rtmdet-ins_onnxruntime_static-640x640.py",
+                "tensorrt": "/root/workspace/mmdeploy/configs/mmdet/instance-seg/instance-seg_rtmdet-ins_tensorrt_static-640x640.py",
             },
         },
         "mmpose": {
