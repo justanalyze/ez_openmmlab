@@ -1,10 +1,46 @@
-import warnings
+def mute_warnings():
+    """Helper to suppress MMLab and noisy library verbosity manually."""
+    import logging
+    import sys
+    import warnings
 
-# Suppress noisy library warnings immediately on import
-warnings.filterwarnings("ignore", message=".*pkg_resources is deprecated")
-warnings.filterwarnings(
-    "ignore", message="A new version of Albumentations is available"
-)
+    from loguru import logger
+    from mmengine.logging import MMLogger
+
+    # 0. Globally configure Loguru to INFO level by default
+    logger.remove()
+    logger.add(sys.stderr, level="INFO")
+
+    # 1. Suppress standard Python warnings
+    warnings.filterwarnings("ignore", message=".*pkg_resources is deprecated")
+    warnings.filterwarnings("ignore", message=".*LocalVisBackend")
+    warnings.filterwarnings("ignore", message=".*meshgrid")
+    warnings.filterwarnings("ignore", message=".*bbox is out of bounds")
+    warnings.filterwarnings("ignore", message=".*polygon is out of bounds")
+    warnings.filterwarnings(
+        "ignore", message="A new version of Albumentations is available"
+    )
+
+    # 2. Suppress standard logging for noisy libraries
+    noisy_loggers = [
+        "mmengine",
+        "PIL",
+        "matplotlib",
+        "urllib3",
+        "albumentations",
+    ]
+    for name in noisy_loggers:
+        logging.getLogger(name).setLevel(logging.ERROR)
+
+    # 3. Suppress MMEngine specific logger
+    try:
+        MMLogger.get_instance("mmengine").setLevel(logging.ERROR)
+    except Exception:
+        pass
+
+
+# Apply immediate silencing on import to ensure 'EZ' first impression
+mute_warnings()
 
 from mmdet.utils import register_all_modules as register_mmdet
 

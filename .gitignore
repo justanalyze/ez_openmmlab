@@ -31,7 +31,6 @@ checkpoints/
 /dummy_data/
 /datasets/
 
-.gemini/
 gha-creds-*.json
 
 todo.md

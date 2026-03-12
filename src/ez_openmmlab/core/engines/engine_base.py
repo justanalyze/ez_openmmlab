@@ -91,14 +91,21 @@ class EZMMLab(ABC):
                 )
 
     def _configure_logging(self, log_level: str) -> None:
-        """Configures the global logger level."""
+        """Configures the global logger level and suppresses noisy dependencies."""
         try:
-            logger.remove()
             import sys
-
-            logger.add(sys.stderr, level=log_level)
+            logger.remove()  # Remove default handler
+            
+            # We add a sink that only shows logs at or above our current level
+            # This ensures that even if Loguru intercepts internal DEBUGs, they don't show up.
+            logger.add(sys.stderr, level=log_level, filter=lambda record: record["level"].no >= logger.level(log_level).no)
+            
+            # Ensure internal OpenMMLab loggers are also synced to this level
+            import logging
+            logging.getLogger("mmengine").setLevel(logging.ERROR if log_level == "INFO" else log_level)
         except Exception as e:
-            logger.warning(f"Failed to set log level: {e}")
+            # We don't want a logging failure to crash the entire engine
+            print(f"Warning: Failed to set log level: {e}")
 
     def _validate_inputs(
         self,

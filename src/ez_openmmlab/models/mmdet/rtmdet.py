@@ -10,7 +10,21 @@ from ez_openmmlab.core.schema.models import (
 
 
 class RTMDet(EZMMDetector):
-    """RTMDet implementation for high-speed object detection and instance segmentation."""
+    """Initializes a new RTMDet engine.
+
+    RTMDet (Real-time Models for Object Detection) is a family of high-efficiency
+    models from MMDetection. This class provides a simplified interface for
+    training, inference, and deployment (export) using these models.
+
+    Args:
+        model: The model variant to use. Can be a member of :class:`ModelName`,
+            a string name (e.g., 'rtmdet_tiny'), or a path to a custom `config.toml`.
+        checkpoint_path: Path to a custom model checkpoint (.pth). If None,
+            the official pretrained weights will be automatically downloaded
+            based on the `model` name.
+        log_level: Global logging level for the engine. Defaults to "INFO".
+        **kwargs: Additional configuration parameters passed to the base engine.
+    """
 
     def __init__(
         self,
@@ -19,21 +33,6 @@ class RTMDet(EZMMDetector):
         log_level: str = "INFO",
         **kwargs,
     ):
-        """Initializes a new RTMDet engine.
-
-        RTMDet (Real-time Models for Object Detection) is a family of high-efficiency
-        models from MMDetection. This class provides a simplified interface for
-        training and inference using these models.
-
-        Args:
-            model: The model variant to use. Can be a member of :class:`ModelName`,
-                a string name (e.g., 'rtmdet_tiny'), or a path to a custom `config.toml`.
-            checkpoint_path: Path to a custom model checkpoint (.pth). If None,
-                the official pretrained weights will be automatically downloaded
-                based on the `model` name.
-            log_level: Global logging level for the engine. Defaults to "INFO".
-            **kwargs: Additional configuration parameters passed to the base engine.
-        """
         self._validate_model(model)
         super().__init__(model, checkpoint_path, log_level, **kwargs)
 
