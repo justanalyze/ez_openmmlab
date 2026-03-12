@@ -34,3 +34,4 @@ checkpoints/
 gha-creds-*.json
 
 todo.md
+temp_dir_mmdeploy_configs/
