@@ -13,7 +13,21 @@ from ez_openmmlab.core.utils.download import ensure_model_checkpoint
 
 
 class RTMPose(EZMMPose):
-    """Top-down RTMPose architecture."""
+    """Initializes a new RTMPose engine.
+
+    RTMPose is a high-performance top-down pose estimation engine from MMPose.
+    It works in two stages: first detecting people using a detector (default: RTMDet),
+    and then estimating the pose for each detected person.
+
+    Args:
+        model: The model variant to use. Can be a member of :class:`ModelName`,
+            a string name (e.g., 'rtmpose_s'), or a path to a custom `config.toml`.
+        checkpoint_path: Path to a custom model checkpoint (.pth). If None,
+            the official pretrained weights will be automatically downloaded
+            based on the `model` name.
+        log_level: Global logging level for the engine. Defaults to "INFO".
+        **kwargs: Additional configuration parameters passed to the base engine.
+    """
 
     def _validate_model_name(self, name: str) -> None:
         supported = ["rtmpose_tiny", "rtmpose_s", "rtmpose_m", "rtmpose_l"]

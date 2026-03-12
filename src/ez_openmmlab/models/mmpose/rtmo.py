@@ -9,7 +9,20 @@ from ez_openmmlab.core.schema.models import ModelName
 
 
 class RTMO(EZMMPose):
-    """Bottom-up RTMO architecture."""
+    """Initializes a new RTMO engine.
+
+    RTMO (Real-Time Multi-person One-stage) is a one-stage pose estimation model
+    from MMPose. It detects people and their poses simultaneously in a single pass.
+
+    Args:
+        model: The model variant to use. Can be a member of :class:`ModelName`,
+            a string name (e.g., 'rtmo_s'), or a path to a custom `config.toml`.
+        checkpoint_path: Path to a custom model checkpoint (.pth). If None,
+            the official pretrained weights will be automatically downloaded
+            based on the `model` name.
+        log_level: Global logging level for the engine. Defaults to "INFO".
+        **kwargs: Additional configuration parameters passed to the base engine.
+    """
 
     def _validate_model_name(self, name: str) -> None:
         supported = ["rtmo_s", "rtmo_m", "rtmo_l"]
