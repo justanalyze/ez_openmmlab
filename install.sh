@@ -51,14 +51,14 @@ esac
 # 3. Optional: MMDeploy (Docker) Dependency
 echo -e "\n${YELLOW}Do you want to enable Model Export support (requires Docker)?${NC}"
 echo -e "💡 ${WHITE}CPU users can export to ONNX. GPU users can export to ONNX and TensorRT.${NC}"
+echo -e "\n⚠️ ${RED}WARNING: The MMDeploy Docker image is approximately 30+ GB.${NC}\n"
 read -p "Enable MMDeploy? [y/N]: " enable_mmdeploy
 
 if [[ "$enable_mmdeploy" =~ ^[Yy]$ ]]; then
     if command -v docker &>/dev/null; then
         # We use the only stable available tag for both CPU and GPU
         DOCKER_TAG="ubuntu20.04-cuda11.8-mmdeploy1.3.1"
-        
-        echo -e "\n⚠️  ${YELLOW}WARNING: The MMDeploy Docker image is approximately 11.3 GB.${NC}"
+
         echo -e "🐳 ${GREEN}Docker found. Pulling: ${YELLOW}openmmlab/mmdeploy:$DOCKER_TAG${NC}..."
         docker pull openmmlab/mmdeploy:$DOCKER_TAG || echo -e "${RED}⚠️ Failed to pull image. You may need to pull it manually later.${NC}"
     else

@@ -116,16 +116,15 @@ class EZMMLab(ABC):
         is_toml = isinstance(model, (Path, str)) and str(model).endswith(".toml")
 
         # 1. Enforce explicit checkpoint for custom configs during inference/export
-        # We allow missing checkpoint only if the user explicitly wants to LOAD for a training resume,
-        # but for export or direct inference, it must be provided to avoid ambiguity.
-        if is_toml and not checkpoint_path:
-            # We check if a checkpoint was smart-resolved (e.g. from the same folder)
-            # If not even a smart-resolved one exists, we raise an error.
-            if not self.checkpoint_path:
-                raise ValueError(
-                    f"You initialized the model with a custom config ({model}) but provided no weights. "
-                    "For export or inference, you must explicitly provide the 'checkpoint_path'."
-                )
+        # We require an explicit checkpoint_path when using user_config.toml to avoid
+        # accidentally exporting/using pre-trained or smart-resolved weights that 
+        # the user might not have intended.
+        if is_toml and not self._using_custom_weights:
+            raise ValueError(
+                f"You initialized the model with a custom config ({model}) but did not "
+                "explicitly provide a 'checkpoint_path'. For safety and precision during "
+                "export or inference, you must explicitly specify the weights you wish to use."
+            )
 
         # 2. Enforce explicit configuration for custom weights to prevent head size mismatches
         # This applies when a user provides weights manually (Case 2 in resolve_resources)
