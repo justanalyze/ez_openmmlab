@@ -9,6 +9,7 @@ from ez_openmmlab.core.engines.engine_base import EZMMLab
 from ez_openmmlab.core.inference.formatters import PoseResultFormatter
 from ez_openmmlab.core.schema.models import ModelName
 from ez_openmmlab.core.utils.context import switch_to_lib_root
+from ez_openmmlab.core.validators import InputValidator
 
 
 class EZMMPose(EZMMLab):
@@ -25,22 +26,13 @@ class EZMMPose(EZMMLab):
         self._inferencer: Optional[MMPoseInferencer] = None
         self._formatter = PoseResultFormatter()
 
-    def _validate_inputs(
-        self,
-        model: Union[ModelName, str, Path],
-        checkpoint_path: Optional[Union[str, Path]],
-    ) -> None:
-        """Pose-specific input validation."""
-        super()._validate_inputs(model, checkpoint_path)
-
-        # For pose models, we often need to know the number of keypoints
-        # if using custom weights without a full config.toml
-        if self._using_custom_weights and not str(model).endswith(".toml"):
-            if self.num_keypoints is None and self.num_classes is None:
-                raise ValueError(
-                    "MMPose models require 'num_keypoints' or 'num_classes' to be specified "
-                    "when loading custom weights without a config.toml."
-                )
+        # Pose-specific validation
+        InputValidator.validate_mmpose_weights(
+            model=model,
+            using_custom_weights=self._using_custom_weights,
+            num_keypoints=self.num_keypoints,
+            num_classes=self.num_classes,
+        )
 
     def _init_inferencer(self, device: str, **kwargs):
         """Lazy initialization of the MMPose inferencer with patching support."""

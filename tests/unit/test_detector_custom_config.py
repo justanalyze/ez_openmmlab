@@ -8,8 +8,8 @@ from ez_openmmlab import RTMDet
 
 
 @patch("ez_openmmlab.core.engines.mmdet.DetInferencer")
-@patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
-@patch("ez_openmmlab.core.engines.engine_base.get_config_file")
+@patch("ez_openmmlab.core.resolvers.resource_resolver.ensure_model_checkpoint")
+@patch("ez_openmmlab.core.config_manager.get_config_file")
 def test_rtmdet_predict_auto_loads_toml_params(
     mock_get_config, mock_ensure, mock_inferencer_cls, tmp_path
 ):

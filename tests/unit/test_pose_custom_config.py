@@ -8,8 +8,8 @@ from ez_openmmlab import RTMO, RTMPose
 
 
 @patch("ez_openmmlab.models.mmpose.rtmpose.MMPoseInferencer")
-@patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
-@patch("ez_openmmlab.core.engines.engine_base.get_config_file")
+@patch("ez_openmmlab.core.resolvers.resource_resolver.ensure_model_checkpoint")
+@patch("ez_openmmlab.core.config_manager.get_config_file")
 def test_rtmpose_predict_patches_arch_params(
     mock_get_config, mock_ensure, mock_inferencer_cls, tmp_path
 ):
@@ -49,8 +49,8 @@ def test_rtmpose_predict_patches_arch_params(
 
 
 @patch("ez_openmmlab.models.mmpose.rtmo.MMPoseInferencer")
-@patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
-@patch("ez_openmmlab.core.engines.engine_base.get_config_file")
+@patch("ez_openmmlab.core.resolvers.resource_resolver.ensure_model_checkpoint")
+@patch("ez_openmmlab.core.config_manager.get_config_file")
 def test_rtmo_predict_patches_input_size(
     mock_get_config, mock_ensure, mock_inferencer_cls, tmp_path
 ):
@@ -81,8 +81,8 @@ def test_rtmo_predict_patches_input_size(
 
 
 @patch("ez_openmmlab.models.mmpose.rtmpose.MMPoseInferencer")
-@patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
-@patch("ez_openmmlab.core.engines.engine_base.get_config_file")
+@patch("ez_openmmlab.core.resolvers.resource_resolver.ensure_model_checkpoint")
+@patch("ez_openmmlab.core.config_manager.get_config_file")
 def test_rtmpose_predict_auto_loads_toml_params(
     mock_get_config, mock_ensure, mock_inferencer_cls, tmp_path
 ):

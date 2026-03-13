@@ -10,7 +10,8 @@ from mmengine.runner import Runner
 from ez_openmmlab.core.config_manager import ConfigManager, get_config_file
 from ez_openmmlab.core.datasets import DynamicDatasetRegistry
 from ez_openmmlab.core.inference.results import InferenceResult
-from ez_openmmlab.core.resolvers import ResourceResolver, InputValidator
+from ez_openmmlab.core.resolvers import ResourceResolver
+from ez_openmmlab.core.validators import InputValidator
 from ez_openmmlab.core.surgery import get_surgeries
 from ez_openmmlab.core.schema.models import ModelName
 from ez_openmmlab.core.utils.context import switch_to_lib_root
@@ -28,7 +29,7 @@ from ez_openmmlab.core.schema.config import (
 class EZMMLab(ABC):
     """Abstract base class for all OpenMMLab engines.
 
-    Acts as a high-level coordinator, delegating specific tasks to specialized 
+    Acts as a high-level coordinator, delegating specific tasks to specialized
     components like ResourceResolver, ConfigManager, and InputValidator.
     """
 
@@ -46,6 +47,7 @@ class EZMMLab(ABC):
 
         # Ensure noisy warnings are suppressed immediately
         from ez_openmmlab import mute_warnings
+
         mute_warnings()
 
         # --- 2. Internal Managers ---
@@ -82,6 +84,7 @@ class EZMMLab(ABC):
         """Configures the global logger level and suppresses noisy dependencies."""
         try:
             import sys
+
             logger.remove()
             logger.add(
                 sys.stderr,
@@ -89,6 +92,7 @@ class EZMMLab(ABC):
                 filter=lambda record: record["level"].no >= logger.level(log_level).no,
             )
             import logging
+
             logging.getLogger("mmengine").setLevel(
                 logging.ERROR if log_level == "INFO" else log_level
             )
@@ -178,19 +182,25 @@ class EZMMLab(ABC):
         from ez_openmmlab.core.deploy.registry import DeployConfigRegistry
 
         current_path = Path(__file__).resolve()
-        project_root = next((p for p in current_path.parents if (p / "pyproject.toml").exists()), None)
-        
+        project_root = next(
+            (p for p in current_path.parents if (p / "pyproject.toml").exists()), None
+        )
+
         if not project_root:
             raise RuntimeError("Could not determine project root.")
 
         registry = DeployConfigRegistry()
-        deploy_cfg = registry.get_deploy_cfg(self._get_library_family(), format, model_name=self.model)
+        deploy_cfg = registry.get_deploy_cfg(
+            self._get_library_family(), format, model_name=self.model
+        )
 
         manager = DockerExportManager(project_root=project_root)
         image_tag = kwargs.pop("image_tag", "ubuntu20.04-cuda11.8-mmdeploy1.3.1")
 
         if not manager.check_image_exists(image_tag):
-            raise RuntimeError(f"MMDeploy Docker image '{image_tag}' missing. Rerun ./install.sh.")
+            raise RuntimeError(
+                f"MMDeploy Docker image '{image_tag}' missing. Rerun ./install.sh."
+            )
 
         export_work_dir = Path(output_dir)
         export_work_dir.mkdir(parents=True, exist_ok=True)
@@ -235,8 +245,10 @@ class EZMMLab(ABC):
     ) -> None:
         """Runs a fresh end-to-end training pipeline."""
         logger.info(f"Assembling fresh training config for: {dataset_config_path}")
-        InputValidator.validate_augments(augments, self._get_library_family(), self.__class__.__name__)
-        
+        InputValidator.validate_augments(
+            augments, self._get_library_family(), self.__class__.__name__
+        )
+
         architecture_params = self._get_architecture_params(**kwargs)
         aug_dict = augments or {}
 
@@ -278,7 +290,9 @@ class EZMMLab(ABC):
     ) -> None:
         """Resumes an unfinished training session."""
         if not self._source_toml:
-            raise ValueError("Resumption requires initialization with 'user_config.toml'.")
+            raise ValueError(
+                "Resumption requires initialization with 'user_config.toml'."
+            )
 
         effective_work_dir = work_dir or str(self._source_dir)
         user_config = self._config_manager.recover_config_from_toml(
@@ -300,15 +314,19 @@ class EZMMLab(ABC):
 
         work_dir = Path(config.training.work_dir)
         work_dir.mkdir(parents=True, exist_ok=True)
-        config.model.base_config_path = str(get_config_file(config.model.name).absolute())
+        config.model.base_config_path = str(
+            get_config_file(config.model.name).absolute()
+        )
 
         save_user_config(config, work_dir / "user_config.toml")
-        
+
         self._cfg = self._load_base_config(config.model.name)
         for surgery in get_surgeries(self.model):
             surgery.apply(self._cfg, config)
 
-        final_config_path = work_dir / f"{config.model.name.value}_{config.data.dataset_name}.py"
+        final_config_path = (
+            work_dir / f"{config.model.name.value}_{config.data.dataset_name}.py"
+        )
         self._config_manager.dump_config(self._cfg, final_config_path)
 
         if dry_run:
@@ -365,13 +383,19 @@ class EZMMLab(ABC):
         return {}
 
     @abstractmethod
-    def _init_inferencer(self, device: str, **kwargs) -> None: pass
+    def _init_inferencer(self, device: str, **kwargs) -> None:
+        pass
 
     @abstractmethod
-    def _run_inference(self, inputs: list, out_dir: str, show: bool, **kwargs) -> Union[dict, list]: pass
+    def _run_inference(
+        self, inputs: list, out_dir: str, show: bool, **kwargs
+    ) -> Union[dict, list]:
+        pass
 
     @abstractmethod
-    def _get_library_family(self) -> str: pass
+    def _get_library_family(self) -> str:
+        pass
 
     @abstractmethod
-    def _get_architecture_params(self, **kwargs) -> Dict[str, Any]: pass
+    def _get_architecture_params(self, **kwargs) -> Dict[str, Any]:
+        pass

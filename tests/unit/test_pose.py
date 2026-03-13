@@ -11,7 +11,7 @@ from ez_openmmlab.core.schema.models import ModelName
 @patch("mmengine.infer.infer._load_checkpoint")
 @patch("pathlib.Path.exists")
 @patch("ez_openmmlab.models.mmpose.rtmpose.MMPoseInferencer")
-@patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
+@patch("ez_openmmlab.core.resolvers.resource_resolver.ensure_model_checkpoint")
 def test_rtmpose_predict_converts_results(
     mock_ensure, mock_inferencer_cls, mock_exists, mock_load
 ):
@@ -61,8 +61,8 @@ def test_rtmpose_predict_converts_results(
 
 
 @patch("ez_openmmlab.models.mmpose.rtmpose.MMPoseInferencer")
-@patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
-@patch("ez_openmmlab.core.engines.engine_base.get_config_file")
+@patch("ez_openmmlab.core.resolvers.resource_resolver.ensure_model_checkpoint")
+@patch("ez_openmmlab.core.config_manager.get_config_file")
 def test_rtmpose_predict_detector_overrides(
     mock_get_config, mock_ensure, mock_inferencer_cls
 ):

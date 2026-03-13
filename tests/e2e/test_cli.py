@@ -87,6 +87,8 @@ def test_train_command_calls_factory_and_train(tmp_path):
                 "5",
                 "--batch-size",
                 "4",
+                "--num_workers",
+                "0",
             ],
         )
 
@@ -96,3 +98,4 @@ def test_train_command_calls_factory_and_train(tmp_path):
         _, t_kwargs = mock_model_instance.train.call_args
         assert t_kwargs["epochs"] == 5
         assert t_kwargs["batch_size"] == 4
+        assert t_kwargs["num_workers"] == 0

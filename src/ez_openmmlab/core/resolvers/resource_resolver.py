@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Any, Dict, Optional, Union, TYPE_CHECKING
 
 from loguru import logger
 from pydantic import BaseModel, ConfigDict
@@ -19,13 +19,13 @@ class ResolvedResources(BaseModel):
     model_name: str
     checkpoint_path: Optional[Path]
     config_path: Path
-    
+
     # Metadata from TOML if applicable
     num_classes: Optional[int] = None
     num_keypoints: Optional[int] = None
     metainfo: Optional[dict] = None
     architecture_params: Dict[str, Any] = {}
-    
+
     # Contextual paths
     source_toml: Optional[Path] = None
     source_dir: Optional[Path] = None
@@ -75,7 +75,7 @@ class ResourceResolver:
 
         # 2. Load metadata from TOML
         meta = self._config_manager.load_metadata_from_toml(config_toml)
-        
+
         # 3. Generate temporary Python config
         temp_config = self._config_manager.prepare_config_file(
             config_toml, final_checkpoint
@@ -99,9 +99,9 @@ class ResourceResolver:
     ) -> ResolvedResources:
         """Handles resolution for standard OpenMMLab model names."""
         from ez_openmmlab.core.config_manager import get_config_file
-        
+
         model_str = model.value if isinstance(model, ModelName) else str(model)
-        
+
         # ensure_model_checkpoint handles both finding existing and downloading
         resolved_checkpoint = ensure_model_checkpoint(model, checkpoint_path)
         resolved_config = get_config_file(model)

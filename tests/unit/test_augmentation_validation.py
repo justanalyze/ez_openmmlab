@@ -17,8 +17,8 @@ def test_train_unsupported_augmentation_raises_error():
     """Verifies that providing an invalid augmentation key raises ValueError."""
     # Note: We need to mock enough of the init to avoid real file checks if possible,
     # or just use a valid model name and mock the registry.
-    with patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint", return_value="dummy.pth"):
-        with patch("ez_openmmlab.core.engines.engine_base.get_config_file", return_value="dummy.py"):
+    with patch("ez_openmmlab.core.utils.download.ensure_model_checkpoint", return_value="dummy.pth"):
+        with patch("ez_openmmlab.core.config_manager.get_config_file", return_value="dummy.py"):
             detector = ConcreteEZDetector(model=ModelName.RTM_DET_TINY)
             
             with pytest.raises(ValueError, match="Unsupported augmentation key"):

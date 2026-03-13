@@ -30,7 +30,7 @@ def test_ezmmlab_init_with_string():
 def test_ezmmlab_init_with_config_path_no_checkpoint(tmp_path):
     """Test initialization with a path to a config file but no checkpoint.
     
-    Now expects a warning during init and a ValueError during predict.
+    Now expects a ValueError during init because weights are mandatory for custom configs.
     """
     config_file = tmp_path / "config.toml"
     # Create a valid minimal TOML to pass validation
@@ -46,8 +46,6 @@ root = "data/coco"
 epochs = 10
 """)
 
-    engine = ConcreteEZMMLab(model=config_file)
-    assert engine.checkpoint_path is None
-    
-    with pytest.raises(ValueError, match="No checkpoint found or provided"):
-        engine.predict("test.jpg")
+    # Should raise ValueError because weights are now mandatory for custom configs
+    with pytest.raises(ValueError, match="did not explicitly provide a 'checkpoint_path'"):
+        ConcreteEZMMLab(model=config_file)
