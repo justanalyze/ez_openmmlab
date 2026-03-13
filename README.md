@@ -1,10 +1,10 @@
 # 🚀 ez_openmmlab: OpenMMLab Made EZ
 
-Train and deploy SOTA models like **RTMDet**, **RTMPose**, and **RTMO** in minutes, not days. `ez_openmmlab` is a high-level, **TOML-first** wrapper that makes the OpenMMLab ecosystem actually usable.
+Train and deploy SOTA models like **RTMDet**, **RTMPose**, and **RTMO** in minutes, not days. `ez_openmmlab` is a high-level, **TOML-first** wrapper that makes the OpenMMLab ecosystem actually EZ to use.
 
 - **EZ Environment:** Reproducible setups that just work.
 - **EZ Configuration:** Human-readable TOML replaces 500-line Python config "surgery".
-- **EZ Workflow:** A unified API for training and inference across the entire ecosystem. (MMDet an MMPose so far...)
+- **EZ Workflow:** A unified API for training and inference across the entire ecosystem. (MMDet and MMPose so far...)
 - **Config Verification:** Validate your final flattened configuration without starting a training run.
 - **Unified API:** One interface for Detection, Segmentation, and Pose Estimation.
 
@@ -104,7 +104,10 @@ img_dir = "images/val"
 
 [metainfo]
 # Sigmas are required for OKS evaluation (one per keypoint)
-sigmas = [0.025, 0.025, 0.05] 
+sigmas = [0.025, 0.025, 0.05]
+
+# Optional: Higher weights (e.g. 2.0) make the model focus more on specific points
+joint_weights = [1.0, 1.0, 1.0]
 
 # Define keypoint identities
 [metainfo.keypoint_info.0]
@@ -153,6 +156,7 @@ results = model.predict("player.jpg", show=True)
 Deploying OpenMMLab models is often a nightmare due to complex dependencies. `ez_openmmlab` simplifies this by leveraging **MMDeploy via Docker**. Export your models to ONNX or TensorRT with a single command.
 
 ### Python API
+
 ```python
 from ez_openmmlab import RTMDet
 
@@ -166,6 +170,7 @@ model.export(
 ```
 
 ### CLI
+
 ```bash
 ez-mmlab export rtmdet_tiny sample.jpg --format onnx --out deploy/
 ```
@@ -174,9 +179,9 @@ ez-mmlab export rtmdet_tiny sample.jpg --format onnx --out deploy/
 
 ## 🗺️ Roadmap
 
-- [ ] **Native Export:** One-click `.export()` to ONNX and TensorRT for production. (For now install [MMDeploy](https://github.com/open-mmlab/mmdeploy) Via Docker to prevent headaches ;) )
-- [ ] **Architecture Expansion:** Bringing the "EZ" treatment to more SOTA architectures under OpenMMLab (taking suggestions!).
+- [x] **Native Export:** One-click `.export()` to ONNX and TensorRT for production. (For now install [MMDeploy](https://github.com/open-mmlab/mmdeploy) Via Docker to prevent headaches ;) )
 - [ ] **Full CLI:** Run entire training and inference experiments directly from your terminal.
+- [ ] **Architecture Expansion:** Bringing the "EZ" treatment to more SOTA architectures under OpenMMLab (taking suggestions!).
 
 ---
 
