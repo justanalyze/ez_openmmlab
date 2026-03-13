@@ -40,12 +40,12 @@ chmod +x install.sh
 
 ### 🛡️ Why These Specific Versions?
 
-OpenMMLab (`mmdet`, `mmpose`) is pinned to a specific ecosystem:
+OpenMMLab (`mmcv`, `mmdet`, `mmpose`) is pinned to a specific ecosystem:
 - **Python 3.8–3.10**
 - **PyTorch 2.0.1**
 - **CUDA 11.7**
 
-This is intentional and fully tested. `ez_openmmlab` exists precisely to give you a stable, working environment for these tools without the usual dependency archaeology. **If it installs, it works.**
+This specific alignment is required to ensure all three libraries can be installed together in a single environment without version conflicts. This is intentional and fully tested. `ez_openmmlab` exists precisely to give you a stable, working environment for these tools without the usual dependency archaeology. **If it installs, it works.**
 
 ---
 
