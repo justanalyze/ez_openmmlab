@@ -2,6 +2,7 @@ import cv2
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
+
 from loguru import logger
 from mmengine.config import Config
 from mmengine.runner import Runner
@@ -9,7 +10,7 @@ from mmengine.runner import Runner
 from ez_openmmlab.core.config_manager import ConfigManager, get_config_file
 from ez_openmmlab.core.datasets import DynamicDatasetRegistry
 from ez_openmmlab.core.inference.results import InferenceResult
-from ez_openmmlab.core.resolvers import ResourceResolver
+from ez_openmmlab.core.resolvers import ResourceResolver, InputValidator
 from ez_openmmlab.core.surgery import get_surgeries
 from ez_openmmlab.core.schema.models import ModelName
 from ez_openmmlab.core.utils.context import switch_to_lib_root
@@ -25,9 +26,10 @@ from ez_openmmlab.core.schema.config import (
 
 
 class EZMMLab(ABC):
-    """Abstract base class for all OpenMMLab libraries (Detection, Pose, etc.).
+    """Abstract base class for all OpenMMLab engines.
 
-    Implements shared logic for configuration management and training workflows.
+    Acts as a high-level coordinator, delegating specific tasks to specialized 
+    components like ResourceResolver, ConfigManager, and InputValidator.
     """
 
     def __init__(
@@ -37,23 +39,20 @@ class EZMMLab(ABC):
         log_level: str = "INFO",
         **kwargs,
     ):
-        # --- 1. Logging & Internal State ---
+        # --- 1. Logging ---
         self.log_level = log_level
         self._configure_logging(log_level)
-
         logger.info(f"Initializing {self.__class__.__name__} with model: '{model}'")
 
-        # Ensure noisy warnings are suppressed when engine starts
+        # Ensure noisy warnings are suppressed immediately
         from ez_openmmlab import mute_warnings
-
         mute_warnings()
 
         # --- 2. Internal Managers ---
         self._config_manager = ConfigManager()
         self._resource_resolver = ResourceResolver(self._config_manager)
 
-        # --- 3. Model Configuration & State ---
-        # Resolve all paths and metadata via delegated resolver
+        # --- 3. Resource Resolution ---
         resources = self._resource_resolver.resolve(model, checkpoint_path)
 
         self.checkpoint_path = resources.checkpoint_path
@@ -71,121 +70,58 @@ class EZMMLab(ABC):
         self._using_custom_weights = checkpoint_path is not None
 
         # --- 4. Validation ---
-        self._validate_inputs(model, self.checkpoint_path)
-
-    def _validate_augments(self, augments: Optional[Dict[str, Any]]) -> None:
-        """Strictly validates augmentation keys against the registry."""
-        if not augments:
-            return
-
-        from ez_openmmlab.core.surgery.pipeline_patchers import (
-            PipelineTransformPatcherRegistry,
+        InputValidator.validate_initialization(
+            model=model,
+            checkpoint_path=self.checkpoint_path,
+            using_custom_weights=self._using_custom_weights,
+            num_classes=self.num_classes,
+            num_keypoints=self.num_keypoints,
         )
-
-        family = self._get_library_family()
-        supported = PipelineTransformPatcherRegistry.get_supported_augments(family)
-
-        for key in augments:
-            if key not in supported:
-                raise ValueError(
-                    f"Unsupported augmentation key '{key}' for {self.__class__.__name__}. "
-                    f"Available augmentations for this model: {supported}"
-                )
 
     def _configure_logging(self, log_level: str) -> None:
         """Configures the global logger level and suppresses noisy dependencies."""
         try:
             import sys
-
-            logger.remove()  # Remove default handler
-            # We add a sink that only shows logs at or above our current level
-            # This ensures that even if Loguru intercepts internal DEBUGs, they don't show up.
+            logger.remove()
             logger.add(
                 sys.stderr,
                 level=log_level,
                 filter=lambda record: record["level"].no >= logger.level(log_level).no,
             )
-            # Ensure internal OpenMMLab loggers are also synced to this level
             import logging
-
             logging.getLogger("mmengine").setLevel(
                 logging.ERROR if log_level == "INFO" else log_level
             )
         except Exception as e:
-            # We don't want a logging failure to crash the entire engine
             print(f"Warning: Failed to set log level: {e}")
-
-    def _validate_inputs(
-        self,
-        model: Union[ModelName, str, Path],
-        checkpoint_path: Optional[Union[str, Path]],
-    ) -> None:
-        """Performs initial validation of provided arguments."""
-        is_toml = isinstance(model, (Path, str)) and str(model).endswith(".toml")
-
-        # 1. Enforce explicit checkpoint for custom configs during inference/export
-        # We require an explicit checkpoint_path when using user_config.toml to avoid
-        # accidentally exporting/using pre-trained or smart-resolved weights that
-        # the user might not have intended.
-        if is_toml and not self._using_custom_weights:
-            raise ValueError(
-                f"You initialized the model with a custom config ({model}) but did not "
-                "explicitly provide a 'checkpoint_path'. For safety and precision during "
-                "export or inference, you must explicitly specify the weights you wish to use."
-            )
-
-        # 2. Enforce explicit configuration for custom weights to prevent head size mismatches
-        # This applies when a user provides weights manually (Case 2 in resolve_resources)
-        if checkpoint_path and self._using_custom_weights and not is_toml:
-            if self.num_classes is None and self.num_keypoints is None:
-                raise ValueError(
-                    f"You provided custom weights ({checkpoint_path}) but no custom configuration. "
-                    "To load a custom trained model, please provide its 'config.toml' as the 'model' argument. "
-                    "Alternatively, specify 'num_classes' explicitly if using a standard model name."
-                )
 
     def __del__(self):
         """Cleanup temporary files."""
-        if hasattr(self, "_temp_config_file"):
+        if hasattr(self, "_temp_config_file") and self._temp_config_file:
             self._config_manager.cleanup_temp_config(self._temp_config_file)
 
     def _load_and_patch_config(self, **kwargs) -> Config:
         """Loads the model config and applies all registered plugin surgeries."""
         with switch_to_lib_root(self.model):
             cfg = Config.fromfile(str(self.config_path))
-
-            # Trigger patching if custom metadata or architecture params are provided
             dummy_user_cfg = self._get_dummy_user_config(**kwargs)
             for surgery in get_surgeries(self.model):
                 surgery.apply(cfg, dummy_user_cfg)
-
             return cfg
 
     def _get_dummy_user_config(self, **kwargs) -> UserConfig:
-        """Creates a dummy UserConfig to satisfy the injector interface.
-
-        This ensures that architecture-specific parameters passed during predict()
-        or loaded from config.toml are correctly picked up by injectors.
-        """
+        """Creates a dummy UserConfig to satisfy the injector interface."""
         model_params = {
             "name": self.model,
             "num_classes": self.num_classes,
             "num_keypoints": self.num_keypoints,
         }
-        # 1. Use stored architecture_params (from config.toml)
         model_params.update(self.architecture_params)
-
-        # 2. Inject architecture-specific parameters passed to predict()
         model_params.update(kwargs)
 
         return UserConfig(
             model=ModelSection(**model_params),
-            training=TrainingSection(
-                num_workers=0,
-                learning_rate=0.001,
-                weight_decay=None,
-                evaluator_metric=None,
-            ),
+            training=TrainingSection(num_workers=0, learning_rate=0.001),
             data=DataSection(root=""),
         )
 
@@ -198,91 +134,30 @@ class EZMMLab(ABC):
         show: bool = False,
         **kwargs,
     ) -> List[InferenceResult]:
-        """Universal prediction entry point (Template Method).
-
-        Args:
-            image_path: Path to a single image, a list of paths, or a directory.
-            device: Computing device ('cuda', 'cpu').
-            out_dir: Directory to save visualization images.
-            show: Whether to pop up a window with the result.
-            **kwargs: Library-specific inference arguments.
-        """
+        """Universal prediction entry point."""
         if not self.checkpoint_path:
-            raise ValueError(
-                "No checkpoint found or provided. Inference requires a valid weight file (.pth)."
-            )
+            raise ValueError("Inference requires a valid weight file (.pth).")
 
-        # 1. Extract and normalize architecture parameters
-        # Use stored architecture_params as defaults for kwargs
         merged_kwargs = {**self.architecture_params, **kwargs}
         architecture_params = self._get_architecture_params(**merged_kwargs)
 
-        # 2. Lazy Initialization with merged params
         self._init_inferencer(device, **{**architecture_params, **kwargs})
 
-        # 3. Setup Resources
         actual_out_dir = str(get_unique_dir(out_dir)) if out_dir else ""
         inputs = normalize_inputs(image_path)
 
         if not hasattr(self, "_inferencer") or self._inferencer is None:
             raise RuntimeError("Inferencer failed to initialize.")
 
-        # 4. Delegate execution to child
         raw_results = self._run_inference(inputs, actual_out_dir, show, **kwargs)
 
-        # 4.1 Cleanup visualization if needed
         if show:
             cv2.destroyAllWindows()
 
-        # 5. Format results
         if not hasattr(self, "_formatter") or self._formatter is None:
             raise RuntimeError("Result formatter not initialized.")
 
         return self._formatter.map_results(raw_results, inputs, self._get_class_names())
-
-    @abstractmethod
-    def _init_inferencer(self, device: str, **kwargs) -> None:
-        """Library-specific inferencer initialization."""
-        pass
-
-    @abstractmethod
-    def _run_inference(
-        self, inputs: list, out_dir: str, show: bool, **kwargs
-    ) -> Union[dict, list]:
-        """Library-specific inference execution."""
-        pass
-
-    @abstractmethod
-    def _get_library_family(self) -> str:
-        """Returns the library family ('mmdet' or 'mmpose') for this engine."""
-        pass
-
-    @abstractmethod
-    def _get_architecture_params(self, **kwargs) -> Dict[str, Any]:
-        """Extracts architecture-specific hyperparameters from kwargs."""
-        pass
-
-    def _get_class_names(self) -> dict:
-        """Retrieves class names from local metainfo or inferencer.
-
-        Returns:
-            A dictionary mapping class IDs to names.
-        """
-        # 1. Check local metainfo (auto-loaded from config near checkpoint)
-        if self.metainfo and "classes" in self.metainfo:
-            return {i: name for i, name in enumerate(self.metainfo["classes"])}
-
-        # 2. Check inferencer model metadata (contains model's original training classes)
-        if hasattr(self, "_inferencer") and self._inferencer:
-            # Handle MMDet/MMPose internal model metadata
-            model = getattr(self._inferencer, "model", None)
-            if model:
-                meta = getattr(model, "dataset_meta", {})
-                if "classes" in meta:
-                    return {i: name for i, name in enumerate(meta["classes"])}
-
-        # 3. No fallback
-        return {}
 
     def export(
         self,
@@ -292,71 +167,31 @@ class EZMMLab(ABC):
         device: str = "cpu",
         **kwargs,
     ) -> Path:
-        """Exports the model to a production format using MMDeploy via Docker.
-
-        Args:
-            format: Target format ('onnx', 'tensorrt').
-            image: Sample image path for model tracing.
-            output_dir: Host directory to save the exported artifacts.
-            device: 'cpu' or 'cuda'.
-            **kwargs: Additional parameters for MMDeploy.
-
-        Returns:
-            Path to the output directory containing the exported model.
-        """
+        """Exports the model to production formats via Docker."""
         if not self.checkpoint_path or not self.checkpoint_path.exists():
             raise ValueError("Export requires a valid checkpoint path.")
 
         if format == "tensorrt" and device == "cpu":
-            raise ValueError(
-                "TensorRT export requires a GPU. Please set device='cuda'. "
-                "For CPU-based deployment, please use format='onnx'."
-            )
+            raise ValueError("TensorRT export requires a GPU (device='cuda').")
 
         from ez_openmmlab.core.deploy.docker_manager import DockerExportManager
         from ez_openmmlab.core.deploy.registry import DeployConfigRegistry
 
-        # 1. Resolve Project Context
-        # Find the project root by looking for pyproject.toml up from current file
         current_path = Path(__file__).resolve()
-        project_root = None
-        for parent in current_path.parents:
-            if (parent / "pyproject.toml").exists():
-                project_root = parent
-                break
-
+        project_root = next((p for p in current_path.parents if (p / "pyproject.toml").exists()), None)
+        
         if not project_root:
-            raise RuntimeError(
-                "Could not determine project root (pyproject.toml not found)."
-            )
+            raise RuntimeError("Could not determine project root.")
 
-        # 2. Resolve Deploy Config
         registry = DeployConfigRegistry()
-        deploy_cfg = registry.get_deploy_cfg(
-            self._get_library_family(), format, model_name=self.model
-        )
+        deploy_cfg = registry.get_deploy_cfg(self._get_library_family(), format, model_name=self.model)
 
-        # 3. Build Orchestrator
         manager = DockerExportManager(project_root=project_root)
+        image_tag = kwargs.pop("image_tag", "ubuntu20.04-cuda11.8-mmdeploy1.3.1")
 
-        # 3.1 Resolve Docker Tag
-        # Use provided tag or pick the only valid stable default
-        default_tag = "ubuntu20.04-cuda11.8-mmdeploy1.3.1"
-        image_tag = kwargs.pop("image_tag", default_tag)
-
-        # 3.2 Verify Image exists locally
         if not manager.check_image_exists(image_tag):
-            raise RuntimeError(
-                f"MMDeploy Docker image 'openmmlab/mmdeploy:{image_tag}' not found locally.\n"
-                "To use model export, please install the MMDeploy dependency by rerunning the installer:\n"
-                "  ./install.sh\n"
-                "And choosing 'y' when prompted for MMDeploy support."
-            )
+            raise RuntimeError(f"MMDeploy Docker image '{image_tag}' missing. Rerun ./install.sh.")
 
-        # 4. Prepare Patched Model Config
-        # We generate a flattened, patched config in the output directory
-        # to ensure it's within the project root (for Docker mounting) and
-        # contains all custom metadata from UserConfig (e.g. num_classes).
         export_work_dir = Path(output_dir)
         export_work_dir.mkdir(parents=True, exist_ok=True)
 
@@ -364,8 +199,6 @@ class EZMMLab(ABC):
         final_cfg_path = export_work_dir / "config.py"
         self._config_manager.dump_config(patched_cfg, final_cfg_path)
 
-        # 5. Construct and Run Command
-        # Note: model_cfg and checkpoint must be absolute for the manager to map them
         cmd = manager.build_command(
             deploy_cfg=deploy_cfg,
             model_cfg=str(final_cfg_path.absolute()),
@@ -378,8 +211,7 @@ class EZMMLab(ABC):
         )
 
         manager.run_export(cmd)
-
-        logger.info(f"Export successful. Artifacts saved to: {output_dir}")
+        logger.info(f"Export successful: {output_dir}")
         return Path(output_dir)
 
     def train(
@@ -401,35 +233,12 @@ class EZMMLab(ABC):
         stage2_num_epochs: int = 20,
         **kwargs,
     ) -> None:
-        """Runs a fresh end-to-end training pipeline.
-
-        Args:
-            dataset_config_path: Path to the dataset.toml definition.
-            epochs: Number of training epochs.
-            batch_size: Total batch size for training.
-            device: Training hardware ('cuda', 'cpu', 'mps').
-            work_dir: Directory for logs and checkpoints.
-            learning_rate: Initial learning rate.
-            amp: Enable Automatic Mixed Precision.
-            num_workers: Number of data loading workers.
-            enable_tensorboard: Enable TensorBoard visualization.
-            log_level: Override for internal framework logging.
-            weight_decay: Optimizer weight decay.
-            evaluator_metric: Metric(s) for validation.
-            augments: Dictionary of data augmentation parameters.
-            dry_run: If True, only generates the final config file without starting training.
-            stage2_num_epochs: Number of epochs for stage 2 training pipeline.
-            **kwargs: Additional architecture-specific parameters.
-        """
+        """Runs a fresh end-to-end training pipeline."""
         logger.info(f"Assembling fresh training config for: {dataset_config_path}")
-        self._validate_augments(augments)
+        InputValidator.validate_augments(augments, self._get_library_family(), self.__class__.__name__)
+        
         architecture_params = self._get_architecture_params(**kwargs)
-
-        # Extract individual augmentation values for create_fresh_config
         aug_dict = augments or {}
-        scale_factor = aug_dict.get("scale_factor")
-        rotate_factor = aug_dict.get("rotate_factor")
-        random_flip_prob = aug_dict.get("random_flip_prob")
 
         user_config = self._config_manager.create_fresh_config(
             model=self.model,
@@ -447,9 +256,9 @@ class EZMMLab(ABC):
             weight_decay=weight_decay,
             evaluator_metric=evaluator_metric,
             architecture_params=architecture_params,
-            scale_factor=scale_factor,
-            rotate_factor=rotate_factor,
-            random_flip_prob=random_flip_prob,
+            scale_factor=aug_dict.get("scale_factor"),
+            rotate_factor=aug_dict.get("rotate_factor"),
+            random_flip_prob=aug_dict.get("random_flip_prob"),
             stage2_num_epochs=stage2_num_epochs,
             **kwargs,
         )
@@ -467,31 +276,11 @@ class EZMMLab(ABC):
         stage2_num_epochs: Optional[int] = None,
         **kwargs,
     ) -> None:
-        """Resumes an unfinished training session from a source directory.
-
-        Args:
-            checkpoint: Whether to resume. If True, automatically find the latest
-                checkpoint in the source directory. If string, use as specific path.
-            epochs: Optional override for the total number of epochs.
-            batch_size: Optional override for training batch size.
-            learning_rate: Optional override for the learning rate.
-            work_dir: Optional override for the working directory. If None,
-                it defaults to the directory containing the source configuration.
-            dry_run: If True, only generates the final config file without starting training.
-            stage2_num_epochs: Optional override for stage 2 training pipeline epochs.
-            **kwargs: Additional training parameter overrides.
-        """
+        """Resumes an unfinished training session."""
         if not self._source_toml:
-            raise ValueError(
-                "Training resumption requires the model to be initialized with "
-                "the 'user_config.toml' from the previous run."
-            )
+            raise ValueError("Resumption requires initialization with 'user_config.toml'.")
 
-        # Resolve effective directory context
         effective_work_dir = work_dir or str(self._source_dir)
-        logger.info(f"Resuming training in context: {effective_work_dir}")
-
-        # Recover and patch context
         user_config = self._config_manager.recover_config_from_toml(
             toml_path=self._source_toml,
             resume=checkpoint,
@@ -506,89 +295,83 @@ class EZMMLab(ABC):
         self._run_training_workflow(user_config, dry_run=dry_run)
 
     def _run_training_workflow(self, config: UserConfig, dry_run: bool = False) -> None:
-        """Orchestrates the internal OpenMMLab setup and execution."""
-        # 1. Register Dataset
+        """Orchestrates internal OpenMMLab setup and execution."""
         DynamicDatasetRegistry.register_dataset(config, self._get_library_family())
 
-        # 2. Setup Artifacts
         work_dir = Path(config.training.work_dir)
         work_dir.mkdir(parents=True, exist_ok=True)
-        config.model.base_config_path = str(
-            get_config_file(config.model.name).absolute()
-        )
+        config.model.base_config_path = str(get_config_file(config.model.name).absolute())
 
         save_user_config(config, work_dir / "user_config.toml")
-        logger.info(f"User configuration saved to: {work_dir / 'user_config.toml'}")
-
-        # 3. Prepare Final Configuration
+        
         self._cfg = self._load_base_config(config.model.name)
-        self._inject_user_configs(config)
+        for surgery in get_surgeries(self.model):
+            surgery.apply(self._cfg, config)
 
-        final_config_path = (
-            work_dir / f"{config.model.name.value}_{config.data.dataset_name}.py"
-        )
+        final_config_path = work_dir / f"{config.model.name.value}_{config.data.dataset_name}.py"
         self._config_manager.dump_config(self._cfg, final_config_path)
 
         if dry_run:
-            logger.info(f"Dry run enabled. Config generated at: {final_config_path}")
+            logger.info(f"Dry run: {final_config_path}")
             return
 
-        # 4. Execute Training
         self._run_training(final_config_path, config.training.log_level)
-
-        # 5. Synchronize State
         self._sync_state_after_training(work_dir, final_config_path)
 
     def _sync_state_after_training(self, work_dir: Path, config_path: Path) -> None:
-        """Synchronizes engine state with newly trained weights and persistent configs."""
-        logger.info("Synchronizing model state with newly trained weights...")
-
-        # Resolve weights via delegated resolver
+        """Synchronizes engine state after training."""
+        logger.info("Synchronizing model state...")
         new_checkpoint = self._resource_resolver._try_resolve_checkpoint(work_dir)
         if new_checkpoint:
             self.checkpoint_path = new_checkpoint
             self._using_custom_weights = True
-        else:
-            logger.warning(
-                f"No checkpoints found in {work_dir}. Inference may use stale weights."
-            )
 
-        # Update persistent configuration context
         self._source_toml = (work_dir / "user_config.toml").absolute()
         self._source_dir = work_dir.absolute()
         self.config_path = config_path
 
-        # Refresh metadata (critical for first-time training of custom models)
         meta = self._config_manager.load_metadata_from_toml(self._source_toml)
         self.num_classes = meta.get("num_classes")
         self.num_keypoints = meta.get("num_keypoints")
         self.metainfo = meta.get("metainfo")
         self.architecture_params = meta.get("architecture_params", {})
 
-        # Clear inferencer to force re-initialization on next predict() call
         if hasattr(self, "_inferencer"):
             self._inferencer = None
 
     def _run_training(self, config_path: Path, log_level: str) -> None:
         """Initializes the MMEngine Runner and starts training."""
-        logger.info(f"Starting MMEngine Runner with config: {config_path}")
+        logger.info(f"Starting MMEngine Runner: {config_path}")
         runner = Runner.from_cfg(Config.fromfile(str(config_path)))
         runner.train()
 
     def _load_base_config(self, model: str) -> Config:
         config_path = get_config_file(model)
-
         with switch_to_lib_root(self.model) as lib_root:
-            # Use relative path from lib_root
             rel_config_path = config_path.relative_to(lib_root)
-            cfg = Config.fromfile(str(rel_config_path))
+            return Config.fromfile(str(rel_config_path))
 
-        return cfg
+    def _get_class_names(self) -> dict:
+        """Retrieves class names from local metainfo or inferencer."""
+        if self.metainfo and "classes" in self.metainfo:
+            return {i: name for i, name in enumerate(self.metainfo["classes"])}
 
-    def _inject_user_configs(self, config: UserConfig) -> None:
-        """Applies configuration changes using the registered plugin surgeries."""
-        if not self._cfg:
-            raise RuntimeError("Base config not loaded.")
+        if hasattr(self, "_inferencer") and self._inferencer:
+            model = getattr(self._inferencer, "model", None)
+            if model:
+                meta = getattr(model, "dataset_meta", {})
+                if "classes" in meta:
+                    return {i: name for i, name in enumerate(meta["classes"])}
+        return {}
 
-        for surgery in get_surgeries(self.model):
-            surgery.apply(self._cfg, config)
+    @abstractmethod
+    def _init_inferencer(self, device: str, **kwargs) -> None: pass
+
+    @abstractmethod
+    def _run_inference(self, inputs: list, out_dir: str, show: bool, **kwargs) -> Union[dict, list]: pass
+
+    @abstractmethod
+    def _get_library_family(self) -> str: pass
+
+    @abstractmethod
+    def _get_architecture_params(self, **kwargs) -> Dict[str, Any]: pass
