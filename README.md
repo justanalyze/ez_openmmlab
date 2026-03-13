@@ -35,6 +35,9 @@ chmod +x install.sh
 ./install.sh
 ```
 
+> [!TIP]
+> If you just want to try out the library and don't need to export models to production yet, you can **skip** the MMDeploy Docker installation when prompted. The image is **30GB+**. You can always rerun `./install.sh` later to enable export support.
+
 ---
 
 ## 📖 Quick Start
