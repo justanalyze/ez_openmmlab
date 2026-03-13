@@ -15,8 +15,9 @@ def test_rtmpose_predict_patches_arch_params(
 ):
     """Verify that RTMPose.predict patches architecture params into the config."""
     mock_ensure.return_value = tmp_path / "dummy.pth"
-    mock_get_config.return_value = tmp_path / "dummy.py"
-    (tmp_path / "dummy.py").write_text("model = dict(head=dict(type='RTMCCHead'))\ncodec=dict(type='SimCCLabel')")
+    mock_cfg_path = tmp_path / "dummy.py"
+    mock_cfg_path.write_text("model = dict(head=dict(type='RTMCCHead'))\ncodec=dict(type='SimCCLabel')")
+    mock_get_config.return_value = mock_cfg_path
     
     mock_inferencer_instance = MagicMock()
     mock_inferencer_instance.return_value = iter([])
@@ -56,8 +57,9 @@ def test_rtmo_predict_patches_input_size(
 ):
     """Verify that RTMO.predict patches input_size into the config."""
     mock_ensure.return_value = tmp_path / "dummy.pth"
-    mock_get_config.return_value = tmp_path / "dummy.py"
-    (tmp_path / "dummy.py").write_text("model = dict(head=dict(type='RTMOHead'))")
+    mock_cfg_path = tmp_path / "dummy.py"
+    mock_cfg_path.write_text("model = dict(head=dict(type='RTMOHead'))")
+    mock_get_config.return_value = mock_cfg_path
     
     mock_inferencer_instance = MagicMock()
     mock_inferencer_instance.return_value = iter([])
@@ -106,8 +108,9 @@ batch_size = 1
 """)
     
     mock_ensure.return_value = tmp_path / "dummy.pth"
-    mock_get_config.return_value = tmp_path / "dummy.py"
-    (tmp_path / "dummy.py").write_text("model = dict(head=dict(type='RTMCCHead'))\ncodec=dict(type='SimCCLabel')")
+    mock_cfg_path = tmp_path / "dummy.py"
+    mock_cfg_path.write_text("model = dict(head=dict(type='RTMCCHead'))\ncodec=dict(type='SimCCLabel')")
+    mock_get_config.return_value = mock_cfg_path
 
     mock_inferencer_instance = MagicMock()
     mock_inferencer_instance.return_value = iter([])

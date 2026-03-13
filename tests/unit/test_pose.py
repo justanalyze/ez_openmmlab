@@ -64,11 +64,15 @@ def test_rtmpose_predict_converts_results(
 @patch("ez_openmmlab.core.resolvers.resource_resolver.ensure_model_checkpoint")
 @patch("ez_openmmlab.core.config_manager.get_config_file")
 def test_rtmpose_predict_detector_overrides(
-    mock_get_config, mock_ensure, mock_inferencer_cls
+    mock_get_config, mock_ensure, mock_inferencer_cls, tmp_path
 ):
     """Verify that RTMPose.predict respects detector overrides on first call."""
     mock_ensure.return_value = Path("dummy.pth")
-    mock_get_config.return_value = Path("dummy.py")
+    # Must be an absolute path that exists for load_base_config to bypass relative_to
+    mock_cfg_path = tmp_path / "dummy.py"
+    mock_cfg_path.touch()
+    mock_get_config.return_value = mock_cfg_path
+    
     mock_inferencer_instance = MagicMock()
     mock_inferencer_instance.return_value = iter([])
     mock_inferencer_cls.return_value = mock_inferencer_instance

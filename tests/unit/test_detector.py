@@ -47,10 +47,10 @@ def test_predict_initializes_inferencer_and_calls_it(mock_ensure):
 
         # We expect the full path here now (as part of the Config object)
         expected_config = str(
-            Path.cwd()
-            / "libs/mmdetection/configs/rtmdet/rtmdet_tiny_8xb32-300e_coco.py"
+            (Path.cwd()
+            / "libs/mmdetection/configs/rtmdet/rtmdet_tiny_8xb32-300e_coco.py").resolve()
         )
-        assert str(kwargs["model"].filename) == expected_config
+        assert str(Path(kwargs["model"].filename).resolve()) == expected_config
         assert kwargs["weights"] == checkpoint_path
 
         # Verify inferencer was called with the image and threshold

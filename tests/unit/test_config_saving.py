@@ -55,12 +55,11 @@ def test_train_saves_base_config_path(
         mock_get_cfg.return_value = mock_get_config_val
 
         # Mock surgeries to avoid real logic
-        with patch("ez_openmmlab.core.engines.engine_base.get_surgeries", return_value=[]):
+        with patch("ez_openmmlab.core.config_manager.get_surgeries", return_value=[]):
             with patch("mmengine.config.Config.fromfile"):
-                with patch.object(detector, "_load_base_config"):
-                    detector.train(
-                        dataset_config_path=dataset_toml, work_dir=str(work_dir), epochs=1
-                    )
+                detector.train(
+                    dataset_config_path=dataset_toml, work_dir=str(work_dir), epochs=1
+                )
 
     saved_config_path = work_dir / "user_config.toml"
     assert saved_config_path.exists()

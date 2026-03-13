@@ -35,11 +35,11 @@ class TrainingOrchestrator:
         save_user_config(config, work_dir / "user_config.toml")
 
         # 3. Prepare Final Configuration
-        # We temporarily access engine internals for loading/patching
-        # (This will be further refactored when we expand ConfigManager)
-        cfg = engine._load_base_config(config.model.name)
-        for surgery in get_surgeries(engine.model):
-            surgery.apply(cfg, config)
+        # We use ConfigManager for loading and patching
+        cfg = engine._config_manager.load_base_config(
+            config.model.name.value, Path(config.model.base_config_path)
+        )
+        engine._config_manager.patch_config(cfg, engine.model, config)
 
         final_config_path = (
             work_dir / f"{config.model.name.value}_{config.data.dataset_name}.py"

@@ -9,6 +9,8 @@ from ez_openmmlab.core.resolvers import ModelParamsResolverFactory
 from ez_openmmlab.core.schema.datasets import DatasetConfig
 from ez_openmmlab.core.schema.models import ModelName
 from ez_openmmlab.core.schema import config as toml_config
+from ez_openmmlab.core.surgery import get_surgeries
+from ez_openmmlab.core.utils.context import switch_to_lib_root
 
 
 class BaseConfigLoader:
@@ -88,6 +90,60 @@ def get_config_file(model_name: str | ModelName) -> Path:
 
 class ConfigManager:
     """Consolidated manager for constructing UserConfig and handling temporary config lifecycle."""
+
+    def load_base_config(self, model_name: str, config_path: Path) -> Config:
+        """Loads the base OpenMMLab configuration file.
+        
+        Args:
+            model_name: Name of the model (for context switching).
+            config_path: Absolute path to the .py config file.
+        """
+        # If the path is absolute and exists, we can try loading it directly
+        # especially for temporary/mocked configs in tests.
+        if config_path.is_absolute() and config_path.exists():
+            try:
+                # We still want the context switch for any relative imports inside the config
+                with switch_to_lib_root(model_name):
+                    return Config.fromfile(str(config_path))
+            except Exception:
+                # Fallback to relative resolution if direct load fails
+                pass
+
+        with switch_to_lib_root(model_name) as lib_root:
+            rel_config_path = config_path.relative_to(lib_root)
+            return Config.fromfile(str(rel_config_path))
+
+    def patch_config(self, cfg: Config, model_name: str, user_config: toml_config.UserConfig) -> None:
+        """Applies all registered plugin surgeries to a Config object."""
+        for surgery in get_surgeries(model_name):
+            surgery.apply(cfg, user_config)
+
+    def get_dummy_user_config(
+        self, 
+        model_name: str, 
+        num_classes: Optional[int] = None, 
+        num_keypoints: Optional[int] = None, 
+        architecture_params: Optional[Dict[str, Any]] = None,
+        **kwargs
+    ) -> toml_config.UserConfig:
+        """Creates a dummy UserConfig to satisfy the injector interface.
+
+        This is used for on-the-fly patching during inference or export.
+        """
+        model_params = {
+            "name": model_name,
+            "num_classes": num_classes,
+            "num_keypoints": num_keypoints,
+        }
+        if architecture_params:
+            model_params.update(architecture_params)
+        model_params.update(kwargs)
+
+        return toml_config.UserConfig(
+            model=toml_config.ModelSection(**model_params),
+            training=toml_config.TrainingSection(num_workers=0, learning_rate=0.001),
+            data=toml_config.DataSection(root=""),
+        )
 
     def create_fresh_config(
         self,
@@ -191,11 +247,7 @@ class ConfigManager:
         toml_path: Path,
         **kwargs,
     ) -> toml_config.UserConfig:
-        """Loads an existing UserConfig and applies training parameter overrides.
-
-        This ensures that when resuming, we maintain architectural and dataset
-        consistency while allowing extensions (e.g. increasing epochs).
-        """
+        """Loads an existing UserConfig and applies training parameter overrides."""
         user_cfg = toml_config.load_user_config(toml_path)
 
         # Update training parameters with any explicit overrides provided to train()
@@ -231,15 +283,7 @@ class ConfigManager:
         return user_cfg
 
     def load_metadata_from_toml(self, config_path: Path) -> Dict[str, Any]:
-        """Extracts training metadata from a user_config.toml file.
-
-        Args:
-            config_path: Path to the user_config.toml file.
-
-        Returns:
-            A dictionary containing model_name, num_classes, num_keypoints,
-            metainfo, architecture_params, and augmentation_params.
-        """
+        """Extracts training metadata from a user_config.toml file."""
         if not config_path.exists():
             raise FileNotFoundError(
                 f"Configuration file not found: {config_path}"
@@ -260,17 +304,13 @@ class ConfigManager:
             metadata["num_keypoints"] = user_cfg.model.num_keypoints
             metadata["metainfo"] = user_cfg.data.metainfo
 
-            # Capture extra architecture parameters (input_size, etc.)
-            # Pydantic captures these in model_extra because of extra="allow"
             if user_cfg.model.model_extra:
                 metadata["architecture_params"] = user_cfg.model.model_extra
 
-            # Explicitly capture augmentation parameters
             metadata["augmentation_params"] = user_cfg.augments.model_dump(
                 exclude_none=True
             )
 
-            # Explicitly include classes in metainfo if defined in DataSection
             if user_cfg.data.classes:
                 if metadata["metainfo"] is None:
                     metadata["metainfo"] = {}
@@ -323,11 +363,7 @@ class ConfigManager:
                 )
 
     def dump_config(self, cfg: Config, output_path: Path) -> Path:
-        """Saves a memory Config object to a self-contained .py file.
-
-        This 'freezes' the configuration, resolving all _base_ inheritances
-        into a single flattened file.
-        """
+        """Saves a memory Config object to a self-contained .py file."""
         cfg.dump(str(output_path))
         logger.debug(f"Flattened configuration saved to: {output_path}")
         return output_path

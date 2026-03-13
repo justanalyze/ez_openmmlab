@@ -31,9 +31,10 @@ batch_size = 1
 """)
     
     mock_ensure.return_value = tmp_path / "dummy.pth"
-    mock_get_config.return_value = tmp_path / "dummy.py"
+    mock_cfg_path = tmp_path / "dummy.py"
     # Create a dummy python config that the injector will patch
-    (tmp_path / "dummy.py").write_text("model = dict(bbox_head=dict(type='RTMDetHead'))\ntest_pipeline = [dict(type='Resize', scale=(640, 640))]")
+    mock_cfg_path.write_text("model = dict(bbox_head=dict(type='RTMDetHead'))\ntest_pipeline = [dict(type='Resize', scale=(640, 640))]")
+    mock_get_config.return_value = mock_cfg_path
 
     mock_inferencer_instance = MagicMock()
     mock_inferencer_cls.return_value = mock_inferencer_instance

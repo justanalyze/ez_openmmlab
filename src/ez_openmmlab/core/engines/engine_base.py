@@ -6,30 +6,22 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from loguru import logger
 from mmengine.config import Config
 
-from ez_openmmlab.core.config_manager import ConfigManager, get_config_file
+from ez_openmmlab.core.config_manager import ConfigManager
 from ez_openmmlab.core.inference.results import InferenceResult
 from ez_openmmlab.core.resolvers import ResourceResolver
 from ez_openmmlab.core.validators import InputValidator
 from ez_openmmlab.core.training.orchestrator import TrainingOrchestrator
-from ez_openmmlab.core.surgery import get_surgeries
 from ez_openmmlab.core.schema.models import ModelName
-from ez_openmmlab.core.utils.context import switch_to_lib_root
 from ez_openmmlab.core.utils.input import normalize_inputs
 from ez_openmmlab.core.utils.path import get_unique_dir
-from ez_openmmlab.core.schema.config import (
-    DataSection,
-    ModelSection,
-    TrainingSection,
-    UserConfig,
-    save_user_config,
-)
+from ez_openmmlab.core.schema.config import UserConfig
 
 
 class EZMMLab(ABC):
     """Abstract base class for all OpenMMLab engines.
 
-    Acts as a high-level coordinator, delegating specific tasks to specialized
-    components like ResourceResolver, ConfigManager, and InputValidator.
+    Acts as a high-level coordinator, delegating specific tasks to specialized 
+    components like ResourceResolver, ConfigManager, and TrainingOrchestrator.
     """
 
     def __init__(
@@ -46,7 +38,6 @@ class EZMMLab(ABC):
 
         # Ensure noisy warnings are suppressed immediately
         from ez_openmmlab import mute_warnings
-
         mute_warnings()
 
         # --- 2. Internal Managers ---
@@ -84,54 +75,23 @@ class EZMMLab(ABC):
         """Configures the global logger level and suppresses noisy dependencies."""
         try:
             import sys
-
-            logger.remove()  # Remove default handler
-            # We add a sink that only shows logs at or above our current level
-            # This ensures that even if Loguru intercepts internal DEBUGs, they don't show up.
+            logger.remove()
             logger.add(
                 sys.stderr,
                 level=log_level,
                 filter=lambda record: record["level"].no >= logger.level(log_level).no,
             )
-            # Ensure internal OpenMMLab loggers are also synced to this level
             import logging
-
             logging.getLogger("mmengine").setLevel(
                 logging.ERROR if log_level == "INFO" else log_level
             )
         except Exception as e:
-            # We don't want a logging failure to crash the entire engine
             print(f"Warning: Failed to set log level: {e}")
 
     def __del__(self):
         """Cleanup temporary files."""
         if hasattr(self, "_temp_config_file") and self._temp_config_file:
             self._config_manager.cleanup_temp_config(self._temp_config_file)
-
-    def _load_and_patch_config(self, **kwargs) -> Config:
-        """Loads the model config and applies all registered plugin surgeries."""
-        with switch_to_lib_root(self.model):
-            cfg = Config.fromfile(str(self.config_path))
-            dummy_user_cfg = self._get_dummy_user_config(**kwargs)
-            for surgery in get_surgeries(self.model):
-                surgery.apply(cfg, dummy_user_cfg)
-            return cfg
-
-    def _get_dummy_user_config(self, **kwargs) -> UserConfig:
-        """Creates a dummy UserConfig to satisfy the injector interface."""
-        model_params = {
-            "name": self.model,
-            "num_classes": self.num_classes,
-            "num_keypoints": self.num_keypoints,
-        }
-        model_params.update(self.architecture_params)
-        model_params.update(kwargs)
-
-        return UserConfig(
-            model=ModelSection(**model_params),
-            training=TrainingSection(num_workers=0, learning_rate=0.001),
-            data=DataSection(root=""),
-        )
 
     def predict(
         self,
@@ -186,29 +146,24 @@ class EZMMLab(ABC):
         from ez_openmmlab.core.deploy.registry import DeployConfigRegistry
 
         current_path = Path(__file__).resolve()
-        project_root = next(
-            (p for p in current_path.parents if (p / "pyproject.toml").exists()), None
-        )
-
+        project_root = next((p for p in current_path.parents if (p / "pyproject.toml").exists()), None)
+        
         if not project_root:
             raise RuntimeError("Could not determine project root.")
 
         registry = DeployConfigRegistry()
-        deploy_cfg = registry.get_deploy_cfg(
-            self._get_library_family(), format, model_name=self.model
-        )
+        deploy_cfg = registry.get_deploy_cfg(self._get_library_family(), format, model_name=self.model)
 
         manager = DockerExportManager(project_root=project_root)
         image_tag = kwargs.pop("image_tag", "ubuntu20.04-cuda11.8-mmdeploy1.3.1")
 
         if not manager.check_image_exists(image_tag):
-            raise RuntimeError(
-                f"MMDeploy Docker image '{image_tag}' missing. Rerun ./install.sh."
-            )
+            raise RuntimeError(f"MMDeploy Docker image '{image_tag}' missing. Rerun ./install.sh.")
 
         export_work_dir = Path(output_dir)
         export_work_dir.mkdir(parents=True, exist_ok=True)
 
+        # Use expanded ConfigManager for loading and patching
         patched_cfg = self._load_and_patch_config(**kwargs)
         final_cfg_path = export_work_dir / "config.py"
         self._config_manager.dump_config(patched_cfg, final_cfg_path)
@@ -249,10 +204,8 @@ class EZMMLab(ABC):
     ) -> None:
         """Runs a fresh end-to-end training pipeline."""
         logger.info(f"Assembling fresh training config for: {dataset_config_path}")
-        InputValidator.validate_augments(
-            augments, self._get_library_family(), self.__class__.__name__
-        )
-
+        InputValidator.validate_augments(augments, self._get_library_family(), self.__class__.__name__)
+        
         architecture_params = self._get_architecture_params(**kwargs)
         aug_dict = augments or {}
 
@@ -294,9 +247,7 @@ class EZMMLab(ABC):
     ) -> None:
         """Resumes an unfinished training session."""
         if not self._source_toml:
-            raise ValueError(
-                "Resumption requires initialization with 'user_config.toml'."
-            )
+            raise ValueError("Resumption requires initialization with 'user_config.toml'.")
 
         effective_work_dir = work_dir or str(self._source_dir)
         user_config = self._config_manager.recover_config_from_toml(
@@ -312,12 +263,14 @@ class EZMMLab(ABC):
 
         self._training_orchestrator.run(self, user_config, dry_run=dry_run)
 
-    def _load_base_config(self, model: str) -> Config:
-        """Loads the base OpenMMLab configuration file."""
-        config_path = get_config_file(model)
-        with switch_to_lib_root(self.model) as lib_root:
-            rel_config_path = config_path.relative_to(lib_root)
-            return Config.fromfile(str(rel_config_path))
+    def _load_and_patch_config(self, **kwargs) -> Config:
+        """Loads and patches the OpenMMLab config (delegated to ConfigManager)."""
+        cfg = self._config_manager.load_base_config(self.model, self.config_path)
+        dummy_user_cfg = self._config_manager.get_dummy_user_config(
+            self.model, self.num_classes, self.num_keypoints, self.architecture_params, **kwargs
+        )
+        self._config_manager.patch_config(cfg, self.model, dummy_user_cfg)
+        return cfg
 
     def _get_class_names(self) -> dict:
         """Retrieves class names from local metainfo or inferencer."""
@@ -333,19 +286,13 @@ class EZMMLab(ABC):
         return {}
 
     @abstractmethod
-    def _init_inferencer(self, device: str, **kwargs) -> None:
-        pass
+    def _init_inferencer(self, device: str, **kwargs) -> None: pass
 
     @abstractmethod
-    def _run_inference(
-        self, inputs: list, out_dir: str, show: bool, **kwargs
-    ) -> Union[dict, list]:
-        pass
+    def _run_inference(self, inputs: list, out_dir: str, show: bool, **kwargs) -> Union[dict, list]: pass
 
     @abstractmethod
-    def _get_library_family(self) -> str:
-        pass
+    def _get_library_family(self) -> str: pass
 
     @abstractmethod
-    def _get_architecture_params(self, **kwargs) -> Dict[str, Any]:
-        pass
+    def _get_architecture_params(self, **kwargs) -> Dict[str, Any]: pass
