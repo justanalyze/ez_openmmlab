@@ -8,7 +8,7 @@ config_path = "runs/rtmdet_sample_training_v3/user_config.toml"
 checkpoint_path = "runs/rtmdet_sample_training_v3/epoch_10.pth"  # Be explicit!
 
 # 2. Initialize the model
-model = RTMDet(model=config_path)
+model = RTMDet(model=config_path, checkpoint_path=checkpoint_path)
 
 # 3. Run Export
 # The export method will:

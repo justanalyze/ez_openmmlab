@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import tomli
 import tomli_w
@@ -79,7 +79,9 @@ class TrainingSection(BaseModel):
     amp: bool = True
     evaluator_metric: Optional[Union[str, dict, List[Union[str, dict]]]] = None
     resume: Union[bool, str] = False
-    stage2_num_epochs: int = Field(20, ge=0, description="Number of epochs for stage 2 training pipeline")
+    stage2_num_epochs: int = Field(
+        20, ge=0, description="Number of epochs for stage 2 training pipeline"
+    )
 
 
 class AugmentationSection(BaseModel):
@@ -128,3 +130,4 @@ def save_user_config(config: UserConfig, path: Path) -> None:
     # Write to file
     with open(path, "wb") as f:
         tomli_w.dump(data, f)
+

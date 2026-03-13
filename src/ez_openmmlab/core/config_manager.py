@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from loguru import logger
 from mmengine.config import Config
 
-from ez_openmmlab.core.resolvers import ModelParamsResolverFactory
+from ez_openmmlab.core.params_resolvers import ModelParamsResolverFactory
 from ez_openmmlab.core.schema.datasets import DatasetConfig
 from ez_openmmlab.core.schema.models import ModelName
 from ez_openmmlab.core.schema import config as toml_config

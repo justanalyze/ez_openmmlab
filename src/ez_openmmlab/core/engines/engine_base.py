@@ -1,7 +1,7 @@
 import cv2
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 from mmengine.config import Config
@@ -94,15 +94,21 @@ class EZMMLab(ABC):
         """Configures the global logger level and suppresses noisy dependencies."""
         try:
             import sys
+
             logger.remove()  # Remove default handler
-            
             # We add a sink that only shows logs at or above our current level
             # This ensures that even if Loguru intercepts internal DEBUGs, they don't show up.
-            logger.add(sys.stderr, level=log_level, filter=lambda record: record["level"].no >= logger.level(log_level).no)
-            
+            logger.add(
+                sys.stderr,
+                level=log_level,
+                filter=lambda record: record["level"].no >= logger.level(log_level).no,
+            )
             # Ensure internal OpenMMLab loggers are also synced to this level
             import logging
-            logging.getLogger("mmengine").setLevel(logging.ERROR if log_level == "INFO" else log_level)
+
+            logging.getLogger("mmengine").setLevel(
+                logging.ERROR if log_level == "INFO" else log_level
+            )
         except Exception as e:
             # We don't want a logging failure to crash the entire engine
             print(f"Warning: Failed to set log level: {e}")
@@ -117,7 +123,7 @@ class EZMMLab(ABC):
 
         # 1. Enforce explicit checkpoint for custom configs during inference/export
         # We require an explicit checkpoint_path when using user_config.toml to avoid
-        # accidentally exporting/using pre-trained or smart-resolved weights that 
+        # accidentally exporting/using pre-trained or smart-resolved weights that
         # the user might not have intended.
         if is_toml and not self._using_custom_weights:
             raise ValueError(
