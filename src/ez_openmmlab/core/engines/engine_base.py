@@ -2,7 +2,6 @@ import cv2
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
-
 from loguru import logger
 from mmengine.config import Config
 from mmengine.runner import Runner
@@ -10,10 +9,10 @@ from mmengine.runner import Runner
 from ez_openmmlab.core.config_manager import ConfigManager, get_config_file
 from ez_openmmlab.core.datasets import DynamicDatasetRegistry
 from ez_openmmlab.core.inference.results import InferenceResult
+from ez_openmmlab.core.resolvers import ResourceResolver
 from ez_openmmlab.core.surgery import get_surgeries
 from ez_openmmlab.core.schema.models import ModelName
 from ez_openmmlab.core.utils.context import switch_to_lib_root
-from ez_openmmlab.core.utils.download import ensure_model_checkpoint
 from ez_openmmlab.core.utils.input import normalize_inputs
 from ez_openmmlab.core.utils.path import get_unique_dir
 from ez_openmmlab.core.schema.config import (
@@ -51,24 +50,27 @@ class EZMMLab(ABC):
 
         # --- 2. Internal Managers ---
         self._config_manager = ConfigManager()
+        self._resource_resolver = ResourceResolver(self._config_manager)
 
         # --- 3. Model Configuration & State ---
-        self.checkpoint_path: Optional[Path] = None
-        self.config_path: Optional[Path] = None
-        self.model: Optional[str] = None
-        self.num_classes: Optional[int] = kwargs.get("num_classes")
-        self.num_keypoints: Optional[int] = kwargs.get("num_keypoints")
-        self.metainfo: Optional[dict] = kwargs.get("metainfo")
-        self.architecture_params: Dict[str, Any] = {}
+        # Resolve all paths and metadata via delegated resolver
+        resources = self._resource_resolver.resolve(model, checkpoint_path)
+
+        self.checkpoint_path = resources.checkpoint_path
+        self.config_path = resources.config_path
+        self.model = resources.model_name
+        self.num_classes = kwargs.get("num_classes") or resources.num_classes
+        self.num_keypoints = kwargs.get("num_keypoints") or resources.num_keypoints
+        self.metainfo = kwargs.get("metainfo") or resources.metainfo
+        self.architecture_params = resources.architecture_params
 
         self._cfg: Optional[Config] = None
-        self._temp_config_file: Optional[Path] = None
-        self._source_dir: Optional[Path] = None  # Directory of the source config
-        self._source_toml: Optional[Path] = None  # Path to the source TOML file
-        self._using_custom_weights: bool = checkpoint_path is not None
+        self._temp_config_file = resources.temp_config_file
+        self._source_dir = resources.source_dir
+        self._source_toml = resources.source_toml
+        self._using_custom_weights = checkpoint_path is not None
 
-        # --- 4. Initialization Sequence ---
-        self._resolve_resources(model, checkpoint_path)
+        # --- 4. Validation ---
         self._validate_inputs(model, self.checkpoint_path)
 
     def _validate_augments(self, augments: Optional[Dict[str, Any]]) -> None:
@@ -141,87 +143,6 @@ class EZMMLab(ABC):
                     "To load a custom trained model, please provide its 'config.toml' as the 'model' argument. "
                     "Alternatively, specify 'num_classes' explicitly if using a standard model name."
                 )
-
-    def _resolve_resources(
-        self,
-        model: Union[ModelName, str, Path],
-        checkpoint_path: Optional[Union[str, Path]],
-    ) -> None:
-        """Resolves absolute paths for resources and initializes model state.
-
-        Args:
-            model: ModelName enum or path to config.toml.
-            checkpoint_path: Path to model weights (.pth).
-        """
-        # Case 1: Custom Configuration via TOML
-        if isinstance(model, (Path, str)) and str(model).endswith(".toml"):
-            config_toml = Path(model)
-            self._source_toml = config_toml.absolute()
-            self._source_dir = config_toml.parent.absolute()
-
-            # Smart Resolution: Attempt to find checkpoint in TOML directory if not provided
-            if checkpoint_path:
-                self.checkpoint_path = Path(checkpoint_path)
-            else:
-                self.checkpoint_path = self._try_resolve_checkpoint(self._source_dir)
-
-            # 1.1 Load explicit metadata from TOML
-            meta = self._config_manager.load_metadata_from_toml(config_toml)
-            self.model = meta.get("model_name")
-            self.num_classes = meta.get("num_classes")
-            self.num_keypoints = meta.get("num_keypoints")
-            self.metainfo = meta.get("metainfo")
-            self.architecture_params = meta.get("architecture_params", {})
-
-            # --- Validation: TOML must contain required metadata ---
-            if self.num_classes is None:
-                raise ValueError(
-                    f"Metadata 'num_classes' is missing in '{config_toml}'. "
-                    "When providing a custom config.toml, you must explicitly specify the number of classes."
-                )
-
-            # 1.2 Generate temporary Python config
-            self._temp_config_file = self._config_manager.prepare_config_file(
-                config_toml, self.checkpoint_path
-            )
-            self.config_path = self._temp_config_file
-
-        # Case 2: Standard Model Name
-        else:
-            self.model = model.value if isinstance(model, ModelName) else str(model)
-            self.checkpoint_path = ensure_model_checkpoint(model, checkpoint_path)
-            self.config_path = get_config_file(model)
-
-    def _try_resolve_checkpoint(self, directory: Path) -> Optional[Path]:
-        """Smartly attempts to find a checkpoint in the given directory.
-
-        Priority:
-        1. best_*.pth
-        2. Content of 'last_checkpoint' file
-        """
-        # 1. Search for 'best' checkpoint
-        best_ckpts = list(directory.glob("best_*.pth"))
-        if best_ckpts:
-            # Pick the most recently modified 'best' checkpoint
-            resolved = max(best_ckpts, key=lambda p: p.stat().st_mtime)
-            logger.info(f"Smart-resolved 'best' checkpoint: {resolved.name}")
-            return resolved
-
-        # 2. Fallback to 'last_checkpoint' tracker
-        last_ckpt_tracker = directory / "last_checkpoint"
-        if last_ckpt_tracker.exists():
-            try:
-                ckpt_name = last_ckpt_tracker.read_text().strip()
-                resolved = directory / ckpt_name
-                if resolved.exists():
-                    logger.info(
-                        f"Smart-resolved last checkpoint from tracker: {resolved.name}"
-                    )
-                    return resolved
-            except Exception as e:
-                logger.warning(f"Failed to read 'last_checkpoint' tracker: {e}")
-
-        return None
 
     def __del__(self):
         """Cleanup temporary files."""
@@ -622,8 +543,8 @@ class EZMMLab(ABC):
         """Synchronizes engine state with newly trained weights and persistent configs."""
         logger.info("Synchronizing model state with newly trained weights...")
 
-        # Resolve weights
-        new_checkpoint = self._try_resolve_checkpoint(work_dir)
+        # Resolve weights via delegated resolver
+        new_checkpoint = self._resource_resolver._try_resolve_checkpoint(work_dir)
         if new_checkpoint:
             self.checkpoint_path = new_checkpoint
             self._using_custom_weights = True

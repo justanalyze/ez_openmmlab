@@ -5,7 +5,6 @@ from mmengine.config import Config
 from mmpose.apis import MMPoseInferencer
 
 from ez_openmmlab.core.engines.mmpose import EZMMPose
-from ez_openmmlab.core.schema.models import ModelName
 
 
 class RTMO(EZMMPose):
@@ -143,4 +142,3 @@ class RTMO(EZMMPose):
             pose2d_weights=str(self.checkpoint_path),
             device=device,
         )
-

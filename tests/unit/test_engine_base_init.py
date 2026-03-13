@@ -17,7 +17,8 @@ class MockEngine(EZMMLab):
 
 def test_init_standard_model():
     """Test initialization with standard model name."""
-    with patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint") as mock_ensure:
+    # We must patch the resolver's checkpoint logic now
+    with patch("ez_openmmlab.core.resolvers.resource_resolver.ensure_model_checkpoint") as mock_ensure:
         mock_ensure.return_value = Path("dummy.pth")
         engine = MockEngine(model="rtmdet_tiny")
         assert engine.model == "rtmdet_tiny"
@@ -40,32 +41,13 @@ epochs = 10
     checkpoint = tmp_path / "manual.pth"
     checkpoint.touch()
     
+    # Passing explicit checkpoint should work
     engine = MockEngine(model=config_toml, checkpoint_path=checkpoint)
-    assert engine.checkpoint_path == checkpoint
+    assert engine.checkpoint_path == checkpoint.absolute()
     assert engine.num_classes == 10
 
-def test_init_custom_toml_smart_resolution(tmp_path):
-    """Test initialization with config.toml and smart checkpoint resolution."""
-    config_toml = tmp_path / "custom.toml"
-    config_toml.write_text("""
-[model]
-name = "rtmdet_tiny"
-num_classes = 10
-
-[data]
-root = "data/coco"
-
-[training]
-epochs = 10
-""")
-    best_ckpt = tmp_path / "best_coco_AP_epoch_50.pth"
-    best_ckpt.touch()
-    
-    engine = MockEngine(model=config_toml)
-    assert engine.checkpoint_path == best_ckpt
-
-def test_init_custom_toml_missing_checkpoint(tmp_path):
-    """Test that missing checkpoint in TOML directory raises error during prediction, not init."""
+def test_init_custom_toml_missing_checkpoint_raises_error(tmp_path):
+    """Test that missing checkpoint with custom config raises immediate error."""
     config_toml = tmp_path / "custom.toml"
     config_toml.write_text("""
 [model]
@@ -79,13 +61,9 @@ root = "data/coco"
 epochs = 10
 """)
     
-    # Init should pass with a warning
-    engine = MockEngine(model=config_toml)
-    assert engine.checkpoint_path is None
-    
-    # Predict should fail
-    with pytest.raises(ValueError, match="No checkpoint found or provided"):
-        engine.predict("test.jpg")
+    # Should raise ValueError because weights are now mandatory for custom configs
+    with pytest.raises(ValueError, match="did not explicitly provide a 'checkpoint_path'"):
+        MockEngine(model=config_toml)
 
 def test_init_logging_configuration():
     """Test that logging is configured during initialization."""

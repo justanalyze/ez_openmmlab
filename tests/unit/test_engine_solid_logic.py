@@ -11,14 +11,14 @@ class MockFormatter:
 
 
 class ConcreteMockEngine(EZMMLab):
-    def __init__(self, model="mock_model"):
-        # We need to bypass some of the real resource resolution for testing the template logic
+    def __init__(self, model="rtmdet_tiny"):
+        # We must patch the resolver's dependencies now
         with patch(
-            "ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint",
+            "ez_openmmlab.core.resolvers.resource_resolver.ensure_model_checkpoint",
             return_value=Path("mock.pth"),
         ):
             with patch(
-                "ez_openmmlab.core.engines.engine_base.get_config_file",
+                "ez_openmmlab.core.config_manager.get_config_file",
                 return_value=Path("mock.py"),
             ):
                 super().__init__(model=model)
@@ -80,10 +80,16 @@ def test_export_orchestration(tmp_path):
     engine.checkpoint_path = tmp_path / "best.pth"
     engine.checkpoint_path.touch()
     
+    # We must provide a valid minimal config structure for the injectors to patch
+    engine.config_path = tmp_path / "mock.py"
+    engine.config_path.write_text("model = dict(bbox_head=dict(num_classes=80))")
+    
     # We need to mock the internals of export
     with patch("ez_openmmlab.core.deploy.docker_manager.DockerExportManager") as mock_manager_cls, \
-         patch("ez_openmmlab.core.deploy.registry.DeployConfigRegistry") as mock_registry_cls:
+         patch("ez_openmmlab.core.deploy.registry.DeployConfigRegistry") as mock_registry_cls, \
+         patch("ez_openmmlab.core.config_manager.get_config_file") as mock_get_config:
         
+        mock_get_config.return_value = Path("mock.py")
         mock_registry = mock_registry_cls.return_value
         mock_registry.get_deploy_cfg.return_value = "configs/deploy.py"
         
@@ -94,6 +100,6 @@ def test_export_orchestration(tmp_path):
         engine.export(format="onnx", image="test.jpg", output_dir=str(tmp_path / "export"))
         
         # Verify interactions
-        mock_registry.get_deploy_cfg.assert_called_with("mmdet", "onnx")
+        mock_registry.get_deploy_cfg.assert_called_with("mmdet", "onnx", model_name="rtmdet_tiny")
         mock_manager.build_command.assert_called()
         mock_manager.run_export.assert_called_with("docker run ...")
