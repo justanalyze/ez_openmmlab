@@ -22,37 +22,17 @@ Train and deploy SOTA models like **RTMDet**, **RTMPose**, and **RTMO** in minut
 
 ## 🛠️ Installation
 
-We recommend using [uv](https://github.com/astral-sh/uv) for a lightning-fast and reproducible experience.
+`ez_openmmlab` uses [uv](https://github.com/astral-sh/uv) for a lightning-fast and reproducible experience. The provided **Install Script** is the easiest way to handle all complex OpenMMLab dependencies automatically.
 
 ```bash
-# 1. Clone the repository (including submodules)
-git clone --recursive https://github.com/JustAnalyze/ez_openmmlab.git
+# 1. Clone the repository
+git clone https://github.com/JustAnalyze/ez_openmmlab.git
 cd ez_openmmlab
 
-# 2. Sync the project
-uv sync --extra cpu  # For CPU
-# OR
-uv sync --extra gpu  # For GPU (CUDA 11.7)
-```
-
-### 💡 Manual Bootstrap (If `uv sync` fails)
-
-If you encounter issues during installation (common with OpenMMLab's complex build requirements), you can manually bootstrap the environment:
-
-```bash
-# 1. Install build dependencies
-uv pip install setuptools==80
-uv pip install wheel
-
-# 2. Install PyTorch
-# For CPU:
-uv pip install torch==2.0.1 --index-url https://download.pytorch.org/whl/cpu
-
-# For GPU (CUDA 11.7):
-uv pip install torch==2.0.1 --index-url https://download.pytorch.org/whl/cu117
-
-# 3. Finalize sync
-uv sync --extra gpu  # or --extra cpu
+# 2. Run the EZ Installer
+# This handles uv, submodules, PyTorch, and all build dependencies.
+chmod +x install.sh
+./install.sh
 ```
 
 ---
@@ -107,17 +87,41 @@ results = model.predict("sample.jpg", show=True)
 
 #### 1. Define Data (`dataset.toml`)
 
+When training pose models on **custom datasets**, you must explicitly define your keypoint identities, skeleton links (for visualization), and sigmas (for OKS evaluation). **You can add as many keypoints as your dataset requires.**
+
 ```toml
 data_root = "datasets/pose_data"
-classes = ["person"] # Usually 'person' for pose estimation
+dataset_name = "my_custom_pose"
+classes = ["person"]
 
 [train]
-ann_file = "annotations/person_keypoints_train2017.json"
-img_dir = "train2017"
+ann_file = "annotations/train.json"
+img_dir = "images/train"
 
 [val]
-ann_file = "annotations/person_keypoints_val2017.json"
-img_dir = "val2017"
+ann_file = "annotations/val.json"
+img_dir = "images/val"
+
+[metainfo]
+# Sigmas are required for OKS evaluation (one per keypoint)
+sigmas = [0.025, 0.025, 0.05] 
+
+# Define keypoint identities
+[metainfo.keypoint_info.0]
+name = "nose"
+id = 0
+color = [51, 153, 255]
+
+[metainfo.keypoint_info.1]
+name = "left_eye"
+id = 1
+color = [0, 255, 0]
+
+# Define skeleton links for visualization
+[metainfo.skeleton_info.0]
+link = ["nose", "left_eye"]
+id = 0
+color = [51, 153, 255]
 ```
 
 #### 2. Train & Predict
