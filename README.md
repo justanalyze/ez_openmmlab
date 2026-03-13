@@ -38,6 +38,15 @@ chmod +x install.sh
 > [!TIP]
 > If you just want to try out the library and don't need to export models to production yet, you can **skip** the MMDeploy Docker installation when prompted. The image is **30GB+**. You can always rerun `./install.sh` later to enable export support.
 
+### 🛡️ Why These Specific Versions?
+
+OpenMMLab (`mmdet`, `mmpose`) is pinned to a specific ecosystem:
+- **Python 3.8–3.10**
+- **PyTorch 2.0.1**
+- **CUDA 11.7**
+
+This is intentional and fully tested. `ez_openmmlab` exists precisely to give you a stable, working environment for these tools without the usual dependency archaeology. **If it installs, it works.**
+
 ---
 
 ## 📖 Quick Start
