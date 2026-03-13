@@ -1,17 +1,16 @@
 import cv2
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from loguru import logger
 from mmengine.config import Config
-from mmengine.runner import Runner
 
 from ez_openmmlab.core.config_manager import ConfigManager, get_config_file
-from ez_openmmlab.core.datasets import DynamicDatasetRegistry
 from ez_openmmlab.core.inference.results import InferenceResult
 from ez_openmmlab.core.resolvers import ResourceResolver
 from ez_openmmlab.core.validators import InputValidator
+from ez_openmmlab.core.training.orchestrator import TrainingOrchestrator
 from ez_openmmlab.core.surgery import get_surgeries
 from ez_openmmlab.core.schema.models import ModelName
 from ez_openmmlab.core.utils.context import switch_to_lib_root
@@ -53,6 +52,7 @@ class EZMMLab(ABC):
         # --- 2. Internal Managers ---
         self._config_manager = ConfigManager()
         self._resource_resolver = ResourceResolver(self._config_manager)
+        self._training_orchestrator = TrainingOrchestrator()
 
         # --- 3. Resource Resolution ---
         resources = self._resource_resolver.resolve(model, checkpoint_path)
@@ -85,18 +85,22 @@ class EZMMLab(ABC):
         try:
             import sys
 
-            logger.remove()
+            logger.remove()  # Remove default handler
+            # We add a sink that only shows logs at or above our current level
+            # This ensures that even if Loguru intercepts internal DEBUGs, they don't show up.
             logger.add(
                 sys.stderr,
                 level=log_level,
                 filter=lambda record: record["level"].no >= logger.level(log_level).no,
             )
+            # Ensure internal OpenMMLab loggers are also synced to this level
             import logging
 
             logging.getLogger("mmengine").setLevel(
                 logging.ERROR if log_level == "INFO" else log_level
             )
         except Exception as e:
+            # We don't want a logging failure to crash the entire engine
             print(f"Warning: Failed to set log level: {e}")
 
     def __del__(self):
@@ -275,7 +279,7 @@ class EZMMLab(ABC):
             **kwargs,
         )
 
-        self._run_training_workflow(user_config, dry_run=dry_run)
+        self._training_orchestrator.run(self, user_config, dry_run=dry_run)
 
     def resume(
         self,
@@ -306,64 +310,10 @@ class EZMMLab(ABC):
             **kwargs,
         )
 
-        self._run_training_workflow(user_config, dry_run=dry_run)
-
-    def _run_training_workflow(self, config: UserConfig, dry_run: bool = False) -> None:
-        """Orchestrates internal OpenMMLab setup and execution."""
-        DynamicDatasetRegistry.register_dataset(config, self._get_library_family())
-
-        work_dir = Path(config.training.work_dir)
-        work_dir.mkdir(parents=True, exist_ok=True)
-        config.model.base_config_path = str(
-            get_config_file(config.model.name).absolute()
-        )
-
-        save_user_config(config, work_dir / "user_config.toml")
-
-        self._cfg = self._load_base_config(config.model.name)
-        for surgery in get_surgeries(self.model):
-            surgery.apply(self._cfg, config)
-
-        final_config_path = (
-            work_dir / f"{config.model.name.value}_{config.data.dataset_name}.py"
-        )
-        self._config_manager.dump_config(self._cfg, final_config_path)
-
-        if dry_run:
-            logger.info(f"Dry run: {final_config_path}")
-            return
-
-        self._run_training(final_config_path, config.training.log_level)
-        self._sync_state_after_training(work_dir, final_config_path)
-
-    def _sync_state_after_training(self, work_dir: Path, config_path: Path) -> None:
-        """Synchronizes engine state after training."""
-        logger.info("Synchronizing model state...")
-        new_checkpoint = self._resource_resolver._try_resolve_checkpoint(work_dir)
-        if new_checkpoint:
-            self.checkpoint_path = new_checkpoint
-            self._using_custom_weights = True
-
-        self._source_toml = (work_dir / "user_config.toml").absolute()
-        self._source_dir = work_dir.absolute()
-        self.config_path = config_path
-
-        meta = self._config_manager.load_metadata_from_toml(self._source_toml)
-        self.num_classes = meta.get("num_classes")
-        self.num_keypoints = meta.get("num_keypoints")
-        self.metainfo = meta.get("metainfo")
-        self.architecture_params = meta.get("architecture_params", {})
-
-        if hasattr(self, "_inferencer"):
-            self._inferencer = None
-
-    def _run_training(self, config_path: Path, log_level: str) -> None:
-        """Initializes the MMEngine Runner and starts training."""
-        logger.info(f"Starting MMEngine Runner: {config_path}")
-        runner = Runner.from_cfg(Config.fromfile(str(config_path)))
-        runner.train()
+        self._training_orchestrator.run(self, user_config, dry_run=dry_run)
 
     def _load_base_config(self, model: str) -> Config:
+        """Loads the base OpenMMLab configuration file."""
         config_path = get_config_file(model)
         with switch_to_lib_root(self.model) as lib_root:
             rel_config_path = config_path.relative_to(lib_root)

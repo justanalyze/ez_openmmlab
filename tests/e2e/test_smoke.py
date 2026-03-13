@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pytest
-
 from ez_openmmlab import RTMDet
 from ez_openmmlab.core.schema.models import ModelName
 
@@ -31,6 +30,7 @@ def test_e2e_train_predict_loop(smoke_test_data, tmp_path):
         dataset_config_path=smoke_test_data,
         learning_rate=0.001,
         epochs=1,
+        batch_size=2,
         device="cpu",
         amp=False,
         work_dir=str(work_dir),

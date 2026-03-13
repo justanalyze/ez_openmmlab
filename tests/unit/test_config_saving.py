@@ -14,7 +14,7 @@ class ConcreteEZDetector(RTMDet):
         return {}
 
 
-@patch("ez_openmmlab.core.engines.engine_base.Runner")
+@patch("ez_openmmlab.core.training.orchestrator.Runner")
 @patch("ez_openmmlab.core.resolvers.resource_resolver.ensure_model_checkpoint")
 @patch("ez_openmmlab.core.schema.datasets.DatasetConfig.from_toml")
 def test_train_saves_base_config_path(
@@ -49,7 +49,7 @@ def test_train_saves_base_config_path(
     expected_path = (
         Path.cwd() / "libs" / "mmdetection" / "configs" / "rtmdet" / "tiny.py"
     )
-    with patch("ez_openmmlab.core.engines.engine_base.get_config_file") as mock_get_cfg:
+    with patch("ez_openmmlab.core.training.orchestrator.get_config_file") as mock_get_cfg:
         mock_get_config_val = MagicMock()
         mock_get_config_val.absolute.return_value = expected_path
         mock_get_cfg.return_value = mock_get_config_val
