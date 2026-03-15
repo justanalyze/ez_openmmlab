@@ -69,6 +69,43 @@ class SimCCTensorRTStrategy(OverrideStrategy):
         )
 
 
+class RTMOTensorRTStrategy(OverrideStrategy):
+    """Strategy for RTMO models using TensorRT."""
+
+    def should_apply(self, base_cfg_path: str) -> bool:
+        return "pose-detection_rtmo_tensorrt-fp16_dynamic-640x640.py" in base_cfg_path
+
+    def get_overrides(self, w: int, h: int) -> str:
+        return (
+            "onnx_config = dict(\n"
+            "    output_names=['dets', 'keypoints'],\n"
+            "    dynamic_axes={\n"
+            "        'input': {0: 'batch'},\n"
+            "        'dets': {0: 'batch'},\n"
+            "        'keypoints': {0: 'batch'}\n"
+            "    })\n\n"
+            "backend_config = dict(\n"
+            "    common_config=dict(max_workspace_size=1 << 30),\n"
+            "    model_inputs=[\n"
+            "        dict(\n"
+            "            input_shapes=dict(\n"
+            "                input=dict(\n"
+            f"                    min_shape=[1, 3, {h}, {w}],\n"
+            f"                    opt_shape=[1, 3, {h}, {w}],\n"
+            f"                    max_shape=[1, 3, {h}, {w}])))\n"
+            "    ])\n\n"
+            "codebase_config = dict(\n"
+            "    post_processing=dict(\n"
+            "        score_threshold=0.05,\n"
+            "        iou_threshold=0.5,\n"
+            "        max_output_boxes_per_class=200,\n"
+            "        pre_top_k=2000,\n"
+            "        keep_top_k=50,\n"
+            "        background_label_id=-1,\n"
+            "    ))\n\n"
+        )
+
+
 class TensorRTStaticStrategy(OverrideStrategy):
     """Strategy for Detection/Segmentation models using static TensorRT shapes."""
 
@@ -101,6 +138,7 @@ class DeployConfigModifier:
     _STRATEGIES: List[OverrideStrategy] = [
         SimCCOnnxStrategy(),
         SimCCTensorRTStrategy(),
+        RTMOTensorRTStrategy(),
         TensorRTStaticStrategy(),
     ]
 
