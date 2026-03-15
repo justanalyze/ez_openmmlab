@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Optional, Union
 
 from loguru import logger
 from mmengine.config import Config
@@ -34,7 +34,8 @@ class EZMMDetector(EZMMLab):
         """Lazy initialization of the DetInferencer with patching support."""
         if self._inferencer is None:
             logger.info(
-                f"Initializing DetInferencer for model: {self.model} (using config: {self.config_path})"
+                f"Initializing DetInferencer for model:\
+                {self.model} (using config: {self.config_path})"
             )
             det_cfg = self._load_and_patch_config(**kwargs)
 
