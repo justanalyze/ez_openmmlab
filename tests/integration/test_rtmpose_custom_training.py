@@ -36,22 +36,21 @@ img_dir = "v/"
     }
 
     # Mock the Runner and the base configuration loading to avoid full OpenMMLab init
-    with patch("ez_openmmlab.core.engines.engine_base.Runner.from_cfg") as mock_runner_cls:
-        with patch("ez_openmmlab.core.engines.engine_base.Config.fromfile") as mock_from_file:
+    with patch("ez_openmmlab.core.training.orchestrator.Runner.from_cfg") as mock_runner_cls:
+        with patch("ez_openmmlab.core.training.orchestrator.Config.fromfile") as mock_from_file:
             mock_runner = MagicMock()
             mock_runner_cls.return_value = mock_runner
             
             with patch("ez_openmmlab.core.config_manager.DatasetConfig.from_toml", return_value=mock_ds):
-                with patch("ez_openmmlab.core.engines.engine_base.EZMMLab._load_base_config") as mock_load:
+                with patch("ez_openmmlab.core.config_manager.ConfigManager.load_base_config") as mock_load:
                     mock_cfg = MagicMock()
                     mock_load.return_value = mock_cfg
                     
                     # 2. Instantiate and call train
                     # We mock the resource resolution to avoid needing real config files
-                    with patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint", return_value=tmp_path / "m.pth"):
-                        with patch("ez_openmmlab.core.engines.engine_base.get_config_file", return_value=tmp_path / "c.py"):
-                            model = RTMPose("rtmpose_s")
-                        
+                    with patch("ez_openmmlab.core.resolvers.resource_resolver.ensure_model_checkpoint", return_value=tmp_path / "m.pth"):
+                        with patch("ez_openmmlab.core.config_manager.get_config_file", return_value=tmp_path / "c.py"):
+                            model = RTMPose("rtmpose_s")                        
                         model.train(
                             dataset_config_path=dataset_toml,
                             work_dir=str(tmp_path / "train"),

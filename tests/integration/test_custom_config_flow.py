@@ -7,8 +7,8 @@ from ez_openmmlab import RTMDet
 from ez_openmmlab.core.schema.models import ModelName
 
 
-@patch("ez_openmmlab.core.engines.engine_base.Runner")
-@patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
+@patch("ez_openmmlab.core.training.orchestrator.Runner")
+@patch("ez_openmmlab.core.resolvers.resource_resolver.ensure_model_checkpoint")
 @patch("ez_openmmlab.core.schema.datasets.DatasetConfig.from_toml")
 @patch("ez_openmmlab.core.engines.mmdet.DetInferencer")
 @patch("cv2.imread")
@@ -43,10 +43,9 @@ def test_full_custom_config_flow(mock_imread, mock_inferencer_cls, mock_ds_from_
     # --- STEP 1: TRAIN ---
     detector = RTMDet(model=ModelName.RTM_DET_TINY)
 
-    with patch.object(detector, "_inject_user_configs"):
-        detector.train(
-            dataset_config_path=dataset_toml, work_dir=str(work_dir), epochs=1
-        )
+    detector.train(
+        dataset_config_path=dataset_toml, work_dir=str(work_dir), epochs=1
+    )
 
     saved_config_path = work_dir / "user_config.toml"
     assert saved_config_path.exists()
@@ -57,7 +56,7 @@ def test_full_custom_config_flow(mock_imread, mock_inferencer_cls, mock_ds_from_
 
     # Re-mock ensure_model_checkpoint for the new instance
     # In a real scenario, this would just return the path as it's already local
-    with patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint", return_value=custom_checkpoint):
+    with patch("ez_openmmlab.core.resolvers.resource_resolver.ensure_model_checkpoint", return_value=custom_checkpoint):
         custom_detector = RTMDet(model=saved_config_path, checkpoint_path=custom_checkpoint)
 
         assert custom_detector.model == ModelName.RTM_DET_TINY.value

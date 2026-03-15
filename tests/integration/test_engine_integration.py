@@ -29,8 +29,8 @@ def dummy_dataset_config(tmp_path):
     return config_path
 
 
-@patch("ez_openmmlab.core.engines.engine_base.Runner")
-@patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
+@patch("ez_openmmlab.core.training.orchestrator.Runner")
+@patch("ez_openmmlab.core.resolvers.resource_resolver.ensure_model_checkpoint")
 def test_train_orchestration_and_artifact_creation(mock_ensure, mock_runner, dummy_dataset_config, tmp_path):
     """Integration test for EZMMDetector.train:
     Verifies that handlers are called and user_config.toml is created.
@@ -55,7 +55,7 @@ def test_train_orchestration_and_artifact_creation(mock_ensure, mock_runner, dum
 
 
 @patch("ez_openmmlab.core.engines.mmdet.DetInferencer")
-@patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
+@patch("ez_openmmlab.core.resolvers.resource_resolver.ensure_model_checkpoint")
 def test_predict_result_conversion(mock_ensure, mock_inferencer_cls):
     """Verifies that predict() returns a structured InferenceResult."""
     mock_ensure.return_value = Path("dummy.pth")

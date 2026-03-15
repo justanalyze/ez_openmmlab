@@ -6,7 +6,7 @@ from ez_openmmlab.core.schema.models import ModelName
 
 
 @patch("ez_openmmlab.core.engines.mmdet.DetInferencer")
-@patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
+@patch("ez_openmmlab.core.resolvers.resource_resolver.ensure_model_checkpoint")
 def test_predict_handles_none_out_dir(mock_ensure, mock_inferencer_cls):
     """Regression test: Verifies that predict() handles out_dir=None correctly
     by passing an empty string to DetInferencer (preventing TypeError).
@@ -28,7 +28,7 @@ def test_predict_handles_none_out_dir(mock_ensure, mock_inferencer_cls):
 
 
 @patch("ez_openmmlab.core.engines.mmdet.DetInferencer")
-@patch("ez_openmmlab.core.engines.engine_base.ensure_model_checkpoint")
+@patch("ez_openmmlab.core.resolvers.resource_resolver.ensure_model_checkpoint")
 def test_predict_resolves_config_path(mock_ensure, mock_inferencer_cls):
     """Regression test: Verifies that predict() resolves model name to full path
     instead of passing the short name to DetInferencer.
