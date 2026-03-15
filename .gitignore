@@ -30,6 +30,7 @@ checkpoints/
 /runs/
 /dummy_data/
 /datasets/
+/workspace/
 
 gha-creds-*.json
 

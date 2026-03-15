@@ -282,6 +282,31 @@ class ConfigManager:
         )
         return user_cfg
 
+    def load_dataset_for_export(
+        self, source_toml: Path, path_prefix: Optional[str] = None
+    ) -> Optional[toml_config.DataSection]:
+        """Loads dataset config from TOML and optionally adjusts paths for Docker."""
+        if not source_toml.exists():
+            return None
+
+        try:
+            # Reusing recover_config_from_toml to parse the TOML
+            user_cfg = self.recover_config_from_toml(source_toml)
+            data = user_cfg.data
+
+            if path_prefix:
+                # Adjust root path if it's relative
+                if not Path(data.root).is_absolute():
+                    data.root = f"{path_prefix}/{data.root}"
+                    logger.debug(f"Adjusted data root for export: {data.root}")
+
+            return data
+        except Exception as e:
+            logger.warning(
+                f"Failed to load dataset for export from {source_toml}: {e}"
+            )
+            return None
+
     def load_metadata_from_toml(self, config_path: Path) -> Dict[str, Any]:
         """Extracts training metadata from a user_config.toml file."""
         if not config_path.exists():

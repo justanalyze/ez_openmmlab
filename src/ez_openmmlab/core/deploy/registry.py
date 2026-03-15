@@ -1,5 +1,6 @@
 from typing import Dict, Optional
 
+
 class DeployConfigRegistry:
     """Registry mapping ez_openmmlab model families to MMDeploy configuration files."""
 
@@ -9,7 +10,7 @@ class DeployConfigRegistry:
         "mmdet": {
             "detection": {
                 "onnx": "/root/workspace/mmdeploy/configs/mmdet/detection/detection_onnxruntime_dynamic.py",
-                "tensorrt": "/root/workspace/mmdeploy/configs/mmdet/detection/detection_tensorrt_dynamic-320x320-640x640.py",
+                "tensorrt": "/root/workspace/mmdeploy/configs/mmdet/detection/detection_tensorrt_static-640x640.py",
             },
             "instance-seg": {
                 "onnx": "/root/workspace/mmdeploy/configs/mmdet/instance-seg/instance-seg_rtmdet-ins_onnxruntime_static-640x640.py",

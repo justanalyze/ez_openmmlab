@@ -15,6 +15,7 @@ from ez_openmmlab.core.schema.models import ModelName
 from ez_openmmlab.core.utils.input import normalize_inputs
 from ez_openmmlab.core.utils.path import get_unique_dir
 from ez_openmmlab.core.schema.config import UserConfig
+from ez_openmmlab.core.deploy.config_modifier import DeployConfigModifier
 
 
 class EZMMLab(ABC):
@@ -163,8 +164,17 @@ class EZMMLab(ABC):
         export_work_dir = Path(output_dir)
         export_work_dir.mkdir(parents=True, exist_ok=True)
 
+        # Generate custom deploy config if input_size is specified (e.g. from user_config.toml)
+        input_size = self.architecture_params.get("input_size")
+        if input_size and isinstance(input_size, (list, tuple)) and len(input_size) == 2:
+            deploy_cfg = DeployConfigModifier.generate_input_resize_config(
+                base_deploy_cfg=deploy_cfg,
+                input_size=input_size,
+                output_dir=export_work_dir,
+            )
+
         # Use expanded ConfigManager for loading and patching
-        patched_cfg = self._load_and_patch_config(**kwargs)
+        patched_cfg = self._load_and_patch_config(docker_mode=True, **kwargs)
         final_cfg_path = export_work_dir / "config.py"
         self._config_manager.dump_config(patched_cfg, final_cfg_path)
 
@@ -269,6 +279,16 @@ class EZMMLab(ABC):
         dummy_user_cfg = self._config_manager.get_dummy_user_config(
             self.model, self.num_classes, self.num_keypoints, self.architecture_params, **kwargs
         )
+
+        # Attempt to recover dataset info from source TOML if available
+        if hasattr(self, "_source_toml") and self._source_toml and self._source_toml.exists():
+            path_prefix = "/work" if kwargs.get("docker_mode", False) else None
+            data_section = self._config_manager.load_dataset_for_export(
+                self._source_toml, path_prefix=path_prefix
+            )
+            if data_section:
+                dummy_user_cfg.data = data_section
+
         self._config_manager.patch_config(cfg, self.model, dummy_user_cfg)
         return cfg
 
