@@ -46,20 +46,24 @@ def test_train_saves_base_config_path(
         detector = ConcreteEZDetector(model=ModelName.RTM_DET_TINY)
 
     # Set the absolute path to the base python config for artifact tracking
-    expected_path = (
-        Path.cwd() / "libs" / "mmdetection" / "configs" / "rtmdet" / "tiny.py"
-    )
-    with patch("ez_openmmlab.core.training.orchestrator.get_config_file") as mock_get_cfg:
-        mock_get_config_val = MagicMock()
-        mock_get_config_val.absolute.return_value = expected_path
-        mock_get_cfg.return_value = mock_get_config_val
+    lib_root = Path("/tmp/mmdet")
+    expected_path = lib_root / "configs" / "rtmdet" / "tiny.py"
+    
+    with patch("ez_openmmlab.core.config_manager.BaseConfigLoader._resolve_package_configs", return_value=lib_root / "configs"):
+        with patch("ez_openmmlab.core.training.orchestrator.get_config_file") as mock_get_cfg:
+            mock_get_config_val = MagicMock()
+            mock_get_config_val.absolute.return_value = expected_path
+            mock_get_cfg.return_value = mock_get_config_val
 
-        # Mock surgeries to avoid real logic
-        with patch("ez_openmmlab.core.config_manager.get_surgeries", return_value=[]):
-            with patch("mmengine.config.Config.fromfile"):
-                detector.train(
-                    dataset_config_path=dataset_toml, work_dir=str(work_dir), epochs=1
-                )
+            # Mock surgeries to avoid real logic
+            with patch("ez_openmmlab.core.config_manager.get_surgeries", return_value=[]):
+                with patch("mmengine.config.Config.fromfile"):
+                    # We also need to patch switch_to_lib_root because it uses importlib to find origin
+                    with patch("ez_openmmlab.core.config_manager.switch_to_lib_root") as mock_switch:
+                        mock_switch.return_value.__enter__.return_value = lib_root
+                        detector.train(
+                            dataset_config_path=dataset_toml, work_dir=str(work_dir), epochs=1
+                        )
 
     saved_config_path = work_dir / "user_config.toml"
     assert saved_config_path.exists()

@@ -46,10 +46,8 @@ def test_predict_initializes_inferencer_and_calls_it(mock_ensure):
         _, kwargs = mock_inferencer_cls.call_args
 
         # We expect the full path here now (as part of the Config object)
-        expected_config = str(
-            (Path.cwd()
-            / "libs/mmdetection/configs/rtmdet/rtmdet_tiny_8xb32-300e_coco.py").resolve()
-        )
+        from ez_openmmlab.core.config_manager import get_config_file
+        expected_config = str(get_config_file(model).resolve())
         assert str(Path(kwargs["model"].filename).resolve()) == expected_config
         assert kwargs["weights"] == checkpoint_path
 

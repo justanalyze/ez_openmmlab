@@ -54,8 +54,8 @@ def test_dynamic_registration_mmdet():
     assert dynamic_cls.METAINFO["classes"] == ["cat"]
     assert dynamic_cls.METAINFO["dataset_name"] == "TestDet"
 
-def test_duplicate_registration_raises_error():
-    """Verify that using the same dataset_name twice raises ValueError."""
+def test_duplicate_registration_is_idempotent():
+    """Verify that using the same dataset_name twice does not raise error."""
     config = UserConfig(
         model=ModelSection(name="rtmdet_tiny", num_classes=2),
         data=DataSection(
@@ -69,9 +69,9 @@ def test_duplicate_registration_raises_error():
     # First time should pass
     DynamicDatasetRegistry.register_dataset(config, "mmdet")
     
-    # Second time should fail
-    with pytest.raises(ValueError, match="already registered"):
-        DynamicDatasetRegistry.register_dataset(config, "mmdet")
+    # Second time should also pass (idempotent)
+    class_name = DynamicDatasetRegistry.register_dataset(config, "mmdet")
+    assert class_name == "Duplicate"
 
 def test_missing_dataset_name_raises_error():
     """Verify that missing dataset_name raises ValueError."""
