@@ -1,4 +1,5 @@
 import tempfile
+import importlib.util
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -17,29 +18,44 @@ class BaseConfigLoader:
     """Resolves model names to absolute paths of official OpenMMLab config files."""
 
     def __init__(self):
-        # Resolve relative to the installed package location
-        # Structure: ez_openmmlab/core/config_manager.py -> ez_openmmlab/../../libs
-        self._project_root = Path(__file__).resolve().parents[3]
-        self._mmdet_config_root = (
-            self._project_root / "libs" / "mmdetection" / "configs"
-        )
-        self._mmpose_config_root = self._project_root / "libs" / "mmpose" / "configs"
+        # Dynamically resolve mmdet and mmpose installed locations
+        self._mmdet_config_root = self._resolve_package_configs("mmdet")
+        self._mmpose_config_root = self._resolve_package_configs("mmpose")
 
         logger.debug(
-            f"Initializing BaseConfigLoader. Project root: {self._project_root}"
+            f"Config Roots: mmdet={self._mmdet_config_root}, mmpose={self._mmpose_config_root}"
         )
         self._validate_root()
+
+    def _resolve_package_configs(self, package_name: str) -> Optional[Path]:
+        """Finds the .mim/configs path for an installed OpenMMLab package."""
+        spec = importlib.util.find_spec(package_name)
+        if not spec or not spec.origin:
+            return None
+
+        package_root = Path(spec.origin).parent
+        config_path = package_root / ".mim" / "configs"
+        
+        if config_path.exists():
+            return config_path
+        
+        # Fallback for standard 'configs' directory if .mim is not used
+        legacy_config_path = package_root / "configs"
+        if legacy_config_path.exists():
+            return legacy_config_path
+            
+        return None
 
     def _validate_root(self):
         """Ensures at least one config root exists."""
         if (
-            not self._mmdet_config_root.exists()
-            and not self._mmpose_config_root.exists()
+            (not self._mmdet_config_root or not self._mmdet_config_root.exists())
+            and (not self._mmpose_config_root or not self._mmpose_config_root.exists())
         ):
-            logger.error("Could not find local OpenMMLab configs.")
+            logger.error("Could not find installed OpenMMLab configs.")
             raise FileNotFoundError(
-                "Could not find local mmdetection or mmpose configs.\n"
-                "Ensure submodules are initialized."
+                "Could not find installed mmdetection or mmpose configs.\n"
+                "Ensure they are installed in your environment."
             )
 
     def get_config_path(self, model_name: str | ModelName) -> Path:

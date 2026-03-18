@@ -47,4 +47,4 @@ def test_predict_resolves_config_path(mock_ensure, mock_inferencer_cls):
     model_arg = kwargs["model"]
     # model_arg is now a Config object
     assert str(model_arg.filename).endswith(".py")
-    assert "libs/mmdetection/configs" in str(model_arg.filename)
+    assert ".mim/configs" in str(model_arg.filename)

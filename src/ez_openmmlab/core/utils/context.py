@@ -1,4 +1,5 @@
 import os
+import importlib.util
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Generator
@@ -14,7 +15,7 @@ def switch_to_lib_root(model_name: str) -> Generator[Path, None, None]:
     """Context manager to temporarily switch to the appropriate library root.
 
     This is necessary because OpenMMLab configs often use relative paths
-    that expect to be resolved from the library root (libs/mmdet or libs/mmpose).
+    that expect to be resolved from the library root (mmdet or mmpose).
 
     Args:
         model_name: The name of the model to determine the library root.
@@ -22,11 +23,12 @@ def switch_to_lib_root(model_name: str) -> Generator[Path, None, None]:
     Yields:
         The absolute path to the library root.
     """
-    project_root = get_project_root()
-    if "rtmpose" in model_name or "rtmo" in model_name:
-        lib_root = project_root / "libs" / "mmpose"
-    else:
-        lib_root = project_root / "libs" / "mmdetection"
+    pkg_name = "mmpose" if ("rtmpose" in model_name or "rtmo" in model_name) else "mmdet"
+    spec = importlib.util.find_spec(pkg_name)
+    if not spec or not spec.origin:
+        raise ImportError(f"Could not find installed package: {pkg_name}")
+
+    lib_root = Path(spec.origin).parent
 
     old_cwd = os.getcwd()
     try:
