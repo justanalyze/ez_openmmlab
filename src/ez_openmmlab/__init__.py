@@ -1,3 +1,9 @@
+# Check dependencies before importing anything else
+from ez_openmmlab._check_deps import check_dependencies
+
+check_dependencies()
+
+
 def mute_warnings():
     """Helper to suppress MMLab and noisy library verbosity manually."""
     import logging

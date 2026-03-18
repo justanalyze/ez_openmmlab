@@ -2,6 +2,10 @@
 
 Utilize OpenMMLab using an EZ and Familiar API ;)
 
+[![PyPI version](https://badge.fury.io/py/ez-openmmlab.svg)](https://pypi.org/project/ez-openmmlab/)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 `ez_openmmlab` is a high-level, **TOML-first** wrapper that makes SOTA Openmmlab models (**RTMDet**, **RTMPose**, and **RTMO**) actually EZ to use. Stop fighting with 500-line Python configs and dataset registries—just write a few lines of TOML and get back to building.
 
 ---
