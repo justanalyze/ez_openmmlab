@@ -44,7 +44,9 @@ class DataloaderInjector(BaseConfigSurgery):
         dl.num_workers = user_config.training.num_workers
         dl.persistent_workers = user_config.training.num_workers > 0
 
-        # Use the dynamically registered class if available
+        # Use the dynamically registered class ONLY if explicitly provided.
+        # Otherwise, keep the base config's dataset type (e.g. 'CocoDataset')
+        # which is already registered in OpenMMLab.
         if user_config.data.dataset_name:
             dl.dataset.type = user_config.data.dataset_name
 

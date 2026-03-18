@@ -63,7 +63,20 @@ class EZMMLab(ABC):
         self._source_toml = resources.source_toml
         self._using_custom_weights = checkpoint_path is not None
 
-        # --- 4. Validation ---
+        # --- 4. Dataset Re-registration ---
+        if self.metainfo and "dataset_name" in self.metainfo:
+            from ez_openmmlab.core.datasets import DynamicDatasetRegistry
+
+            try:
+                DynamicDatasetRegistry.register_dataset_from_metainfo(
+                    self.metainfo, self._get_library_family()
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Failed to re-register dataset '{self.metainfo.get('dataset_name')}': {e}"
+                )
+
+        # --- 5. Validation ---
         InputValidator.validate_initialization(
             model=model,
             checkpoint_path=self.checkpoint_path,
@@ -312,6 +325,10 @@ class EZMMLab(ABC):
                 self._source_toml, path_prefix=path_prefix
             )
             if data_section:
+                # For inference, we don't want to inject the training dataset type
+                # as it might not be registered or needed.
+                if not kwargs.get("docker_mode", False):
+                    data_section.dataset_name = None
                 dummy_user_cfg.data = data_section
 
         self._config_manager.patch_config(cfg, self.model, dummy_user_cfg)

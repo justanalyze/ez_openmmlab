@@ -1,4 +1,4 @@
-from typing import Any, Dict, Type
+from typing import Any, Dict, Type, Optional
 
 from loguru import logger
 
@@ -33,7 +33,6 @@ class DynamicDatasetRegistry:
                 "to enable dynamic registration."
             )
 
-        class_name = dataset_name
         metainfo = config.data.metainfo or {}
 
         # Ensure 'classes' are present in metainfo (required by base datasets)
@@ -44,17 +43,26 @@ class DynamicDatasetRegistry:
         if "dataset_name" not in metainfo:
             metainfo["dataset_name"] = dataset_name
 
+        return cls.register_dataset_from_metainfo(metainfo, family)
+
+    @classmethod
+    def register_dataset_from_metainfo(cls, metainfo: Dict[str, Any], family: str) -> str:
+        """Registers a dataset class directly from a metainfo dictionary."""
+        dataset_name = metainfo.get("dataset_name")
+        if not dataset_name:
+            raise ValueError("Metainfo must contain 'dataset_name' for registration.")
+
+        class_name = dataset_name
+
         # Deep convert numeric string keys to integers
         # This is critical when loading from TOML, as TOML keys are always strings.
         # MMPose utilities expect integer keys for keypoint_info and skeleton_info.
         metainfo = cls._deep_convert_numeric_keys(metainfo)
 
-        # 2. Collision Check
+        # 2. Collision Check (Only register if not already present)
         if cls._is_already_registered(class_name, family):
-            raise ValueError(
-                f"Dataset class '{class_name}' is already registered in {family}. "
-                "Please use a unique 'dataset_name' in your dataset.toml to avoid collisions."
-            )
+            logger.debug(f"Dataset '{class_name}' already registered for {family}. Skipping.")
+            return class_name
 
         # 3. Create Class and Register
         if family == "mmpose":
@@ -92,6 +100,8 @@ class DynamicDatasetRegistry:
                 from mmpose.registry import DATASETS
             else:
                 from mmdet.registry import DATASETS
+            
+            # Use module_dict to avoid potential RecursionError if registry is complex
             return name in DATASETS.module_dict
         except (ImportError, AttributeError):
             return False
@@ -141,4 +151,3 @@ class DynamicDatasetRegistry:
         # Register it
         DATASETS.register_module(name=name, module=DynamicClass)
         cls._registered_datasets[name] = DynamicClass
-
