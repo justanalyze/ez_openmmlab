@@ -50,15 +50,16 @@ img_dir = "v/"
                     # We mock the resource resolution to avoid needing real config files
                     with patch("ez_openmmlab.core.resolvers.resource_resolver.ensure_model_checkpoint", return_value=tmp_path / "m.pth"):
                         with patch("ez_openmmlab.core.config_manager.get_config_file", return_value=tmp_path / "c.py"):
-                            model = RTMPose("rtmpose_s")                        
-                        model.train(
-                            dataset_config_path=dataset_toml,
-                            work_dir=str(tmp_path / "train"),
-                            input_size=(288, 384),
-                            evaluator_metric="PCKAccuracy",
-                            epochs=1,
-                            batch_size=2
-                        )
+                            model = RTMPose("rtmpose_s")
+                        
+                            model.train(
+                                dataset_config_path=dataset_toml,
+                                work_dir=str(tmp_path / "train"),
+                                input_size=(288, 384),
+                                evaluator_metric="PCKAccuracy",
+                                epochs=1,
+                                batch_size=2
+                            )
 
     # 3. Verify that the effective configuration reflects the overrides
     # The Effective Config is saved in work_dir/user_config.toml

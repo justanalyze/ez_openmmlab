@@ -84,7 +84,7 @@ class DockerExportManager:
         inner_cmd = (
             f"pip install --no-cache-dir {packages} && "
             f"python3 {deploy_script} {c_deploy} {c_model} {c_checkpoint} {c_test_img} "
-            f"--work-dir {c_work_dir} --device {device}"
+            f"--work-dir {c_work_dir} --device {device} --dump-info"
         )
 
         cmd = (
