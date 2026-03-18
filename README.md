@@ -2,14 +2,16 @@
 
 Utilize OpenMMLab using an EZ and Familiar API ;)
 
-`ez_openmmlab` is a high-level, **TOML-first** wrapper that makes SOTA models like **RTMDet**, **RTMPose**, and **RTMO** actually EZ to use. Stop fighting with 500-line Python configs and dataset registries—just write a few lines of TOML and get back to building.
+`ez_openmmlab` is a high-level, **TOML-first** wrapper that makes SOTA Openmmlab models (**RTMDet**, **RTMPose**, and **RTMO**) actually EZ to use. Stop fighting with 500-line Python configs and dataset registries—just write a few lines of TOML and get back to building.
 
 ---
 
 ## 🏋️ 1. Train
+
 Forget framework-level "surgery". Define your data in a simple `dataset.toml`, call `.train()`, and `ez_openmmlab` handles the rest.
 
 ### Step A: Define your data (`dataset.toml`)
+
 No more manual registration. Just point to your files.
 
 ```toml
@@ -26,7 +28,8 @@ img_dir = "images/val"
 ```
 
 ### Step B: Launch Training
-One method. All the power.
+
+One method. Im sure this is familiar for most of you ;)
 
 ```python
 from ez_openmmlab import RTMDet
@@ -39,15 +42,15 @@ model.train(
     dataset_config_path="dataset.toml",
     epochs=100,
     batch_size=16,
-    scale_factor=(0.5, 2.0), # Example: Data augmentation is EZ too
-    random_flip_prob=0.5
 )
 ```
+
 ![Training Demo](docs/train.gif)
 
 ---
 
 ## 🔍 2. Inference
+
 Predict and visualize results with a single line.
 
 ```python
@@ -58,12 +61,14 @@ results = model.predict("sample.jpg", show=True)
 for box in results[0].boxes:
     print(f"Class: {box.cls}, Score: {box.conf}, BBox: {box.xyxy}")
 ```
+
 ![Inference Demo](docs/inference.gif)
 
 ---
 
 ## 🚢 3. Export
-Deploying to production is usually a nightmare. We simplified it to one command using **MMDeploy via Docker**.
+
+Deploying to production with mmdeploy is usually a nightmare. We simplified it to one command using **MMDeploy via Docker**.
 
 ```python
 model.export(
@@ -73,11 +78,13 @@ model.export(
     device="cpu"          # Use 'cuda' for TensorRT
 )
 ```
+
 ![Export Demo](docs/export.gif)
 
 ---
 
 ## 🧘 Custom Pose Estimation? Still EZ.
+
 Training on custom keypoints? Just add your metainfo to the TOML. **You can add as many keypoints as your dataset requires.**
 
 ```toml
@@ -132,7 +139,7 @@ chmod +x install.sh
 
 - [x] **Native Export:** One-click `.export()` to ONNX and TensorRT.
 - [ ] **Full CLI:** Run training and inference directly from your terminal.
-- [ ] **Architecture Expansion:** Bringing the "EZ" treatment to more OpenMMLab models.
+- [ ] **Architecture Expansion:** Bringing the "EZ" treatment to more OpenMMLab models. (This is a good candidate: https://github.com/53mins/CIGPose)
 
 ---
 
@@ -141,5 +148,6 @@ chmod +x install.sh
 `ez_openmmlab` wouldn't exist without the relentless research and engineering of the **OpenMMLab** team.
 
 **Currently Supported:**
-- **Detection & Segmentation:** `rtmdet` (all variants)
+
+- **Detection & Segmentation:** `rtmdet`, `rtmdet-ins`
 - **2D Pose Estimation:** `rtmpose`, `rtmo`
