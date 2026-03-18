@@ -31,9 +31,17 @@ uv venv .venv-test
 # Activate the virtual environment
 source .venv-test/bin/activate
 
-# Install PyTorch first (required)
+# Install setuptools using uv (uv pip works even without pip installed)
+echo "Installing setuptools (required by mmengine)..."
+uv pip install setuptools==80 wheel
+
+# Verify setuptools is installed
+echo "Verifying setuptools installation..."
+python -c "import pkg_resources; print(f'✓ pkg_resources available from setuptools')" || echo "❌ pkg_resources NOT available"
+
+# Install PyTorch
 echo "Installing PyTorch (CPU for testing)..."
-uv pip install torch==2.0.1 torchvision==2.0.1 torchaudio==2.0.2 \
+uv pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 \
     --index-url https://download.pytorch.org/whl/cpu
 
 # Install MMCV
@@ -68,37 +76,32 @@ echo ""
 read -p "Enter choice [1-3]: " choice
 
 case $choice in
-1)
-    echo ""
-    echo "Publishing to TestPyPI..."
-    uv publish --publish-url https://test.pypi.org/legacy/
-    echo ""
-    echo "✓ Published to TestPyPI!"
-    echo ""
-    echo "Test install with:"
-    echo "  uv pip install torch==2.0.1 --index-url https://download.pytorch.org/whl/cpu"
-    echo "  uv pip install mmcv==2.1.0 --find-links https://download.openmmlab.com/mmcv/dist/cpu/torch2.0/index.html"
-    echo "  uv pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple ez-openmmlab"
-    echo ""
-    echo "Or use the install script:"
-    echo "  curl -sSL https://raw.githubusercontent.com/JustAnalyze/ez_openmmlab/main/install.sh | bash"
-    ;;
-2)
-    echo ""
-    read -p "Are you sure you want to publish to PyPI? (yes/no): " confirm
-    if [ "$confirm" = "yes" ]; then
-        echo "Publishing to PyPI..."
-        uv publish
+    1)
         echo ""
-        echo "✓ Published to PyPI!"
+        echo "Publishing to TestPyPI..."
+        uv publish --publish-url https://test.pypi.org/legacy/
         echo ""
-        echo "Users can now install with:"
+        echo "✓ Published to TestPyPI!"
+        echo ""
+        echo "Test install with:"
         echo "  curl -sSL https://raw.githubusercontent.com/JustAnalyze/ez_openmmlab/main/install.sh | bash"
-    else
+        ;;
+    2)
+        echo ""
+        read -p "Are you sure you want to publish to PyPI? (yes/no): " confirm
+        if [ "$confirm" = "yes" ]; then
+            echo "Publishing to PyPI..."
+            uv publish
+            echo ""
+            echo "✓ Published to PyPI!"
+            echo ""
+            echo "Users can now install with:"
+            echo "  curl -sSL https://raw.githubusercontent.com/JustAnalyze/ez_openmmlab/main/install.sh | bash"
+        else
+            echo "Cancelled."
+        fi
+        ;;
+    *)
         echo "Cancelled."
-    fi
-    ;;
-*)
-    echo "Cancelled."
-    ;;
+        ;;
 esac

@@ -1,4 +1,5 @@
 # Check dependencies before importing anything else
+
 from ez_openmmlab._check_deps import check_dependencies
 
 check_dependencies()
@@ -63,34 +64,13 @@ register_mmdet(init_default_scope=True)
 from .models.mmdet import RTMDet
 from .models.mmpose import RTMO, RTMPose
 
+__version__ = "0.1.0"
 __all__ = [
     "RTMDet",
     "RTMPose",
     "RTMO",
     "mute_warnings",
 ]
-
-
-def create(
-    model: str,
-    checkpoint: str | None = None,
-    log_level: str = "INFO",
-    **kwargs,
-):
-    """Unified entry point to instantiate any ez_openmmlab model.
-
-    Args:
-        model: Name of the model (e.g. 'rtmdet_tiny') or path to config.toml.
-        checkpoint: Optional path to custom weights.
-        log_level: Logging verbosity.
-        **kwargs: Additional architecture or training overrides.
-    """
-    return ModelFactory.get_model(
-        model_name=model,
-        checkpoint_path=checkpoint,
-        log_level=log_level,
-        **kwargs,
-    )
 
 
 def mute_warnings():
