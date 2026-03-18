@@ -1,62 +1,16 @@
 # 🚀 ez_openmmlab: OpenMMLab Made EZ
 
-Train and deploy SOTA models like **RTMDet**, **RTMPose**, and **RTMO** in minutes, not days. `ez_openmmlab` is a high-level, **TOML-first** wrapper that makes the OpenMMLab ecosystem actually EZ to use.
+Utilize OpenMMLab using an EZ and Familiar API ;)
 
-- **EZ Environment:** Reproducible setups that just work.
-- **EZ Configuration:** Human-readable TOML replaces 500-line Python config "surgery".
-- **EZ Workflow:** A unified API for training and inference across the entire ecosystem. (MMDet and MMPose so far...)
-- **Config Verification:** Validate your final flattened configuration without starting a training run.
-- **Unified API:** One interface for Detection, Segmentation, and Pose Estimation.
+`ez_openmmlab` is a high-level, **TOML-first** wrapper that makes SOTA models like **RTMDet**, **RTMPose**, and **RTMO** actually EZ to use. Stop fighting with 500-line Python configs and dataset registries—just write a few lines of TOML and get back to building.
 
 ---
 
-## ✨ Key Features
+## 🏋️ 1. Train
+Forget framework-level "surgery". Define your data in a simple `dataset.toml`, call `.train()`, and `ez_openmmlab` handles the rest.
 
-- **Intuitive API:** Train and predict with simple classes like `RTMDet`, `RTMPose`, and `RTMO`.
-- **Config-First Workflow:** Decouple your data from your model using human-readable `dataset.toml` files. No more framework-level "surgery" to change a class count.
-- **Auto-Magic Checkpoints:** Missing a model? `ez_openmmlab` automatically downloads official checkpoints to a clean, centralized cache with simplified names.
-- **Strict Validation:** Powered by Pydantic to catch configuration and metadata errors (like missing `num_classes` for custom models) _before_ you waste time on a broken run.
-- **Performance Optimized:** Features vectorized, NumPy-first results with **Lazy Initialization**—we only process heavy data (like masks) when you actually ask for it.
-
----
-
-## 🛠️ Installation
-
-`ez_openmmlab` uses [uv](https://github.com/astral-sh/uv) for a lightning-fast and reproducible experience. The provided **Install Script** is the easiest way to handle all complex OpenMMLab dependencies automatically.
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/JustAnalyze/ez_openmmlab.git
-cd ez_openmmlab
-
-# 2. Run the EZ Installer
-# This handles uv, submodules, PyTorch, and all build dependencies.
-chmod +x install.sh
-./install.sh
-```
-
-> [!TIP]
-> If you just want to try out the library and don't need to export models to production yet, you can **skip** the MMDeploy Docker installation when prompted. The image is **30GB+**. You can always rerun `./install.sh` later to enable export support.
-
-### 🛡️ Why These Specific Versions?
-
-OpenMMLab (`mmcv`, `mmdet`, `mmpose`) is pinned to a specific ecosystem:
-- **Python 3.8–3.10**
-- **PyTorch 2.0.1**
-- **CUDA 11.7**
-
-This specific alignment is required to ensure all three libraries can be installed together in a single environment without version conflicts. This is intentional and fully tested. `ez_openmmlab` exists precisely to give you a stable, working environment for these tools without the usual dependency archaeology. **If it installs, it works.**
-
----
-
-## 📖 Quick Start
-
-Choose your task to see how EZ it is:
-
-<details>
-<summary><b>🔍 Object Detection & Segmentation (RTMDet)</b></summary>
-
-#### 1. Define Data (`dataset.toml`)
+### Step A: Define your data (`dataset.toml`)
+No more manual registration. Just point to your files.
 
 ```toml
 data_root = "datasets/my_project"
@@ -71,108 +25,47 @@ ann_file = "annotations/val.json"
 img_dir = "images/val"
 ```
 
-#### 2. Train & Predict
+### Step B: Launch Training
+One method. All the power.
 
 ```python
 from ez_openmmlab import RTMDet
 
-# Initialize (choices: rtmdet_tiny, rtmdet_s, rtmdet_m, etc.)
+# Initialize (choices: rtmdet_tiny, rtmdet_s, rtmpose_m, etc.)
 model = RTMDet("rtmdet_tiny")
 
-# Start training on your custom data
+# Start training. No more config file surgeries!
 model.train(
     dataset_config_path="dataset.toml",
     epochs=100,
     batch_size=16,
-    scale_factor=(0.5, 2.0), # Example: Random scaling between 50% and 200%
-    random_flip_prob=0.75 # Example: 75% chance of horizontal flip
+    scale_factor=(0.5, 2.0), # Example: Data augmentation is EZ too
+    random_flip_prob=0.5
 )
-
-# Inference made simple
-results = model.predict("sample.jpg", show=True)
 ```
-
-</details>
-
-<details>
-<summary><b>🧘 Pose Estimation (RTMPose / RTMO)</b></summary>
-
-#### 1. Define Data (`dataset.toml`)
-
-When training pose models on **custom datasets**, you must explicitly define your keypoint identities, skeleton links (for visualization), and sigmas (for OKS evaluation). **You can add as many keypoints as your dataset requires.**
-
-```toml
-data_root = "datasets/pose_data"
-dataset_name = "my_custom_pose"
-classes = ["person"]
-
-[train]
-ann_file = "annotations/train.json"
-img_dir = "images/train"
-
-[val]
-ann_file = "annotations/val.json"
-img_dir = "images/val"
-
-[metainfo]
-# Sigmas are required for OKS evaluation (one per keypoint)
-sigmas = [0.025, 0.025, 0.05]
-
-# Optional: Higher weights (e.g. 2.0) make the model focus more on specific points
-joint_weights = [1.0, 1.0, 1.0]
-
-# Define keypoint identities
-[metainfo.keypoint_info.0]
-name = "nose"
-id = 0
-color = [51, 153, 255]
-
-[metainfo.keypoint_info.1]
-name = "left_eye"
-id = 1
-color = [0, 255, 0]
-
-# Define skeleton links for visualization
-[metainfo.skeleton_info.0]
-link = ["nose", "left_eye"]
-id = 0
-color = [51, 153, 255]
-```
-
-#### 2. Train & Predict
-
-```python
-from ez_openmmlab import RTMPose
-
-# Initialize (choices: rtmpose_s, rtmpose_m, rtmo_s, etc.)
-model = RTMPose("rtmpose_s")
-
-# Start training
-model.train(
-    dataset_config_path="dataset.toml",
-    epochs=210,
-    rotate_factor=90.0, # Example: Rotate up to 90 degrees
-    random_flip_prob=0.5 # Example: 50% chance of horizontal flip
-)
-
-# Inference
-results = model.predict("player.jpg", show=True)
-```
-
-</details>
+![Training Demo](docs/train.gif)
 
 ---
 
-## 🚀 Model Export (Production)
-
-Deploying OpenMMLab models is often a nightmare due to complex dependencies. `ez_openmmlab` simplifies this by leveraging **MMDeploy via Docker**. Export your models to ONNX or TensorRT with a single command.
-
-### Python API
+## 🔍 2. Inference
+Predict and visualize results with a single line.
 
 ```python
-from ez_openmmlab import RTMDet
+# Inference made simple
+results = model.predict("sample.jpg", show=True)
 
-model = RTMDet("rtmdet_tiny")
+# Access clean, structured results
+for box in results[0].boxes:
+    print(f"Class: {box.cls}, Score: {box.conf}, BBox: {box.xyxy}")
+```
+![Inference Demo](docs/inference.gif)
+
+---
+
+## 🚢 3. Export
+Deploying to production is usually a nightmare. We simplified it to one command using **MMDeploy via Docker**.
+
+```python
 model.export(
     format="onnx",        # Target format: 'onnx' or 'tensorrt'
     image="sample.jpg",   # Required for model tracing
@@ -180,29 +73,73 @@ model.export(
     device="cpu"          # Use 'cuda' for TensorRT
 )
 ```
+![Export Demo](docs/export.gif)
 
-### CLI
+---
+
+## 🧘 Custom Pose Estimation? Still EZ.
+Training on custom keypoints? Just add your metainfo to the TOML. **You can add as many keypoints as your dataset requires.**
+
+```toml
+# dataset.toml (Pose Version)
+[metainfo]
+sigmas = [0.025, 0.025, 0.05] # One per keypoint
+
+[metainfo.keypoint_info.0]
+name = "nose"
+id = 0
+color = [51, 153, 255]
+
+[metainfo.skeleton_info.0]
+link = ["nose", "left_eye"]
+id = 0
+```
+
+```python
+from ez_openmmlab import RTMPose
+model = RTMPose("rtmpose_s")
+model.train(dataset_config_path="pose_data.toml", epochs=210)
+```
+
+---
+
+## 🛠️ Installation
 
 ```bash
-ez-mmlab export rtmdet_tiny sample.jpg --format onnx --out deploy/
+# 1. Clone the repository
+git clone https://github.com/JustAnalyze/ez_openmmlab.git
+cd ez_openmmlab
+
+# 2. Run the EZ Installer
+# This handles uv, submodules, PyTorch, and all build dependencies.
+chmod +x install.sh
+./install.sh
 ```
+
+---
+
+## ✨ Key Features
+
+- **EZ Environment:** Reproducible setups that just work via `uv`.
+- **EZ Configuration:** Human-readable TOML replaces complex Python config inheritance.
+- **Auto-Magic Checkpoints:** Missing weights? We download them for you automatically.
+- **Strict Validation:** Powered by Pydantic to catch errors _before_ you start your run.
+- **Performance Optimized:** Vectorized, NumPy-first results with **Lazy Initialization**.
 
 ---
 
 ## 🗺️ Roadmap
 
-- [x] **Native Export:** One-click `.export()` to ONNX and TensorRT for production. (For now install [MMDeploy](https://github.com/open-mmlab/mmdeploy) Via Docker to prevent headaches ;) )
-- [ ] **Full CLI:** Run entire training and inference experiments directly from your terminal.
-- [ ] **Architecture Expansion:** Bringing the "EZ" treatment to more SOTA architectures under OpenMMLab (taking suggestions!).
+- [x] **Native Export:** One-click `.export()` to ONNX and TensorRT.
+- [ ] **Full CLI:** Run training and inference directly from your terminal.
+- [ ] **Architecture Expansion:** Bringing the "EZ" treatment to more OpenMMLab models.
 
 ---
 
 ## 🤝 Acknowledgements
 
-`ez_openmmlab` wouldn't exist without the relentless research and engineering of the **OpenMMLab** team. Their models are world-class and still competing with (and beating) the newest architectures out there.
+`ez_openmmlab` wouldn't exist without the relentless research and engineering of the **OpenMMLab** team.
 
 **Currently Supported:**
-
 - **Detection & Segmentation:** `rtmdet` (all variants)
-- **2D Pose Estimation:** `rtmpose`
-- **Multi-Person Pose:** `rtmo`
+- **2D Pose Estimation:** `rtmpose`, `rtmo`
