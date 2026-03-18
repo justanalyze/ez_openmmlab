@@ -8,7 +8,7 @@ echo ""
 
 # Clean previous builds
 echo "🧹 Cleaning previous builds..."
-rm -rf dist/ build/ *.egg-info src/*.egg-info
+rm -rf dist/ build/ *.egg-info src/*.egg-info .venv-test
 
 # Build the package
 echo "📦 Building wheel..."
@@ -24,29 +24,36 @@ echo "  Testing the build"
 echo "════════════════════════════════════════"
 echo ""
 
-# Create test environment
-echo "Creating test environment..."
-python3 -m venv test_env
-source test_env/bin/activate
+# Create test environment with UV
+echo "Creating test environment with UV..."
+uv venv .venv-test
+
+# Activate the virtual environment
+source .venv-test/bin/activate
 
 # Install PyTorch first (required)
 echo "Installing PyTorch (CPU for testing)..."
-pip install torch==2.0.1 --index-url https://download.pytorch.org/whl/cpu -q
+uv pip install torch==2.0.1 torchvision==2.0.1 torchaudio==2.0.2 \
+    --index-url https://download.pytorch.org/whl/cpu
 
 # Install MMCV
 echo "Installing MMCV..."
-pip install mmcv==2.1.0 -f https://download.openmmlab.com/mmcv/dist/cpu/torch2.0/index.html -q
+uv pip install mmcv==2.1.0 \
+    --find-links https://download.openmmlab.com/mmcv/dist/cpu/torch2.0/index.html
 
 # Install the wheel
 echo "Installing ez-openmmlab from wheel..."
-pip install dist/*.whl -q
+uv pip install dist/*.whl
 
 # Test import
 echo "Testing import..."
-python3 -c "import ez_openmmlab; print(f'✓ Successfully imported ez-openmmlab {ez_openmmlab.__version__}')"
+python -c "import ez_openmmlab; print(f'✓ Successfully imported ez-openmmlab {ez_openmmlab.__version__}')"
 
 deactivate
-rm -rf test_env
+
+# Clean up test environment
+echo "Cleaning up test environment..."
+rm -rf .venv-test
 
 echo ""
 echo "════════════════════════════════════════"
@@ -69,9 +76,12 @@ case $choice in
     echo "✓ Published to TestPyPI!"
     echo ""
     echo "Test install with:"
-    echo "  pip install torch==2.0.1 --index-url https://download.pytorch.org/whl/cpu"
-    echo "  pip install mmcv==2.1.0 -f https://download.openmmlab.com/mmcv/dist/cpu/torch2.0/index.html"
-    echo "  pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple ez-openmmlab"
+    echo "  uv pip install torch==2.0.1 --index-url https://download.pytorch.org/whl/cpu"
+    echo "  uv pip install mmcv==2.1.0 --find-links https://download.openmmlab.com/mmcv/dist/cpu/torch2.0/index.html"
+    echo "  uv pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple ez-openmmlab"
+    echo ""
+    echo "Or use the install script:"
+    echo "  curl -sSL https://raw.githubusercontent.com/JustAnalyze/ez_openmmlab/main/install.sh | bash"
     ;;
 2)
     echo ""
