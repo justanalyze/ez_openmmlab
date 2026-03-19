@@ -51,21 +51,7 @@ class DockerExportManager:
         device: str = "cpu",
         image_tag: str = "latest",
     ) -> str:
-        """Constructs the full 'docker run' command string.
-
-        Args:
-            deploy_cfg: Path to deploy config (relative to project or absolute).
-            model_cfg: Path to model config.
-            checkpoint: Path to model weights.
-            test_img: Path to sample image for tracing.
-            work_dir: Host relative path for output artifacts.
-            device: 'cpu' or 'cuda'.
-            image_tag: The tag for 'openmmlab/mmdeploy' image.
-
-        Returns:
-            A string containing the complete docker command.
-        """
-        # Map all host paths to container paths
+        # Path mappings
         c_deploy = self.to_container_path(deploy_cfg)
         c_model = self.to_container_path(model_cfg)
         c_checkpoint = self.to_container_path(checkpoint)
@@ -74,27 +60,49 @@ class DockerExportManager:
 
         gpu_flag = "--gpus all" if device == "cuda" else ""
 
-        # Add project submodules to PYTHONPATH inside container
-        python_path = f"PYTHONPATH={self.container_workdir}/libs/mmdetection:{self.container_workdir}/libs/mmpose:$PYTHONPATH"
+        # 1. Setup Volumes - ONLY mount the project and specific packages
+        import mmdet, mmpose
+
+        volume_mounts = [f"-v {self.project_root}:{self.container_workdir}"]
+
+        # We will point PYTHONPATH to this directory
+        container_pkg_root = "/opt/external_pkgs"
+
+        for pkg in [mmdet, mmpose]:
+            host_pkg_path = Path(pkg.__file__).parent
+            pkg_name = host_pkg_path.name
+            # Important: Mount the package folder INTO the root
+            # e.g., /home/.../mmdet -> /opt/external_pkgs/mmdet
+            volume_mounts.append(f"-v {host_pkg_path}:{container_pkg_root}/{pkg_name}")
+
+        # 2. Prepare the Environment Variable
+        # Note: We include container_workdir so it can find local configs/models
+        # and container_pkg_root so it can find 'import mmdet'
+        python_path_env = (
+            f"PYTHONPATH={self.container_workdir}:{container_pkg_root}:$PYTHONPATH"
+        )
 
         deploy_script = f"{self.container_mmdeploy_root}/tools/deploy.py"
-
-        # Pre-install missing dependencies inside the container
         packages = "pycocotools terminaltables shapely scipy albumentations"
+
+        # 3. Construct the inner shell command
+        # Using 'export' ensures all subsequent python calls see the new PATH
         inner_cmd = (
+            f"export {python_path_env} && "
             f"pip install --no-cache-dir {packages} && "
             f"python3 {deploy_script} {c_deploy} {c_model} {c_checkpoint} {c_test_img} "
             f"--work-dir {c_work_dir} --device {device} --dump-info"
         )
 
+        # 4. Final Docker Command
         cmd = (
             f"docker run --rm {gpu_flag} "
-            f"-e {python_path} "
-            f"-v {self.project_root}:{self.container_workdir} "
+            f"{' '.join(volume_mounts)} "
             f"-w {self.container_workdir} "
             f"openmmlab/mmdeploy:{image_tag} "
             f"bash -c '{inner_cmd}'"
         )
+
         return cmd
 
     def run_export(self, command: str) -> None:
