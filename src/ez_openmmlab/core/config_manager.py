@@ -35,22 +35,21 @@ class BaseConfigLoader:
 
         package_root = Path(spec.origin).parent
         config_path = package_root / ".mim" / "configs"
-        
+
         if config_path.exists():
             return config_path
-        
+
         # Fallback for standard 'configs' directory if .mim is not used
         legacy_config_path = package_root / "configs"
         if legacy_config_path.exists():
             return legacy_config_path
-            
+
         return None
 
     def _validate_root(self):
         """Ensures at least one config root exists."""
-        if (
-            (not self._mmdet_config_root or not self._mmdet_config_root.exists())
-            and (not self._mmpose_config_root or not self._mmpose_config_root.exists())
+        if (not self._mmdet_config_root or not self._mmdet_config_root.exists()) and (
+            not self._mmpose_config_root or not self._mmpose_config_root.exists()
         ):
             logger.error("Could not find installed OpenMMLab configs.")
             raise FileNotFoundError(
@@ -109,7 +108,7 @@ class ConfigManager:
 
     def load_base_config(self, model_name: str, config_path: Path) -> Config:
         """Loads the base OpenMMLab configuration file.
-        
+
         Args:
             model_name: Name of the model (for context switching).
             config_path: Absolute path to the .py config file.
@@ -126,21 +125,32 @@ class ConfigManager:
                 pass
 
         with switch_to_lib_root(model_name) as lib_root:
-            rel_config_path = config_path.relative_to(lib_root)
-            return Config.fromfile(str(rel_config_path))
+            try:
+                rel_config_path = config_path.relative_to(lib_root)
+                return Config.fromfile(str(rel_config_path))
+            except ValueError:
+                import sys
 
-    def patch_config(self, cfg: Config, model_name: str, user_config: toml_config.UserConfig) -> None:
+                logger.error(
+                    f"Configuration file '{config_path.name}' was not found in the "
+                    f"designated OpenMMLab location: {lib_root}\n"
+                )
+                sys.exit(1)
+
+    def patch_config(
+        self, cfg: Config, model_name: str, user_config: toml_config.UserConfig
+    ) -> None:
         """Applies all registered plugin surgeries to a Config object."""
         for surgery in get_surgeries(model_name):
             surgery.apply(cfg, user_config)
 
     def get_dummy_user_config(
-        self, 
-        model_name: str, 
-        num_classes: Optional[int] = None, 
-        num_keypoints: Optional[int] = None, 
+        self,
+        model_name: str,
+        num_classes: Optional[int] = None,
+        num_keypoints: Optional[int] = None,
         architecture_params: Optional[Dict[str, Any]] = None,
-        **kwargs
+        **kwargs,
     ) -> toml_config.UserConfig:
         """Creates a dummy UserConfig to satisfy the injector interface.
 
@@ -293,9 +303,7 @@ class ConfigManager:
                 if hasattr(user_cfg.augments, k):
                     setattr(user_cfg.augments, k, v)
 
-        logger.debug(
-            f"Recovered and updated resume configuration from: {toml_path}"
-        )
+        logger.debug(f"Recovered and updated resume configuration from: {toml_path}")
         return user_cfg
 
     def load_dataset_for_export(
@@ -318,17 +326,13 @@ class ConfigManager:
 
             return data
         except Exception as e:
-            logger.warning(
-                f"Failed to load dataset for export from {source_toml}: {e}"
-            )
+            logger.warning(f"Failed to load dataset for export from {source_toml}: {e}")
             return None
 
     def load_metadata_from_toml(self, config_path: Path) -> Dict[str, Any]:
         """Extracts training metadata from a user_config.toml file."""
         if not config_path.exists():
-            raise FileNotFoundError(
-                f"Configuration file not found: {config_path}"
-            )
+            raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
         metadata = {
             "num_classes": None,
@@ -369,9 +373,7 @@ class ConfigManager:
     ) -> Path:
         """Generates a temporary python config file from a custom config.toml."""
         if not toml_path.exists():
-            raise FileNotFoundError(
-                f"Custom config file not found: {toml_path}"
-            )
+            raise FileNotFoundError(f"Custom config file not found: {toml_path}")
 
         user_cfg = toml_config.load_user_config(toml_path)
 
@@ -383,9 +385,7 @@ class ConfigManager:
         content = f'_base_ = ["{base_config_str}"]\n'
 
         # Create temp file
-        temp_file = tempfile.NamedTemporaryFile(
-            suffix=".py", mode="w", delete=False
-        )
+        temp_file = tempfile.NamedTemporaryFile(suffix=".py", mode="w", delete=False)
         temp_file.write(content)
         temp_file.close()
 
@@ -399,9 +399,7 @@ class ConfigManager:
                 config_path.unlink()
                 logger.debug(f"Removed temporary config file: {config_path}")
             except Exception as e:
-                logger.warning(
-                    f"Failed to remove temp config file {config_path}: {e}"
-                )
+                logger.warning(f"Failed to remove temp config file {config_path}: {e}")
 
     def dump_config(self, cfg: Config, output_path: Path) -> Path:
         """Saves a memory Config object to a self-contained .py file."""
