@@ -105,6 +105,53 @@ class DockerExportManager:
 
         return cmd
 
+    def check_docker_installed(self) -> bool:
+        """Checks if Docker is installed and running."""
+        try:
+            subprocess.run(
+                ["docker", "--version"],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            return True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            return False
+
+    def ensure_image_available(self, image_tag: str) -> None:
+        """Checks for the image and interactively prompts to pull if missing."""
+        if not self.check_docker_installed():
+            raise RuntimeError(
+                "Docker is not installed or not in your PATH.\n"
+                "Model export requires Docker to run the MMDeploy container."
+            )
+
+        full_image = f"openmmlab/mmdeploy:{image_tag}"
+        if self.check_image_exists(image_tag):
+            return
+
+        print(f"\n[!] The MMDeploy Docker image '{full_image}' is missing locally.")
+        print(f"[!] WARNING: This image is VERY LARGE (30GB+).")
+        print(
+            "[!] It contains the full environment needed to export models to ONNX/TensorRT."
+        )
+
+        # Interactive prompt
+        try:
+            response = input(f"Do you want to download it now? (y/n): ").strip().lower()
+        except EOFError:
+            response = "n"  # Handle non-interactive environments
+
+        if response != "y":
+            raise RuntimeError("Export cancelled. Docker image is required.")
+
+        logger.info(f"Pulling {full_image}... This may take a while.")
+        try:
+            subprocess.run(["docker", "pull", full_image], check=True)
+            logger.info("Image pulled successfully.")
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(f"Failed to pull Docker image: {e}")
+
     def run_export(self, command: str) -> None:
         """Executes the docker command using subprocess.
 

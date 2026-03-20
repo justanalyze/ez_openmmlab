@@ -164,10 +164,8 @@ class EZMMLab(ABC):
         manager = DockerExportManager(project_root=project_root)
         image_tag = kwargs.pop("image_tag", "ubuntu20.04-cuda11.8-mmdeploy1.3.1")
 
-        if not manager.check_image_exists(image_tag):
-            raise RuntimeError(
-                f"MMDeploy Docker image '{image_tag}' missing. Rerun ./install.sh."
-            )
+        # Ensure Docker is available and the image exists (prompting if needed)
+        manager.ensure_image_available(image_tag)
 
         export_work_dir = Path(output_dir)
         export_work_dir.mkdir(parents=True, exist_ok=True)
@@ -203,7 +201,6 @@ class EZMMLab(ABC):
         )
 
         manager.run_export(cmd)
-        logger.info(f"Export successful: {output_dir}")
         return Path(output_dir)
 
     def train(
