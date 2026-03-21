@@ -18,7 +18,7 @@ from ez_openmmlab.core.deploy.config_modifier import DeployConfigModifier
 
 
 class EZMMLab(ABC):
-    """Abstract base class for all OpenMMLab engines.
+    """Abstract base class for all OpenMMLab models.
 
     Acts as a high-level coordinator, delegating specific tasks to specialized
     components like ResourceResolver, ConfigManager, and TrainingOrchestrator.

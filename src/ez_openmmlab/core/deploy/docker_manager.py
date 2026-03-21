@@ -33,7 +33,8 @@ class DockerExportManager:
 
         try:
             relative = path.relative_to(self.project_root)
-            return f"{self.container_workdir}/{relative}"
+            # Use .as_posix() to ensure forward slashes on Windows
+            return f"{self.container_workdir}/{relative.as_posix()}"
         except ValueError:
             raise ValueError(
                 f"Path '{host_path}' is outside the project root '{self.project_root}'. "
@@ -63,7 +64,8 @@ class DockerExportManager:
         # 1. Setup Volumes - ONLY mount the project and specific packages
         import mmdet, mmpose
 
-        volume_mounts = [f"-v {self.project_root}:{self.container_workdir}"]
+        # Use .as_posix() for volume mounts to ensure cross-platform compatibility
+        volume_mounts = [f"-v \"{self.project_root.as_posix()}\":{self.container_workdir}"]
 
         # We will point PYTHONPATH to this directory
         container_pkg_root = "/opt/external_pkgs"
@@ -73,7 +75,7 @@ class DockerExportManager:
             pkg_name = host_pkg_path.name
             # Important: Mount the package folder INTO the root
             # e.g., /home/.../mmdet -> /opt/external_pkgs/mmdet
-            volume_mounts.append(f"-v {host_pkg_path}:{container_pkg_root}/{pkg_name}")
+            volume_mounts.append(f"-v \"{host_pkg_path.as_posix()}\":{container_pkg_root}/{pkg_name}")
 
         # 2. Prepare the Environment Variable
         # Note: We include container_workdir so it can find local configs/models
@@ -95,12 +97,15 @@ class DockerExportManager:
         )
 
         # 4. Final Docker Command
+        # Use double quotes for the inner command to improve compatibility with Windows shells
+        # We escape any internal double quotes (though we currently don't use any in inner_cmd)
+        safe_inner_cmd = inner_cmd.replace('"', '\\"')
         cmd = (
             f"docker run --rm {gpu_flag} "
             f"{' '.join(volume_mounts)} "
             f"-w {self.container_workdir} "
             f"openmmlab/mmdeploy:{image_tag} "
-            f"bash -c '{inner_cmd}'"
+            f"bash -c \"{safe_inner_cmd}\""
         )
 
         return cmd
