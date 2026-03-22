@@ -4,17 +4,13 @@ from ez_openmmlab import RTMDet
 # 1. Provide the paths to your custom configuration and weights
 # For production export, we force you to be explicit about the weights
 # to ensure the exported model matches exactly what you intended.
-config_path = "runs/rtmdet_sample_training_v3/user_config.toml"
-checkpoint_path = "runs/rtmdet_sample_training_v3/epoch_10.pth"  # Be explicit!
+config_path = "demos/demo_rtmdet_training/user_config.toml"
+checkpoint_path = "demos/demo_rtmdet_training/epoch_10.pth"
 
 # 2. Initialize the model
 model = RTMDet(model=config_path, checkpoint_path=checkpoint_path)
 
 # 3. Run Export
-# The export method will:
-# - Flatten the config into a single file
-# - Select a 'Dynamic' deployment recipe (Flexible image sizes)
-# - Run MMDeploy inside Docker to produce the production artifact
 print(f"Exporting model with weights: {checkpoint_path}...")
 
 export_dir = model.export(

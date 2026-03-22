@@ -1,5 +1,6 @@
 from ez_openmmlab import RTMDet
 
-model = RTMDet(model="./runs/rtmdet_sample_training_v2/user_config.toml")
+# provide the user_config.toml of the unfinished training
+model = RTMDet(model="path/to/user_config.toml")
 
 model.resume(epochs=150)
