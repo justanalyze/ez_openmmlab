@@ -79,13 +79,13 @@ from ez_openmmlab import RTMDet
 # Option 1: Load your trained model
 model = RTMDet(
     model="user_config.toml",      # Config generated during training
-    checkpoint_path="epoch_100.pth" # Your trained checkpoint
+    checkpoint_path="epoch_100.pth"  # Provide which checkpoint you want to load
 )
 
-# Option 2: Use pretrained model
-model = RTMDet("rtmdet_s")  # Auto-downloads pretrained weights
+# Option 2: Or just use a pretrained model for quick inference
+model = RTMDet("rtmdet_s")
 
-# Run inference
+# Inference made simple
 results = model.predict("sample.jpg", show=True)
 
 # Access clean, structured results
