@@ -1,0 +1,66 @@
+name: Windows Sanity Check
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install PyTorch (CPU)
+        run: uv pip install --system torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install MMCV
+        run: uv pip install --system mmcv==2.1.0 -f https://download.openmmlab.com/mmcv/dist/cpu/torch2.0/index.html
+
+      - name: Install chumpy
+        run: uv pip install --system git+https://github.com/JustAnalyze/chumpy.git@master
+
+      - name: Install ez_openmmlab
+        run: uv pip install --system -e .
+
+      - name: Create Python Predict Script
+        shell: bash
+        run: |
+          echo "import cv2" > test_predict.py
+          echo "import numpy as np" >> test_predict.py
+          echo "from ez_openmmlab import RTMDet" >> test_predict.py
+          echo "print('Creating dummy image...')" >> test_predict.py
+          echo "cv2.imwrite('test_image.jpg', np.zeros((640, 640, 3), dtype=np.uint8))" >> test_predict.py
+          echo "print('Initializing RTMDet model...')" >> test_predict.py
+          echo "model = RTMDet('rtmdet_tiny')" >> test_predict.py
+          echo "print('Running predict...')" >> test_predict.py
+          echo "model.predict('test_image.jpg', show=False, device='cpu')" >> test_predict.py
+          echo "print('✅ Predict method passed flawlessly on Windows!')" >> test_predict.py
+
+      - name: Run Predict Test
+        run: python test_predict.py
+
+      - name: Create Python Train Script
+        shell: bash
+        run: |
+          echo "from ez_openmmlab import RTMDet" > test_train.py
+          echo "print('Initializing training dry-run...')" >> test_train.py
+          echo "model = RTMDet('rtmdet_tiny')" >> test_train.py
+          echo "print('Running train with CPU optimizations...')" >> test_train.py
+          echo "model.train(dataset_config_path='demos/coco_mini/dataset.toml', epochs=5, batch_size=2, device='cpu', amp=False, num_workers=0)" >> test_train.py
+          echo "print('✅ Train method passed flawlessly on Windows!')" >> test_train.py
+
+      - name: Run Train Test
+        run: python test_train.py
