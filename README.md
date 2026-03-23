@@ -101,6 +101,9 @@ for box in results[0].boxes:
 
 Deploying to production with mmdeploy is usually a nightmare. We simplified it to one command using **MMDeploy via Docker**.
 
+> [!IMPORTANT]
+> **Docker is required** for the `.export()` method. If the MMDeploy image is missing, you will be prompted to download it (warning: 30GB+).
+
 ```python
 from ez_openmmlab import RTMDet
 
