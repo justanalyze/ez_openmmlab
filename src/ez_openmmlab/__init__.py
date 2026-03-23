@@ -64,7 +64,7 @@ register_mmdet(init_default_scope=True)
 from .models.mmdet import RTMDet
 from .models.mmpose import RTMO, RTMPose
 
-__version__ = "0.1.0"
+__version__ = "0.1.2"
 __all__ = [
     "RTMDet",
     "RTMPose",
