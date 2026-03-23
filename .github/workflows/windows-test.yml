@@ -17,6 +17,10 @@ jobs:
         uses: astral-sh/setup-uv@v2
         with:
           enable-cache: true
+          # Only re-cache if dependency files or the workflow itself changes
+          cache-dependency-glob: |
+            **/pyproject.toml
+            .github/workflows/windows-test.yml
 
       - name: Set up Python
         uses: actions/setup-python@v5
