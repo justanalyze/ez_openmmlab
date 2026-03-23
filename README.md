@@ -203,7 +203,7 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 **2. Create virtual environment:**
 
 ```bash
-uv venv
+uv venv -p 3.10 # or 3.9
 source .venv/bin/activate  # Linux
 # .venv\Scripts\activate    # Windows
 ```
