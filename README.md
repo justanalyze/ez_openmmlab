@@ -186,76 +186,93 @@ results = model.predict("person.jpg", show=True)
 
 ## 🛠️ Installation
 
-### Requirements
+ez-openmmlab uses **uv** for fast, reliable installations (10-100x faster than pip).
 
-- Python 3.9 or 3.10
-- NVIDIA GPU with CUDA 11.7 (for GPU version)
-- Linux or Windows
-- Git
+### Quick Start
 
-## Installation
+**1. Install uv:**
 
-### Quick Install (Recommended)
+```bash
+# on linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-Our install scripts support both **uv** (faster) and **pip** (traditional). You'll be prompted to choose during installation.
+# on windows powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+**2. Create virtual environment:**
+
+```bash
+uv venv
+source .venv/bin/activate  # Linux
+# .venv\Scripts\activate    # Windows
+```
+
+**3. Install ez-openmmlab:**
 
 **GPU (CUDA 11.7):**
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/JustAnalyze/ez_openmmlab/main/install.sh | bash
+# Step 1: Install PyTorch
+uv pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cu117
+
+# Step 2: Install MMCV
+uv pip install mmcv==2.1.0 -f https://download.openmmlab.com/mmcv/dist/cu117/torch2.0/index.html
+
+# Step 3: Install chumpy
+# MAKE SURE THAT YOU HAVE GIT INSTALLED.
+uv pip install git+https://github.com/JustAnalyze/chumpy.git@master
+
+# Step 4: Install ez-openmmlab
+uv pip install ez-openmmlab
 ```
 
 **CPU:**
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/JustAnalyze/ez_openmmlab/main/install-cpu.sh | bash
-```
+# Step 1: Install PyTorch
+uv pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cpu
 
-> 💡 **Tip:** Choose `uv` when prompted for 10-100x faster installation!
+# Step 2: Install MMCV
+uv pip install mmcv==2.1.0 -f https://download.openmmlab.com/mmcv/dist/cpu/torch2.0/index.html
 
-### Manual Installation
-
-> ⚠️ **Important:** Steps must be followed in order. Installing chumpy before ez-openmmlab is required due to a known issue with the upstream chumpy package.
-
-#### GPU (CUDA 11.7)
-
-```bash
-# Step 1: Install PyTorch with CUDA support
-pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 \
-    --index-url https://download.pytorch.org/whl/cu117
-
-# Step 2: Install MMCV with CUDA support
-pip install mmcv==2.1.0 \
-    -f https://download.openmmlab.com/mmcv/dist/cu117/torch2.0/index.html
-
-# Step 3: Install chumpy (fixed version)
-pip install git+https://github.com/JustAnalyze/chumpy.git@master
+# Step 3: Install chumpy
+# MAKE SURE THAT YOU HAVE GIT INSTALLED.
+uv pip install git+https://github.com/JustAnalyze/chumpy.git@master
 
 # Step 4: Install ez-openmmlab
-pip install ez-openmmlab
+uv pip install ez-openmmlab
 ```
 
-#### CPU Only
+### Other Installation methods
+
+Don't want to use uv? See [install/README.md](install/README.md) for manual pip installation instructions.
+
+### Requirements
+
+- Python 3.9 or 3.10
+- uv package manager
+- NVIDIA GPU with CUDA 11.7 (for GPU version)
+- Git
+
+## Troubleshooting
+
+### Virtual environment not activated
+
+Make sure you see `(.venv)` at the beginning of your terminal prompt. If not:
 
 ```bash
-# Step 1: Install PyTorch (CPU)
-pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 \
-    --index-url https://download.pytorch.org/whl/cpu
-
-# Step 2: Install MMCV (CPU)
-pip install mmcv==2.1.0 \
-    -f https://download.openmmlab.com/mmcv/dist/cpu/torch2.0/index.html
-
-# Step 3: Install chumpy (fixed version)
-pip install git+https://github.com/JustAnalyze/chumpy.git@master
-
-# Step 4: Install ez-openmmlab
-pip install ez-openmmlab
+source .venv/bin/activate  # Linux
+.venv\Scripts\activate      # Windows
 ```
 
-> **Why install chumpy manually?** The upstream chumpy package (v0.70) has a broken setup.py that causes installation failures with modern Python packaging tools. We maintain a fixed fork that resolves these issues.
+### uv not found after installation
 
----
+Restart your terminal or run:
+
+```bash
+source $HOME/.cargo/env
+```
 
 ## ✨ Key Features
 
