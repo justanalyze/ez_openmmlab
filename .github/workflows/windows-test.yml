@@ -47,7 +47,7 @@ jobs:
           echo "model = RTMDet('rtmdet_tiny')" >> test_predict.py
           echo "print('Running predict...')" >> test_predict.py
           echo "model.predict('test_image.jpg', show=False, device='cpu')" >> test_predict.py
-          echo "print('✅ Predict method passed flawlessly on Windows!')" >> test_predict.py
+          echo "print('Predict method passed flawlessly on Windows!')" >> test_predict.py
 
       - name: Run Predict Test
         run: python test_predict.py
@@ -60,7 +60,7 @@ jobs:
           echo "model = RTMDet('rtmdet_tiny')" >> test_train.py
           echo "print('Running train with CPU optimizations...')" >> test_train.py
           echo "model.train(dataset_config_path='demos/coco_mini/dataset.toml', epochs=5, batch_size=2, device='cpu', amp=False, num_workers=0)" >> test_train.py
-          echo "print('✅ Train method passed flawlessly on Windows!')" >> test_train.py
+          echo "print('Train method passed flawlessly on Windows!')" >> test_train.py
 
       - name: Run Train Test
         run: python test_train.py
