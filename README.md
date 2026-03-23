@@ -54,6 +54,7 @@ model.train(
 ### Resume Interrupted Training
 
 Training got interrupted? No problem - just resume where you left off:
+
 ```python
 from ez_openmmlab import RTMDet
 
@@ -192,7 +193,11 @@ results = model.predict("person.jpg", show=True)
 - Linux or Windows
 - Git
 
+## Installation
+
 ### Quick Install (Recommended)
+
+Our install scripts support both **uv** (faster) and **pip** (traditional). You'll be prompted to choose during installation.
 
 **GPU (CUDA 11.7):**
 
@@ -206,7 +211,11 @@ curl -sSL https://raw.githubusercontent.com/JustAnalyze/ez_openmmlab/main/instal
 curl -sSL https://raw.githubusercontent.com/JustAnalyze/ez_openmmlab/main/install-cpu.sh | bash
 ```
 
+> 💡 **Tip:** Choose `uv` when prompted for 10-100x faster installation!
+
 ### Manual Installation
+
+> ⚠️ **Important:** Steps must be followed in order. Installing chumpy before ez-openmmlab is required due to a known issue with the upstream chumpy package.
 
 #### GPU (CUDA 11.7)
 
@@ -219,7 +228,10 @@ pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 \
 pip install mmcv==2.1.0 \
     -f https://download.openmmlab.com/mmcv/dist/cu117/torch2.0/index.html
 
-# Step 3: Install ez-openmmlab
+# Step 3: Install chumpy (fixed version)
+pip install git+https://github.com/JustAnalyze/chumpy.git@master
+
+# Step 4: Install ez-openmmlab
 pip install ez-openmmlab
 ```
 
@@ -234,9 +246,14 @@ pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 \
 pip install mmcv==2.1.0 \
     -f https://download.openmmlab.com/mmcv/dist/cpu/torch2.0/index.html
 
-# Step 3: Install ez-openmmlab
+# Step 3: Install chumpy (fixed version)
+pip install git+https://github.com/JustAnalyze/chumpy.git@master
+
+# Step 4: Install ez-openmmlab
 pip install ez-openmmlab
 ```
+
+> **Why install chumpy manually?** The upstream chumpy package (v0.70) has a broken setup.py that causes installation failures with modern Python packaging tools. We maintain a fixed fork that resolves these issues.
 
 ---
 

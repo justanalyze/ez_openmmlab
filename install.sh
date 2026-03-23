@@ -6,6 +6,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}"
@@ -31,30 +32,102 @@ fi
 
 echo -e "${GREEN}✓ Python $PYTHON_VERSION detected${NC}\n"
 
+# Check if uv is available
+UV_AVAILABLE=false
+if command -v uv &>/dev/null; then
+    UV_AVAILABLE=true
+fi
+
+# Ask user to choose installation method
+echo -e "${CYAN}Choose installation method:${NC}"
+if [ "$UV_AVAILABLE" = true ]; then
+    echo -e "  ${GREEN}1)${NC} uv (recommended - faster)"
+    echo -e "  ${YELLOW}2)${NC} pip (traditional)"
+else
+    echo -e "  ${YELLOW}1)${NC} pip (uv not detected)"
+    echo -e "  ${GREEN}2)${NC} Install uv first, then use uv"
+fi
+echo ""
+read -p "Enter choice [1-2]: " install_choice
+
+# Install uv if requested
+if [ "$UV_AVAILABLE" = false ] && [ "$install_choice" = "2" ]; then
+    echo -e "\n${CYAN}Installing uv...${NC}"
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="$HOME/.cargo/bin:$PATH"
+    echo -e "${GREEN}✓ uv installed${NC}\n"
+    UV_AVAILABLE=true
+    install_choice="1"
+fi
+
+# Determine which tool to use
+if [ "$UV_AVAILABLE" = true ] && [ "$install_choice" = "1" ]; then
+    INSTALLER="uv pip"
+    echo -e "\n${GREEN}Using uv for installation (faster!)${NC}\n"
+else
+    INSTALLER="pip"
+    echo -e "\n${YELLOW}Using pip for installation${NC}\n"
+    # Ensure setuptools is available for pip
+    echo -e "${YELLOW}Ensuring setuptools is available...${NC}"
+    pip install --upgrade setuptools -q
+fi
+
 # Step 1: PyTorch
-echo -e "${YELLOW}[1/3] Installing PyTorch (CUDA 11.7)...${NC}"
-pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 \
-    --index-url https://download.pytorch.org/whl/cu117 \
-    --no-cache-dir
+echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${YELLOW}[1/4] Installing PyTorch (CUDA 11.7)...${NC}"
+echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+$INSTALLER install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 \
+    --index-url https://download.pytorch.org/whl/cu117
 
 echo -e "${GREEN}✓ PyTorch installed${NC}\n"
 
 # Step 2: MMCV
-echo -e "${YELLOW}[2/3] Installing MMCV (CUDA 11.7)...${NC}"
-pip install mmcv==2.1.0 \
-    -f https://download.openmmlab.com/mmcv/dist/cu117/torch2.0/index.html \
-    --no-cache-dir
+echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${YELLOW}[2/4] Installing MMCV (CUDA 11.7)...${NC}"
+echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+if [ "$INSTALLER" = "uv pip" ]; then
+    $INSTALLER install mmcv==2.1.0 \
+        --find-links https://download.openmmlab.com/mmcv/dist/cu117/torch2.0/index.html
+else
+    $INSTALLER install mmcv==2.1.0 \
+        -f https://download.openmmlab.com/mmcv/dist/cu117/torch2.0/index.html \
+        --no-cache-dir
+fi
 
 echo -e "${GREEN}✓ MMCV installed${NC}\n"
 
-# Step 3: ez-openmmlab
-echo -e "${YELLOW}[3/3] Installing ez-openmmlab...${NC}"
-pip install ez-openmmlab
+# Step 3: setuptools (if using uv, needed for mmengine)
+if [ "$INSTALLER" = "uv pip" ]; then
+    echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${YELLOW}Installing setuptools (required by mmengine)...${NC}"
+    echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    $INSTALLER install setuptools wheel
+    echo -e "${GREEN}✓ setuptools installed${NC}\n"
+fi
+
+# Step 4: chumpy (fixed version)
+echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${YELLOW}[3/4] Installing chumpy (fixed version)...${NC}"
+echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+$INSTALLER install git+https://github.com/JustAnalyze/chumpy.git@master
+
+echo -e "${GREEN}✓ chumpy installed${NC}\n"
+
+# Step 5: ez-openmmlab
+echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${YELLOW}[4/4] Installing ez-openmmlab...${NC}"
+echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+$INSTALLER install ez-openmmlab
 
 echo -e "${GREEN}✓ ez-openmmlab installed${NC}\n"
 
 # Verify installation
-echo -e "${BLUE}Verifying installation...${NC}"
+echo -e "${BLUE}"
+echo "════════════════════════════════════════"
+echo "  Verifying Installation"
+echo "════════════════════════════════════════"
+echo -e "${NC}"
+
 python3 <<'PYEOF'
 import sys
 try:

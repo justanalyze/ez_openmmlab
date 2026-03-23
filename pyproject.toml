@@ -27,7 +27,6 @@ dependencies = [
     "openmim>=0.3.9",
     "mmdet>=3.0.0",
     "mmpose>=1.0.0",
-    "chumpy @ git+https://github.com/JustAnalyze/chumpy.git@master",
     "pycocotools>=2.0.7",
     "pydantic>=2.0.0",
     "typer>=0.9.0",
@@ -56,6 +55,7 @@ dev = [
     "torch==2.0.1",
     "torchvision==0.15.2",
     "torchaudio==2.0.2",
+    "chumpy @ git+https://github.com/JustAnalyze/chumpy.git@master",
     "mmcv==2.1.0",
     "mypy>=1.19.1",
     "pytest>=8.4.2",
@@ -66,6 +66,11 @@ dev = [
 [tool.uv]
 managed = true
 package = true
+
+# Workaround for broken chumpy build
+# This is needed because mmpose depends on PyPI chumpy which has broken setup.py
+[tool.uv.extra-build-dependencies]
+chumpy = ["pip"]
 
 # Custom indexes for development only
 [[tool.uv.index]]
