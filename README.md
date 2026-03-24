@@ -24,7 +24,27 @@ Utilize OpenMMLab using an EZ and Familiar API ;)
 ## 🏋️ 1. Train
 
 Forget framework-level "surgery". Define your data in a simple `dataset.toml`, call `.train()`, and `ez_openmmlab` handles the rest.
-
+> [!IMPORTANT]
+> **Classes must match your COCO annotations exactly!**
+>
+> The `classes` list must match the `categories` field in your COCO JSON files (same names, same order)
+>
+> **Example:**
+> If your `annotations/train.json` contains:
+>
+> ```json
+> "categories": [
+>   {"id": 1, "name": "cat"},
+>   {"id": 2, "name": "dog"}
+> ]
+> ```
+>
+> Then your `dataset.toml` should be:
+>
+> ```toml
+> classes = ["cat", "dog"]
+> ```
+>
 ### Step A: Define your data (`dataset.toml`)
 
 No more manual registration. Just point to your files.
