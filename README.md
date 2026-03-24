@@ -24,32 +24,26 @@ Utilize OpenMMLab using an EZ and Familiar API ;)
 ## 🏋️ 1. Train
 
 Forget framework-level "surgery". Define your data in a simple `dataset.toml`, call `.train()`, and `ez_openmmlab` handles the rest.
-> [!IMPORTANT]
-> **Classes must match your COCO annotations exactly!**
->
-> The `classes` list must match the `categories` field in your COCO JSON files (same names, same order)
->
-> **Example:**
-> If your `annotations/train.json` contains:
->
-> ```json
-> "categories": [
->   {"id": 1, "name": "cat"},
->   {"id": 2, "name": "dog"}
-> ]
-> ```
->
-> Then your `dataset.toml` should be:
->
-> ```toml
-> classes = ["cat", "dog"]
-> ```
->
+
 ### Step A: Define your data (`dataset.toml`)
 
 No more manual registration. Just point to your files.
 
+> [!IMPORTANT] The `classes` list must exactly match the `categories` in your COCO annotation files. For example, if your `train.json` contains:
+>
+> ```json
+>
+> "categories": [
+>   {"id": 1, "name": "cat"},
+>   {"id": 2, "name": "dog"}
+> ]
+>
+> ```
+>
+> Then your `dataset.toml` should have `classes = ["cat", "dog"]` in the same order.
+
 ```toml
+dataset_name = "MY_CUSTOM_DATASET"
 data_root = "datasets/my_project"
 classes = ["cat", "dog"]
 
@@ -148,10 +142,27 @@ model.export(
 
 Training on custom keypoints? Just add your metainfo to the TOML. **You can add as many keypoints as your dataset requires.**
 
+> [!IMPORTANT]
+> **Keypoints and skeleton must match your COCO annotations!**
+> 
+> - `keypoint_info` must match the `keypoints` list in your COCO JSON
+> - `skeleton_info` must match the `skeleton` connections in your COCO JSON
+> - Order and names must be identical
+
+**Example COCO JSON structure:**
+
+```json
+"keypoints": ["nose", "left_eye", "right_eye"],
+"skeleton": [[0, 1], [0, 2]]
+```
+
+**Corresponding dataset.toml:**
+
 ```toml
 # pose_dataset.toml
+dataset_name = "MY_CUSTOM_POSE_DATASET"
 data_root = "datasets/custom_pose"
-classes = ["dog"]
+classes = ["person"]
 
 [train]
 ann_file = "annotations/train.json"
@@ -162,34 +173,33 @@ ann_file = "annotations/val.json"
 img_dir = "images/val"
 
 [metainfo]
-sigmas = [0.025, 0.025, 0.05]  # One per keypoint
-joint_weights = [1.0, 1.0, 1.0] # One per key point
+sigmas = [0.025, 0.025, 0.05]        # One per keypoint
+joint_weights = [1.0, 1.0, 1.0]      # One per keypoint
 
 [metainfo.keypoint_info.0]
-name = "nose"
+name = "nose"                         # Must match COCO keypoints[0]
 id = 0
 color = [51, 153, 255]
 
 [metainfo.keypoint_info.1]
-name = "left_eye"
+name = "left_eye"                     # Must match COCO keypoints[1]
 id = 1
 color = [51, 153, 255]
 
 [metainfo.keypoint_info.2]
-name = "right_eye"
+name = "right_eye"                    # Must match COCO keypoints[2]
 id = 2
 color = [51, 153, 255]
 
 [metainfo.skeleton_info.0]
-link = ["nose", "left_eye"]
+link = ["nose", "left_eye"]           # Must match COCO skeleton[0]
 id = 0
 
 [metainfo.skeleton_info.1]
-link = ["nose", "right_eye"]
+link = ["nose", "right_eye"]          # Must match COCO skeleton[1]
 id = 1
 
-# ADD AS MANY KEYPOINT INFO AS YOU NEED
-
+# Add as many keypoints and skeleton connections as needed
 ```
 
 ```python
