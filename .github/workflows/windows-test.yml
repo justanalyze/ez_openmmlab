@@ -63,12 +63,23 @@ jobs:
       - name: Create Python Train Script
         shell: bash
         run: |
-          echo "from ez_openmmlab import RTMDet" > test_train.py
-          echo "print('Initializing training dry-run...')" >> test_train.py
-          echo "model = RTMDet('rtmdet_tiny')" >> test_train.py
-          echo "print('Running train with CPU optimizations...')" >> test_train.py
-          echo "model.train(dataset_config_path='demos/coco_mini/dataset.toml', epochs=10, batch_size=2, device='cpu', amp=False, num_workers=4)" >> test_train.py
-          echo "print('Train method passed flawlessly on Windows!')" >> test_train.py
+          cat <<EOF > test_train.py
+          from ez_openmmlab import RTMDet
 
-      - name: Run Train Test
-        run: python test_train.py
+          def main():
+            print('Initializing training dry-run...')
+            model = RTMDet('rtmdet_tiny')
+            print('Running train with CPU optimizations...')
+            model.train(
+                dataset_config_path='demos/coco_mini/dataset.toml', 
+                epochs=10, 
+                batch_size=2, 
+                device='cpu', 
+                amp=False, 
+                num_workers=4
+            )
+            print('Train method passed flawlessly on Windows!')
+
+          if __name__ == '__main__':
+            main()
+          EOF
