@@ -65,7 +65,6 @@ jobs:
         run: |
           cat <<EOF > test_train.py
           from ez_openmmlab import RTMDet
-
           def main():
             print('Initializing training dry-run...')
             model = RTMDet('rtmdet_tiny')
@@ -79,7 +78,8 @@ jobs:
                 num_workers=4
             )
             print('Train method passed flawlessly on Windows!')
-
           if __name__ == '__main__':
             main()
           EOF
+      - name: Run Train Test
+        run: python test_train.py
