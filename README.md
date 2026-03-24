@@ -1,15 +1,24 @@
 # 🚀 ez_openmmlab: OpenMMLab Made EZ
-
-Utilize OpenMMLab using an EZ and Familiar API ;)
-
 [![PyPI version](https://badge.fury.io/py/ez-openmmlab.svg)](https://pypi.org/project/ez-openmmlab/)
 [![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-`ez_openmmlab` is a high-level, **TOML-first** wrapper that makes SOTA OpenMMLab models (**RTMDet**, **RTMPose**, and **RTMO**) actually EZ to use. Stop fighting with 500-line Python configs and dataset registries—just write a few lines of TOML and get back to building.
+Utilize OpenMMLab using an EZ and Familiar API ;)
 
+---
+
+## 🧐 Why ez_openmmlab?
+
+| Feature | The Traditional Way (OpenMMLab) | The **EZ** Way |
+| :--- | :--- | :--- |
+| **Setup** | Hours of dependency archaeology | less than 5 minutes with `uv` |
+| **Config** | Inheriting through 5+ Python files | **One** human-readable `.toml` |
+| **Data** | Fighting with Dataset Registries | Just point to your datasets `dataset.toml`|
+| **Results** | Complex dictionary structures | Vectorized, NumPy-first objects |
+| **Deploy** | Spend Hours installing and learning MMDeploy | just call `.export()` method |
+
+---
 > 💡 **New to ez_openmmlab?** Check out the [`demos/`](demos/) folder for complete end-to-end examples!
-
 ---
 
 ## 🏋️ 1. Train
@@ -51,19 +60,8 @@ model.train(
 )
 ```
 
-### Resume Interrupted Training
-
-Training got interrupted? No problem - just resume where you left off:
-
-```python
-from ez_openmmlab import RTMDet
-
-# Load from your previous run
-model = RTMDet(model="path/to/user_config.toml") # provide the user_config.toml of the interrupted training
-
-# Resume training with new epoch count
-model.resume()  # Continues from last checkpoint
-```
+> [!TIP]
+> Training got interrupted? Just load your config: `model = RTMDet(model="user_config.toml")` and call `model.resume()`
 
 ![Training Demo](docs/train.gif)
 
@@ -126,7 +124,7 @@ model.export(
 
 ---
 
-## 🧘 Custom Pose Estimation? Still EZ.
+## 🧘 Custom Pose Estimation? Still EZ
 
 Training on custom keypoints? Just add your metainfo to the TOML. **You can add as many keypoints as your dataset requires.**
 
