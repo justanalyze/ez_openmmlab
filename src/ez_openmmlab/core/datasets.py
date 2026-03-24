@@ -1,8 +1,25 @@
 from typing import Any, Dict, Type, Optional
 
 from loguru import logger
+from mmdet.datasets import CocoDataset as MMDetCocoDataset
+from mmpose.datasets.datasets.base import BaseCocoStyleDataset as MMPoseCocoDataset
+from mmdet.registry import DATASETS as MMDET_DATASETS
+from mmpose.registry import DATASETS as MMPOSE_DATASETS
 
 from ez_openmmlab.core.schema.config import UserConfig
+
+
+# Define static proxy classes for Windows compatibility (picklable)
+@MMDET_DATASETS.register_module(force=True)
+class EzMMDetDataset(MMDetCocoDataset):
+    """Static proxy for MMDetection datasets to support Windows multiprocessing."""
+    pass
+
+
+@MMPOSE_DATASETS.register_module(force=True)
+class EzMMPoseDataset(MMPoseCocoDataset):
+    """Static proxy for MMPose datasets to support Windows multiprocessing."""
+    pass
 
 
 class DynamicDatasetRegistry:
@@ -46,7 +63,9 @@ class DynamicDatasetRegistry:
         return cls.register_dataset_from_metainfo(metainfo, family)
 
     @classmethod
-    def register_dataset_from_metainfo(cls, metainfo: Dict[str, Any], family: str) -> str:
+    def register_dataset_from_metainfo(
+        cls, metainfo: Dict[str, Any], family: str
+    ) -> str:
         """Registers a dataset class directly from a metainfo dictionary."""
         dataset_name = metainfo.get("dataset_name")
         if not dataset_name:
@@ -61,7 +80,9 @@ class DynamicDatasetRegistry:
 
         # 2. Collision Check (Only register if not already present)
         if cls._is_already_registered(class_name, family):
-            logger.debug(f"Dataset '{class_name}' already registered for {family}. Skipping.")
+            logger.debug(
+                f"Dataset '{class_name}' already registered for {family}. Skipping."
+            )
             return class_name
 
         # 3. Create Class and Register
@@ -100,7 +121,7 @@ class DynamicDatasetRegistry:
                 from mmpose.registry import DATASETS
             else:
                 from mmdet.registry import DATASETS
-            
+
             # Use module_dict to avoid potential RecursionError if registry is complex
             return name in DATASETS.module_dict
         except (ImportError, AttributeError):
@@ -108,10 +129,7 @@ class DynamicDatasetRegistry:
 
     @classmethod
     def _register_mmpose_dataset(cls, name: str, metainfo: Dict[str, Any]):
-        """Creates and registers an MMPose dataset class.
-
-        Validates required pose metadata: keypoint_info, skeleton_info, joint_weights, sigmas.
-        """
+        """Creates and registers an MMPose dataset class using static proxy."""
         required_fields = ["keypoint_info", "skeleton_info", "joint_weights", "sigmas"]
         missing = [f for f in required_fields if f not in metainfo]
         if missing:
@@ -120,34 +138,28 @@ class DynamicDatasetRegistry:
                 "Custom pose datasets require complete keypoint and skeleton definitions."
             )
 
-        from mmpose.datasets.datasets.base import BaseCocoStyleDataset
         from mmpose.registry import DATASETS
 
-        # Create the class in memory
-        DynamicClass = type(name, (BaseCocoStyleDataset,), {"METAINFO": metainfo})
-
-        # Register it
-        DATASETS.register_module(name=name, module=DynamicClass)
-        cls._registered_datasets[name] = DynamicClass
+        # Point the dynamic name to our picklable proxy class
+        # Note: metainfo is passed via config instantiation, not baked into class
+        if name not in DATASETS.module_dict:
+            DATASETS.register_module(name=name, module=EzMMPoseDataset)
+        
+        cls._registered_datasets[name] = EzMMPoseDataset
 
     @classmethod
     def _register_mmdet_dataset(cls, name: str, metainfo: Dict[str, Any]):
-        """Creates and registers an MMDet dataset class.
-
-        Supports 'palette' for visualization colors.
-        """
+        """Creates and registers an MMDet dataset class using static proxy."""
         if "palette" not in metainfo:
             logger.info(
                 f"No 'palette' provided for '{name}'. Using default detection colors. "
                 "You can specify a list of [R, G, B] colors in 'metainfo.palette' in your dataset.toml."
             )
 
-        from mmdet.datasets import CocoDataset
         from mmdet.registry import DATASETS
 
-        # Create the class in memory
-        DynamicClass = type(name, (CocoDataset,), {"METAINFO": metainfo})
-
-        # Register it
-        DATASETS.register_module(name=name, module=DynamicClass)
-        cls._registered_datasets[name] = DynamicClass
+        # Point the dynamic name to our picklable proxy class
+        if name not in DATASETS.module_dict:
+            DATASETS.register_module(name=name, module=EzMMDetDataset)
+            
+        cls._registered_datasets[name] = EzMMDetDataset

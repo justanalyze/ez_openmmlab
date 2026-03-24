@@ -27,10 +27,10 @@ def test_dynamic_registration_mmpose():
     from mmpose.registry import DATASETS
     assert class_name in DATASETS.module_dict
     
-    # Check METAINFO was baked in
+    # Check that the proxy class was registered
+    from ez_openmmlab.core.datasets import EzMMPoseDataset
     dynamic_cls = DATASETS.get(class_name)
-    assert dynamic_cls.METAINFO["classes"] == ["point"]
-    assert "sigmas" in dynamic_cls.METAINFO
+    assert dynamic_cls is EzMMPoseDataset
 
 def test_dynamic_registration_mmdet():
     """Verify that a class is created and registered in mmdet."""
@@ -50,9 +50,10 @@ def test_dynamic_registration_mmdet():
     from mmdet.registry import DATASETS
     assert class_name in DATASETS.module_dict
     
+    # Check that the proxy class was registered
+    from ez_openmmlab.core.datasets import EzMMDetDataset
     dynamic_cls = DATASETS.get(class_name)
-    assert dynamic_cls.METAINFO["classes"] == ["cat"]
-    assert dynamic_cls.METAINFO["dataset_name"] == "TestDet"
+    assert dynamic_cls is EzMMDetDataset
 
 def test_duplicate_registration_is_idempotent():
     """Verify that using the same dataset_name twice does not raise error."""
@@ -106,7 +107,6 @@ def test_dataset_name_injection_into_metainfo():
     from mmdet.registry import DATASETS
     dynamic_cls = DATASETS.get("InjectionTest")
     
-    # It should have both classes (from config.data.classes) 
-    # and dataset_name (from config.data.dataset_name)
-    assert dynamic_cls.METAINFO["dataset_name"] == "InjectionTest"
-    assert dynamic_cls.METAINFO["classes"] == ["item"]
+    # It should point to our static proxy
+    from ez_openmmlab.core.datasets import EzMMDetDataset
+    assert dynamic_cls is EzMMDetDataset

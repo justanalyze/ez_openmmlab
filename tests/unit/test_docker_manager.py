@@ -34,7 +34,7 @@ def test_command_construction():
     )
 
     assert "docker run --rm" in cmd
-    assert f"-v {root}:/work" in cmd
+    assert f'-v "{root.as_posix()}":/work' in cmd
     assert "openmmlab/mmdeploy:latest" in cmd
     assert "python3 /root/workspace/mmdeploy/tools/deploy.py" in cmd
     assert "/root/workspace/mmdeploy/configs/deploy.py" in cmd
@@ -83,11 +83,11 @@ def test_pythonpath_surgical_injection():
             # 1. Verify Volume Mounts:
             # It should mount the HOST directory to the CONTAINER /opt/external_pkgs path
             assert (
-                f"-v {root}/venv/lib/python3.10/site-packages/mmdet:/opt/external_pkgs/mmdet"
+                f'-v "{root.as_posix()}/venv/lib/python3.10/site-packages/mmdet":/opt/external_pkgs/mmdet'
                 in cmd
             )
             assert (
-                f"-v {root}/venv/lib/python3.10/site-packages/mmpose:/opt/external_pkgs/mmpose"
+                f'-v "{root.as_posix()}/venv/lib/python3.10/site-packages/mmpose":/opt/external_pkgs/mmpose'
                 in cmd
             )
 
