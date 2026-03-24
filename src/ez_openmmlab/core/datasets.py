@@ -11,14 +11,16 @@ from ez_openmmlab.core.schema.config import UserConfig
 
 # Define static proxy classes for Windows compatibility (picklable)
 @MMDET_DATASETS.register_module(force=True)
-class EzMMDetDataset(MMDetCocoDataset):
+class EZMMDetDataset(MMDetCocoDataset):
     """Static proxy for MMDetection datasets to support Windows multiprocessing."""
+
     pass
 
 
 @MMPOSE_DATASETS.register_module(force=True)
-class EzMMPoseDataset(MMPoseCocoDataset):
+class EZMMPoseDataset(MMPoseCocoDataset):
     """Static proxy for MMPose datasets to support Windows multiprocessing."""
+
     pass
 
 
@@ -143,9 +145,9 @@ class DynamicDatasetRegistry:
         # Point the dynamic name to our picklable proxy class
         # Note: metainfo is passed via config instantiation, not baked into class
         if name not in DATASETS.module_dict:
-            DATASETS.register_module(name=name, module=EzMMPoseDataset)
-        
-        cls._registered_datasets[name] = EzMMPoseDataset
+            DATASETS.register_module(name=name, module=EZMMPoseDataset)
+
+        cls._registered_datasets[name] = EZMMPoseDataset
 
     @classmethod
     def _register_mmdet_dataset(cls, name: str, metainfo: Dict[str, Any]):
@@ -160,6 +162,6 @@ class DynamicDatasetRegistry:
 
         # Point the dynamic name to our picklable proxy class
         if name not in DATASETS.module_dict:
-            DATASETS.register_module(name=name, module=EzMMDetDataset)
-            
-        cls._registered_datasets[name] = EzMMDetDataset
+            DATASETS.register_module(name=name, module=EZMMDetDataset)
+
+        cls._registered_datasets[name] = EZMMDetDataset
