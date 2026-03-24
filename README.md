@@ -29,15 +29,14 @@ Forget framework-level "surgery". Define your data in a simple `dataset.toml`, c
 
 No more manual registration. Just point to your files.
 
-> [!IMPORTANT] The `classes` list must exactly match the `categories` in your COCO annotation files. For example, if your `train.json` contains:
+> [!IMPORTANT]
+> **The `classes` list must exactly match the `categories` in your COCO annotation files. For example, if your `train.json` contains:**
 >
 > ```json
->
 > "categories": [
 >   {"id": 1, "name": "cat"},
 >   {"id": 2, "name": "dog"}
 > ]
->
 > ```
 >
 > Then your `dataset.toml` should have `classes = ["cat", "dog"]` in the same order.
@@ -144,7 +143,6 @@ Training on custom keypoints? Just add your metainfo to the TOML. **You can add 
 
 > [!IMPORTANT]
 > **Keypoints and skeleton must match your COCO annotations!**
-> 
 > - `keypoint_info` must match the `keypoints` list in your COCO JSON
 > - `skeleton_info` must match the `skeleton` connections in your COCO JSON
 > - Order and names must be identical
