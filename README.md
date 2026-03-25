@@ -72,7 +72,24 @@ model.train(
     batch_size=16,
 )
 ```
+> [!IMPORTANT]
+> **Windows Users:** Always use the `if __name__ == "__main__":` guard when training.
+>
+> Windows handles multiprocessing differently than Linux. Without this guard, you'll get errors during training when PyTorch's DataLoader tries to spawn worker processes.
+```python
+from ez_openmmlab import RTMDet
 
+def main():
+    model = RTMDet("rtmdet_tiny")
+    model.train(
+        dataset_config_path="dataset.toml",
+        epochs=100,
+        batch_size=16,
+    )
+
+if __name__ == "__main__":
+    main()
+```
 > [!TIP]
 > Training got interrupted? Just load your config: `model = RTMDet(model="user_config.toml")` and call `model.resume()`
 
